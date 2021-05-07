@@ -106,9 +106,6 @@ add_install_rpath_support(BIN_DIRS "${CMAKE_INSTALL_FULL_BINDIR}"
 
 include(AddUninstallTarget)
 
-set(CMAKE_C_FLAGS "${YARP_C_FLAGS} ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${YARP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
 yarp_configure_plugins_installation(yarp-device-openxrheadset)
 
 add_subdirectory(src)
