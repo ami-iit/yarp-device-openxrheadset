@@ -14,9 +14,11 @@
 
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/dev/DeviceDriver.h>
+#include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ServiceInterfaces.h>
-
+#include <yarp/sig/Image.h>
 #include "OpenXrInterface.h"
+#include "PortToQuadLayer.h"
 
 namespace yarp {
 namespace dev {
@@ -51,6 +53,9 @@ public:
 
 private:
 
+    std::string m_prefix;
+
+    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
     std::atomic_bool closed{ false };
 
     OpenXrInterface openXrInterface;

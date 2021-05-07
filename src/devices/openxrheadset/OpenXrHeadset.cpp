@@ -35,6 +35,8 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &/*cfg*/)
 {
     yCTrace(OPENXRHEADSET);
 
+    m_prefix = "/OpenXrHeadset";
+
     // Start the thread
     if (!this->start()) {
         yCError(OPENXRHEADSET) << "Thread start failed, aborting.";
@@ -61,6 +63,15 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         return false;
     }
 
+    for (int eye = 0; eye < 2; ++eye) {
+        if (!displayPorts[eye].initialize(openXrInterface.addHeadFixedQuadLayer(),
+                                          (eye == 0 ? m_prefix + "/display/left:i" : m_prefix + "/display/right:i"))) {
+            yCError(OPENXRHEADSET) << "Cannot initialize" << (eye == 0 ? "left" : "right") << "display texture.";
+            return false;
+        }
+        displayPorts[eye].setVisibility(eye == 0 ? IOpenXrQuadLayer::Visibility::LEFT_EYE : IOpenXrQuadLayer::Visibility::RIGHT_EYE);
+    }
+
     return true;
 }
 
@@ -72,7 +83,7 @@ void yarp::dev::OpenXrHeadset::threadRelease()
 
     openXrInterface.close();
 
-    std::raise(SIGTERM);
+//    std::raise(SIGTERM);
 
     closed = true;
 }
@@ -83,6 +94,12 @@ void yarp::dev::OpenXrHeadset::run()
 
     if (openXrInterface.isRunning())
     {
+        for (int eye = 0; eye < 2; ++eye) {
+            if (!displayPorts[eye].updateTexture()) {
+                yCError(OPENXRHEADSET) << "Failed to update" << (eye == 0 ? "left" : "right") << "display texture.";
+                return;
+            }
+        }
         openXrInterface.draw();
     }
     else

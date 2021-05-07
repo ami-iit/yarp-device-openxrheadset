@@ -4,7 +4,7 @@
 # This software may be modified and distributed under the terms of the
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
-set(DEPENDS_STRING "OpenXR_FOUND;glfw3_FOUND;OpenGL_FOUND")
+set(DEPENDS_STRING "OpenXR_FOUND;glfw3_FOUND;GLEW_FOUND;OpenGL_FOUND; Eigen3_FOUND")
 
 if (NOT WIN32)
     string(APPEND DEPENDS_STRING ";X11_FOUND")
@@ -29,13 +29,17 @@ set(yarp_openxrheadset_SRCS
   OpenXrHeadset.cpp
   OpenXrHeadsetLogComponent.cpp
   OpenXrInterface.cpp
+  OpenXrQuadLayer.cpp
 )
 
 set(yarp_openxrheadset_HDRS
   OpenXrConfig.h
+  OpenGLConfig.h
   OpenXrHeadset.h
   OpenXrHeadsetLogComponent.h
+  PortToQuadLayer.h
   OpenXrInterface.h
+  OpenXrQuadLayer.h
   )
 
 target_sources(yarp_openxrheadset
@@ -53,6 +57,8 @@ target_link_libraries(yarp_openxrheadset
     OpenXR::openxr_loader
     glfw
     OpenGL::GL
+    GLEW::GLEW
+    Eigen3::Eigen
 )
 
 if (NOT WIN32)
