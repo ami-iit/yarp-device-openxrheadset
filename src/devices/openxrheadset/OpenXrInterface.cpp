@@ -8,6 +8,20 @@
 
 #include "OpenXrConfig.h"
 
+#if defined(_WIN32)
+ #define GLFW_EXPOSE_NATIVE_WIN32
+ #define GLFW_EXPOSE_NATIVE_WGL
+#elif defined(__APPLE__)
+ #define GLFW_EXPOSE_NATIVE_COCOA
+ #define GLFW_EXPOSE_NATIVE_NSGL
+#elif defined(__linux__)
+ #define GLFW_EXPOSE_NATIVE_X11
+ #define GLFW_EXPOSE_NATIVE_GLX
+#endif
+
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+
 #include <cstdio>
 #include <vector>
 #include <array>
@@ -19,9 +33,6 @@
 
 #include "OpenXrHeadsetLogComponent.h"
 
-#ifdef Success
-  #undef Success
-#endif //See https://gitlab.com/libeigen/eigen/-/issues/253
 #include "OpenXrInterface.h"
 #include "OpenXrQuadLayer.h"
 
@@ -750,6 +761,7 @@ void OpenXrInterface::pollXrEvents()
                 }
 
                 yCInfo(OPENXRHEADSET, "Session started!");
+
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -760,7 +772,7 @@ void OpenXrInterface::pollXrEvents()
         }
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
-            //TO BE USED WHEN SETTING THE CONTROLLERS
+
             break;
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);

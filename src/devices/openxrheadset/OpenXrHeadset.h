@@ -53,9 +53,24 @@ public:
 
 private:
 
+    struct guiParam
+    {
+        float         width;
+        float         height;
+        float         x;
+        float         y;
+        float         z;
+        std::string    portName;
+        PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
+    };
+
     std::string m_prefix;
 
     std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
+
+    unsigned int guiCount;
+    std::vector<guiParam> huds;
+
     std::atomic_bool closed{ false };
 
     OpenXrInterface openXrInterface;
