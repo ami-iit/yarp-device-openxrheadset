@@ -40,6 +40,7 @@ set(yarp_openxrheadset_HDRS
   PortToQuadLayer.h
   OpenXrInterface.h
   OpenXrQuadLayer.h
+  OpenXrEigenConversions.h
   )
 
 target_sources(yarp_openxrheadset

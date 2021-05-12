@@ -18,9 +18,10 @@
 #include <yarp/os/LogStream.h>
 
 #include "OpenXrHeadsetLogComponent.h"
-
 #include "OpenXrInterface.h"
 #include "OpenXrQuadLayer.h"
+#include "OpenXrEigenConversions.h"
+
 
 class OpenXrInterface::Implementation
 {
@@ -140,6 +141,8 @@ public:
     XrCompositionLayerProjection projection_layer;
     //Set of head-locked quad layers added
     std::vector<std::shared_ptr<OpenXrQuadLayer>> headLockedQuadLayers;
+    //Location of the head with respect to the play_space
+    XrSpaceLocation view_space_location;
     //Buffer containing the submitted layers
     std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;
     //The number of layers that have been added. This is lower or equal than the number of submitted layers
@@ -410,6 +413,11 @@ bool OpenXrInterface::prepareXrSystem()
     // Initialization for view state
     m_pimpl->view_state.type = XR_TYPE_VIEW_STATE;
     m_pimpl->view_state.next = NULL;
+
+    // Initialization for the head location
+    m_pimpl->view_space_location.type = XR_TYPE_SPACE_LOCATION;
+    m_pimpl->view_space_location.next = NULL; //Here it is possible to put the address of an XrSpaceVelocity struct to get also the velocity
+    m_pimpl->view_space_location.locationFlags = 0;
 
     // OpenXR requires checking graphics requirements before creating a session.
     XrGraphicsRequirementsOpenGLKHR opengl_reqs;
@@ -808,7 +816,7 @@ void OpenXrInterface::updateXrSpaces()
     uint32_t output_viewCount = m_pimpl->views.size();
     XrResult result = xrLocateViews(m_pimpl->session, &view_locate_info, &(m_pimpl->view_state),
                                     m_pimpl->views.size(), &output_viewCount, m_pimpl->views.data());
-    if (!m_pimpl->checkXrOutput(result, "Failed to begin frame!"))
+    if (!m_pimpl->checkXrOutput(result, "Failed to locate the views!"))
     {
         m_pimpl->closing = true;
         return;
@@ -818,6 +826,14 @@ void OpenXrInterface::updateXrSpaces()
     {
         m_pimpl->projection_views[i].pose = m_pimpl->views[i].pose;
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
+    }
+
+    result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space, m_pimpl->frame_state.predictedDisplayTime, &m_pimpl->view_space_location);
+
+    if (!m_pimpl->checkXrOutput(result, "Failed to locate the head space!"))
+    {
+        m_pimpl->closing = true;
+        return;
     }
 
 }
@@ -1128,6 +1144,26 @@ bool OpenXrInterface::isRunning() const
     yCTrace(OPENXRHEADSET);
 
     return m_pimpl->initialized && !m_pimpl->closing;
+}
+
+bool OpenXrInterface::headPositionIsValid() const
+{
+    return m_pimpl->view_space_location.locationFlags | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+}
+
+Eigen::Vector3f OpenXrInterface::headPosition() const
+{
+    return toEigen(m_pimpl->view_space_location.pose.position);
+}
+
+bool OpenXrInterface::headQuaternionIsValid() const
+{
+    return m_pimpl->view_space_location.locationFlags | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+}
+
+Eigen::Quaternionf OpenXrInterface::headQuaternion() const
+{
+    return toEigen(m_pimpl->view_space_location.pose.orientation);
 }
 
 void OpenXrInterface::close()

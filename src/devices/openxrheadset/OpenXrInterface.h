@@ -122,6 +122,14 @@ public:
 
     bool isRunning() const;
 
+    bool headPositionIsValid() const;
+
+    Eigen::Vector3f headPosition() const;
+
+    bool headQuaternionIsValid() const;
+
+    Eigen::Quaternionf headQuaternion() const;
+
     void close();
 };
 
