@@ -68,7 +68,6 @@ private:
 
     std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
 
-    unsigned int guiCount;
     std::vector<guiParam> huds;
 
     std::atomic_bool closed{ false };

@@ -57,7 +57,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         isFunctionMap[INT]    = &yarp::os::Value::isInt32;
         isFunctionMap[DOUBLE] = &yarp::os::Value::isFloat64;
 
-        guiCount = cfg.find("gui_elements").asInt32();
+        int guiCount = cfg.find("gui_elements").asInt32();
         paramParser.clear();
         if (guiCount)
         {
@@ -67,7 +67,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
             paramParser.push_back(std::make_pair("y",      DOUBLE));
             paramParser.push_back(std::make_pair("z",      DOUBLE));
 
-            for (unsigned int i = 0; i < guiCount; ++i)
+            for (int i = 0; i < guiCount; ++i)
             {
                 std::string       groupName  = "GUI_" + std::to_string(i);
                 yarp::os::Bottle& guip       = cfg.findGroup(groupName);
