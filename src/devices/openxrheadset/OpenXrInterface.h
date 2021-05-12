@@ -74,7 +74,7 @@ class OpenXrInterface
 
     void printSystemProperties();
 
-    bool prepareWindow();
+    bool prepareGL();
 
     bool prepareXrSession();
 
@@ -90,7 +90,7 @@ class OpenXrInterface
 
     bool startXrFrame();
 
-    void updateXrViews();
+    void updateXrSpaces();
 
     void updateXrActions();
 
@@ -111,8 +111,6 @@ public:
     OpenXrInterface& operator=(const OpenXrInterface& other) = delete;
 
     OpenXrInterface& operator=(OpenXrInterface&& other) = delete;
-
-    void setKeyCallback(std::function<void(int /*key*/, int /*scancode*/, int /*action*/, int /*mods*/)> keyCallback);
 
     bool initialize();
 

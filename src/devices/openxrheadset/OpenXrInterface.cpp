@@ -8,20 +8,6 @@
 
 #include "OpenXrConfig.h"
 
-#if defined(_WIN32)
- #define GLFW_EXPOSE_NATIVE_WIN32
- #define GLFW_EXPOSE_NATIVE_WGL
-#elif defined(__APPLE__)
- #define GLFW_EXPOSE_NATIVE_COCOA
- #define GLFW_EXPOSE_NATIVE_NSGL
-#elif defined(__linux__)
- #define GLFW_EXPOSE_NATIVE_X11
- #define GLFW_EXPOSE_NATIVE_GLX
-#endif
-
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-
 #include <cstdio>
 #include <vector>
 #include <array>
@@ -182,24 +168,6 @@ public:
     std::atomic<bool> initialized{false};
 
     std::atomic<bool> closing{false};
-
-    std::function<void (int, int, int, int)> keyCallback = [this](int key, int /*scancode*/, int action, int /*mods*/)
-    {
-        if (GLFW_PRESS != action) {
-            return;
-        }
-
-        if (key == GLFW_KEY_ESCAPE)
-        {
-            closing = true;
-        }
-    };
-
-    static void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-    {
-        Implementation* instance = (Implementation*)glfwGetWindowUserPointer(window);
-        instance->keyCallback(key, scancode, action, mods);
-    }
 
     void submitLayer(const XrCompositionLayerBaseHeader* layer)
     {
@@ -480,7 +448,7 @@ void OpenXrInterface::printSystemProperties()
     yCInfo(OPENXRHEADSET, "\tPosition Tracking   : %d", system_props.trackingProperties.positionTracking);
 }
 
-bool OpenXrInterface::prepareWindow()
+bool OpenXrInterface::prepareGL()
 {
     yCTrace(OPENXRHEADSET);
 
@@ -496,6 +464,7 @@ bool OpenXrInterface::prepareWindow()
     }
     glfwSetErrorCallback(&OpenXrInterface::Implementation::glfwErrorCallback);
 
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_DEPTH_BITS, 16);
     m_pimpl->window = glfwCreateWindow(m_pimpl->windowSize[0], m_pimpl->windowSize[1], "YARP OpenXr Device Window", nullptr, nullptr);
     if (!m_pimpl->window) {
@@ -503,8 +472,6 @@ bool OpenXrInterface::prepareWindow()
         return false;
     }
 
-    glfwSetWindowUserPointer(m_pimpl->window, m_pimpl.get());
-    glfwSetKeyCallback(m_pimpl->window, &OpenXrInterface::Implementation::glfwKeyCallback);
     glfwMakeContextCurrent(m_pimpl->window);
     glfwSwapInterval(1);
 
@@ -825,9 +792,11 @@ bool OpenXrInterface::startXrFrame()
     return true;
 }
 
-void OpenXrInterface::updateXrViews()
+void OpenXrInterface::updateXrSpaces()
 {
     yCTrace(OPENXRHEADSET);
+
+    //Update location of the views
     XrViewLocateInfo view_locate_info = {.type = XR_TYPE_VIEW_LOCATE_INFO,
                                          .next = NULL,
                                          .viewConfigurationType =
@@ -910,33 +879,9 @@ void OpenXrInterface::render()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->swapchain_images[acquired_index].image, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->depth_swapchain_images[depth_acquired_index].image, 0);
 
-    // "render" to the swapchain image
-    glEnable(GL_SCISSOR_TEST);
-
-    //select left eye
-    glScissor(m_pimpl->projection_views[0].subImage.imageRect.offset.x,
-              m_pimpl->projection_views[0].subImage.imageRect.offset.y,
-              m_pimpl->projection_views[0].subImage.imageRect.extent.width,
-              m_pimpl->projection_views[0].subImage.imageRect.extent.height);
-
-    //Set green color
-    glClearColor(0, 1, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //select right eye
-    glScissor(m_pimpl->projection_views[1].subImage.imageRect.offset.x,
-              m_pimpl->projection_views[1].subImage.imageRect.offset.y,
-              m_pimpl->projection_views[1].subImage.imageRect.extent.width,
-              m_pimpl->projection_views[1].subImage.imageRect.extent.height);
-
-    //Set blue color
-    glClearColor(0, 0, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //Restore default clear
+    //Clear the backgorund color
     glClearColor(0, 0, 0, 0);
-
-    glDisable(GL_SCISSOR_TEST);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //------------------------------
 
@@ -983,9 +928,9 @@ void OpenXrInterface::endXrFrame()
 
     if (m_pimpl->frame_state.shouldRender) {
 
-        if (m_pimpl->view_state.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) {
-            m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) & (m_pimpl->projection_layer)); //Submit the projection layer
-        }
+        // Here we can check m_pimpl->view_state.viewStateFlags to see if the orientation has been updated
+        // in case this is used for the rendering
+        m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) & (m_pimpl->projection_layer)); //Submit the projection layer
 
         for (const auto& layer : m_pimpl->headLockedQuadLayers)
         {
@@ -1039,7 +984,7 @@ bool OpenXrInterface::initialize()
 
     bool ok = prepareXrInstance();
     ok = ok && prepareXrSystem();
-    ok = ok && prepareWindow();
+    ok = ok && prepareGL();
     ok = ok && prepareXrSession();
     ok = ok && prepareXrSwapchain();
     ok = ok && prepareXrCompositionLayers();
@@ -1069,18 +1014,6 @@ void OpenXrInterface::draw()
 
     glfwPollEvents();
 
-    if (m_pimpl->closing)
-    {
-        return;
-    }
-
-    m_pimpl->closing = glfwWindowShouldClose(m_pimpl->window);
-
-    if (m_pimpl->closing)
-    {
-        return;
-    }
-
     pollXrEvents();
     if (m_pimpl->closing)
     {
@@ -1088,7 +1021,7 @@ void OpenXrInterface::draw()
     }
 
     if (startXrFrame()) {
-        updateXrViews();
+        updateXrSpaces();
         updateXrActions();
         if (m_pimpl->frame_state.shouldRender) {
             render();
@@ -1195,13 +1128,6 @@ bool OpenXrInterface::isRunning() const
     yCTrace(OPENXRHEADSET);
 
     return m_pimpl->initialized && !m_pimpl->closing;
-}
-
-void OpenXrInterface::setKeyCallback(std::function<void (int, int, int, int)> keyCallback)
-{
-    yCTrace(OPENXRHEADSET);
-
-    m_pimpl->keyCallback = keyCallback;
 }
 
 void OpenXrInterface::close()

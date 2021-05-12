@@ -72,7 +72,6 @@ find_package(Threads REQUIRED)
 find_package(OpenXR 1.0 REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(GLEW REQUIRED)
 
 ## This is to select the newest version of OpenGL
 if (POLICY CMP0072)

@@ -15,11 +15,21 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
-#if defined(__APPLE__)
+#if defined(_WIN32)
+ #define GLFW_EXPOSE_NATIVE_WIN32
+ #define GLFW_EXPOSE_NATIVE_WGL
+#elif defined(__APPLE__)
+ #define GLFW_EXPOSE_NATIVE_COCOA
+ #define GLFW_EXPOSE_NATIVE_NSGL
  #include <GL/glx.h>
 #elif defined(__linux__)
+ #define GLFW_EXPOSE_NATIVE_X11
+ #define GLFW_EXPOSE_NATIVE_GLX
  #include <GL/glx.h>
 #endif
+
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 #ifdef Success
   #undef Success

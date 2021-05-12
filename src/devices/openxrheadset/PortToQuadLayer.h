@@ -9,7 +9,6 @@
 #ifndef YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
 #define YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
 
-#include <GL/glew.h>
 #include "OpenGLConfig.h"
 
 #include <yarp/os/BufferedPort.h>
@@ -41,11 +40,8 @@ public:
             return false;
         }
 
-
-        glewExperimental = true;
-        GLenum err = glewInit();
-        if(err!= GLEW_OK) {
-            yCError(OPENXRHEADSET, "Unable to initialize GLEW");
+        if (!glfwInit()) {
+            yCError(OPENXRHEADSET, "Unable to initialize GLFW");
             return false;
         }
 
