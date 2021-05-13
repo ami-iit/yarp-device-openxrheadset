@@ -139,10 +139,21 @@ public:
     XrViewState view_state;
     // layer with rendered eyes projection
     XrCompositionLayerProjection projection_layer;
-    //Set of head-locked quad layers added
+    // Set of head-locked quad layers added
     std::vector<std::shared_ptr<OpenXrQuadLayer>> headLockedQuadLayers;
-    //Location of the head with respect to the play_space
+    // Location of the head with respect to the play_space
     XrSpaceLocation view_space_location;
+    // Top level path for the two hands. The first is the left
+    XrPath hand_paths[2];
+    // Set of actions used in the application
+    XrActionSet actionset;
+    // Action related to the hand poses
+    XrAction hand_pose_action;
+    // poses can't be queried directly, we need to create a space for each
+    XrSpace hand_pose_spaces[2];
+    // Location of the hands
+    XrSpaceLocation hand_locations[2];
+
     //Buffer containing the submitted layers
     std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;
     //The number of layers that have been added. This is lower or equal than the number of submitted layers
@@ -181,6 +192,18 @@ public:
         }
         submitted_layers[layer_count-1] = layer;
     }
+
+    OpenXrInterface::Pose getPose(const XrSpaceLocation& spaceLocation)
+    {
+        Pose output;
+        output.positionValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+        output.position = toEigen(spaceLocation.pose.position);
+
+        output.rotationValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+        output.rotation = toEigen(spaceLocation.pose.orientation);
+
+        return output;
+    };
 };
 
 bool OpenXrInterface::checkExtensions()
@@ -418,6 +441,13 @@ bool OpenXrInterface::prepareXrSystem()
     m_pimpl->view_space_location.type = XR_TYPE_SPACE_LOCATION;
     m_pimpl->view_space_location.next = NULL; //Here it is possible to put the address of an XrSpaceVelocity struct to get also the velocity
     m_pimpl->view_space_location.locationFlags = 0;
+
+    // Initialize the hands locations
+    for (size_t i = 0; i < 2; ++i)
+    {
+        m_pimpl->hand_locations[i].type = XR_TYPE_SPACE_LOCATION;
+        m_pimpl->hand_locations[i].next = NULL;
+    }
 
     // OpenXR requires checking graphics requirements before creating a session.
     XrGraphicsRequirementsOpenGLKHR opengl_reqs;
@@ -679,7 +709,121 @@ bool OpenXrInterface::prepareXrCompositionLayers()
 bool OpenXrInterface::prepareXrActions()
 {
     yCTrace(OPENXRHEADSET);
-//TODO
+    xrStringToPath(m_pimpl->instance, "/user/hand/left", &m_pimpl->hand_paths[0]);
+    xrStringToPath(m_pimpl->instance, "/user/hand/right", &m_pimpl->hand_paths[1]);
+
+    XrPath trigger_value_path[2];
+    xrStringToPath(m_pimpl->instance, "/user/hand/left/input/trigger/value",
+                   &trigger_value_path[0]);
+    xrStringToPath(m_pimpl->instance, "/user/hand/right/input/trigger/value",
+                   &trigger_value_path[1]);
+
+    //The grip position:
+    //  For tracked hands: The user’s palm centroid when closing the fist, at the surface of the palm.
+    //  For handheld motion controllers: A fixed position within the controller that generally lines up
+    //  with the palm centroid when held by a hand in a neutral position.
+    //  This position should be adjusted left or right to center the position within the controller’s grip.
+
+    //The grip orientation:
+    //  +X axis: When you completely open your hand to form a flat 5-finger pose, the ray that is normal to the user’s
+    //           palm (away from the palm in the left hand, into the palm in the right hand).
+    //  -Z axis: When you close your hand partially (as if holding the controller), the ray that goes through the center
+    //           of the tube formed by your non-thumb fingers, in the direction of little finger to thumb.
+    //  +Y axis: orthogonal to +Z and +X using the right-hand rule.
+    XrPath grip_pose_path[2];
+    xrStringToPath(m_pimpl->instance, "/user/hand/left/input/grip/pose", &grip_pose_path[0]);
+    xrStringToPath(m_pimpl->instance, "/user/hand/right/input/grip/pose", &grip_pose_path[1]);
+
+
+    XrActionSetCreateInfo actionset_info = {
+        .type = XR_TYPE_ACTION_SET_CREATE_INFO, .next = NULL, .priority = 0};
+    strcpy(actionset_info.actionSetName, "yarp_device_actionset");
+    strcpy(actionset_info.localizedActionSetName, "YARP Device Actions");
+
+    XrResult result = xrCreateActionSet(m_pimpl->instance, &actionset_info, &m_pimpl->actionset);
+    if (!m_pimpl->checkXrOutput(result, "Failed to create actionset"))
+        return false;
+
+
+    XrActionCreateInfo action_info = {.type = XR_TYPE_ACTION_CREATE_INFO,
+                                      .next = NULL,
+                                      .actionType = XR_ACTION_TYPE_POSE_INPUT,
+                                      .countSubactionPaths = 2,
+                                      .subactionPaths = m_pimpl->hand_paths};
+    strcpy(action_info.actionName, "handpose");
+    strcpy(action_info.localizedActionName, "Hand Pose");
+
+    result = xrCreateAction(m_pimpl->actionset, &action_info, &m_pimpl->hand_pose_action);
+    if (!m_pimpl->checkXrOutput(result, "Failed to create hand pose action"))
+        return false;
+
+    XrPosef identity_pose =
+    {
+        .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
+        .position = {.x = 0.0, .y = 0.0, .z = 0.0}
+    };
+
+    for (int hand = 0; hand < 2; hand++) {
+        XrActionSpaceCreateInfo action_space_info = {.type = XR_TYPE_ACTION_SPACE_CREATE_INFO,
+                                                     .next = NULL,
+                                                     .action = m_pimpl->hand_pose_action,
+                                                     .subactionPath = m_pimpl->hand_paths[hand],
+                                                     .poseInActionSpace = identity_pose};
+
+        result = xrCreateActionSpace(m_pimpl->session, &action_space_info, &m_pimpl->hand_pose_spaces[hand]);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create hand %d pose space", hand))
+            return false;
+    }
+
+    // suggest actions for simple controller
+    {
+        XrPath interaction_profile_path;
+        result = xrStringToPath(m_pimpl->instance, "/interaction_profiles/khr/simple_controller",
+                                &interaction_profile_path);
+        if (!m_pimpl->checkXrOutput(result, "failed to get interaction profile"))
+            return false;
+
+        std::vector<XrActionSuggestedBinding> bindings = {
+            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
+            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
+        };
+
+        const XrInteractionProfileSuggestedBinding suggested_bindings = {
+            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
+            .next = NULL,
+            .interactionProfile = interaction_profile_path,
+            .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
+            .suggestedBindings = bindings.data()};
+
+        result = xrSuggestInteractionProfileBindings(m_pimpl->instance, &suggested_bindings);
+        if (!m_pimpl->checkXrOutput(result, "Failed to suggest bindings"))
+            return false;
+    }
+
+    // suggest actions for valve index controller
+    {
+        XrPath interaction_profile_path;
+        result = xrStringToPath(m_pimpl->instance, "/interaction_profiles/valve/index_controller",
+                                &interaction_profile_path);
+        if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile"))
+            return false;
+
+        std::vector<XrActionSuggestedBinding> bindings = {
+            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
+            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
+        };
+
+        const XrInteractionProfileSuggestedBinding suggested_bindings = {
+            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
+            .next = NULL,
+            .interactionProfile = interaction_profile_path,
+            .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
+            .suggestedBindings = bindings.data()};
+
+        result = xrSuggestInteractionProfileBindings(m_pimpl->instance, &suggested_bindings);
+        if (!m_pimpl->checkXrOutput(result, "Failed to suggest bindings"))
+            return false;
+    }
     return true;
 }
 
@@ -737,6 +881,14 @@ void OpenXrInterface::pollXrEvents()
 
                 yCInfo(OPENXRHEADSET, "Session started!");
 
+                XrSessionActionSetsAttachInfo actionset_attach_info = {
+                    .type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO,
+                    .next = NULL,
+                    .countActionSets = 1,
+                    .actionSets = &m_pimpl->actionset};
+                result = xrAttachSessionActionSets(m_pimpl->session, &actionset_attach_info);
+                if (!m_pimpl->checkXrOutput(result, "Failed to attach action set"))
+                    return;
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -748,6 +900,23 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
 
+            XrInteractionProfileState state = {.type = XR_TYPE_INTERACTION_PROFILE_STATE};
+
+            for (int i = 0; i < 2; i++) {
+                XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, m_pimpl->hand_paths[i], &state);
+                if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile for %d", i))
+                    continue;
+
+                XrPath prof = state.interactionProfile;
+
+                uint32_t strl;
+                char profile_str[XR_MAX_PATH_LENGTH];
+                result = xrPathToString(m_pimpl->instance, prof, XR_MAX_PATH_LENGTH, &strl, profile_str);
+                if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile path str for %d", i))
+                    continue;
+
+                yCWarning(OPENXRHEADSET, "Interaction profile changed for %d: %s. It seems that the headset controllers changed.", i, profile_str);
+            }
             break;
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);
@@ -828,7 +997,8 @@ void OpenXrInterface::updateXrSpaces()
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
-    result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space, m_pimpl->frame_state.predictedDisplayTime, &m_pimpl->view_space_location);
+    result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space,
+                           m_pimpl->frame_state.predictedDisplayTime, &m_pimpl->view_space_location);
 
     if (!m_pimpl->checkXrOutput(result, "Failed to locate the head space!"))
     {
@@ -841,8 +1011,40 @@ void OpenXrInterface::updateXrSpaces()
 void OpenXrInterface::updateXrActions()
 {
     yCTrace(OPENXRHEADSET);
-    //TODO
 
+    XrActiveActionSet active_actionsets =
+        {.actionSet = m_pimpl->actionset,
+         .subactionPath = XR_NULL_PATH};
+
+    XrActionsSyncInfo actions_sync_info = {
+        .type = XR_TYPE_ACTIONS_SYNC_INFO,
+        .countActiveActionSets = 1,
+        .activeActionSets = &active_actionsets,
+    };
+    XrResult result = xrSyncActions(m_pimpl->session, &actions_sync_info);
+    if (!m_pimpl->checkXrOutput(result, "Failed to sync actions!"))
+        return;
+
+    // query each value / location with a subaction path != XR_NULL_PATH
+    // resulting in individual values per hand/.
+    for (int i = 0; i < 2; i++) {
+        XrActionStatePose hand_pose_state = {.type = XR_TYPE_ACTION_STATE_POSE, .next = NULL};
+        {
+            XrActionStateGetInfo get_info = {.type = XR_TYPE_ACTION_STATE_GET_INFO,
+                                             .next = NULL,
+                                             .action = m_pimpl->hand_pose_action,
+                                             .subactionPath = m_pimpl->hand_paths[i]};
+            result = xrGetActionStatePose(m_pimpl->session, &get_info, &hand_pose_state);
+            if (!m_pimpl->checkXrOutput(result, "Failed to get pose value!"))
+                return;
+        }
+
+        result = xrLocateSpace(m_pimpl->hand_pose_spaces[i], m_pimpl->play_space,
+                               m_pimpl->frame_state.predictedDisplayTime,
+                               &m_pimpl->hand_locations[i]);
+        if (!m_pimpl->checkXrOutput(result, "Failed to locate space %d!", i))
+            return;
+    }
 }
 
 void OpenXrInterface::render()
@@ -1146,24 +1348,19 @@ bool OpenXrInterface::isRunning() const
     return m_pimpl->initialized && !m_pimpl->closing;
 }
 
-bool OpenXrInterface::headPositionIsValid() const
+OpenXrInterface::Pose OpenXrInterface::headPose() const
 {
-    return m_pimpl->view_space_location.locationFlags | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+    return m_pimpl->getPose(m_pimpl->view_space_location);
 }
 
-Eigen::Vector3f OpenXrInterface::headPosition() const
+OpenXrInterface::Pose OpenXrInterface::leftHandPose() const
 {
-    return toEigen(m_pimpl->view_space_location.pose.position);
+    return m_pimpl->getPose(m_pimpl->hand_locations[0]);
 }
 
-bool OpenXrInterface::headQuaternionIsValid() const
+OpenXrInterface::Pose OpenXrInterface::rightHandPose() const
 {
-    return m_pimpl->view_space_location.locationFlags | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
-}
-
-Eigen::Quaternionf OpenXrInterface::headQuaternion() const
-{
-    return toEigen(m_pimpl->view_space_location.pose.orientation);
+    return m_pimpl->getPose(m_pimpl->hand_locations[1]);
 }
 
 void OpenXrInterface::close()

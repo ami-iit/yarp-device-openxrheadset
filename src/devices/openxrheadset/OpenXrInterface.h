@@ -100,6 +100,15 @@ class OpenXrInterface
 
 public:
 
+    struct Pose
+    {
+        bool positionValid{false};
+        bool rotationValid{false};
+
+        Eigen::Vector3f position;
+        Eigen::Quaternionf rotation;
+    };
+
     OpenXrInterface();
 
     ~OpenXrInterface();
@@ -122,13 +131,11 @@ public:
 
     bool isRunning() const;
 
-    bool headPositionIsValid() const;
+    Pose headPose() const;
 
-    Eigen::Vector3f headPosition() const;
+    Pose leftHandPose() const;
 
-    bool headQuaternionIsValid() const;
-
-    Eigen::Quaternionf headQuaternion() const;
+    Pose rightHandPose() const;
 
     void close();
 };
