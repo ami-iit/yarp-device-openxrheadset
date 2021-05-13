@@ -74,7 +74,6 @@ private:
 
     OpenXrInterface openXrInterface;
 
-
 };
 
 #endif // YARP_DEV_OPENXRHEADSET_H

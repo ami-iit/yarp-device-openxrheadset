@@ -10,13 +10,11 @@
 
 #include <map>
 #include <algorithm>
-#include <csignal>
 
 #include "OpenXrHeadset.h"
 #include "OpenXrHeadsetLogComponent.h"
 
 typedef bool(yarp::os::Value::*valueIsType)(void) const;
-
 
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
@@ -209,4 +207,3 @@ bool yarp::dev::OpenXrHeadset::stopService()
     yCTrace(OPENXRHEADSET);
     return this->close();
 }
-
