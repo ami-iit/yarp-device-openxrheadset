@@ -22,14 +22,74 @@
 #include <cstring>
 #include <cstdarg>
 #include <atomic>
+#include <unordered_map>
 
 #include <yarp/os/LogStream.h>
 
+#define NO_INTERACTION_PROFILE_TAG "no_interaction_profile"
+
+// STRUCTS
+template <typename ActionType>
+struct Action {
+    std::string name;
+
+    XrAction xrAction;
+
+    ActionType value;
+
+    XrActionType type() const;
+
+    XrResult create(XrActionSet actionSet, const std::string& inputName)
+    {
+        name = inputName;
+        XrActionCreateInfo action_info = {.type = XR_TYPE_ACTION_CREATE_INFO,
+                                          .next = NULL,
+                                          .actionType = type(),
+                                          .countSubactionPaths = 0,
+                                          .subactionPaths = NULL};
+        strcpy(action_info.actionName, name.c_str());
+        strcpy(action_info.localizedActionName, name.c_str());
+
+        return xrCreateAction(actionSet, &action_info, &xrAction);
+    }
+
+    XrResult update(XrSession session);
+};
+
+template<>
+XrActionType Action<bool>::type() const;
+
+template<>
+XrActionType Action<float>::type() const;
+
+template<>
+XrActionType Action<Eigen::Vector2f>::type() const;
+
+template<>
+XrResult Action<bool>::update(XrSession session);
+
+template<>
+XrResult Action<float>::update(XrSession session);
+
+template<>
+XrResult Action<Eigen::Vector2f>::update(XrSession session);
+
+struct InputActions
+{
+    std::vector<Action<bool>> buttons;
+
+    std::vector<Action<float>> axes;
+
+    std::vector<Action<Eigen::Vector2f>> thumbsticks;
+
+    void clear();
+};
 
 
 class OpenXrInterface::Implementation
 {
 public:
+    //Helper methods
 
     bool checkXrOutput(XrResult result, const char* format, ...)
     {
@@ -80,8 +140,11 @@ public:
 
     OpenXrInterface::Pose getPose(const XrSpaceLocation& spaceLocation);
 
-    bool suggestInteractionProfileBindings(const std::string& interactionProfile,
-                                           const std::vector<XrActionSuggestedBinding>& suggestedBindings);
+    bool suggestInteractionProfileBindings(const std::string &interactionProfileName,
+                                           const std::vector<XrActionSuggestedBinding> &poseBindings,
+                                           std::initializer_list<std::pair<const char*, const char*>> buttonsList = {},
+                                           std::initializer_list<std::pair<const char*, const char*>> axisList = {},
+                                           std::initializer_list<std::pair<const char*, const char*>> thumbStickList = {});
 
     // DATA
 
@@ -162,21 +225,24 @@ public:
     XrSpaceLocation hand_locations[2];
 
     // Current interaction profile
-    std::string current_interaction_profile;
+    std::string currentHandInteractionProfile{NO_INTERACTION_PROFILE_TAG};
 
-    //Buffer containing the submitted layers
+    // Map from the interaction profile to the actions
+    std::unordered_map<std::string, InputActions> inputActions;
+
+    // Buffer containing the submitted layers
     std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;
 
-    //The number of layers that have been added. This is lower or equal than the number of submitted layers
+    // The number of layers that have been added. This is lower or equal than the number of submitted layers
     size_t layer_count = 0;
 
-    // functions pointer to get OpenGL requirements
+    // Functions pointer to get OpenGL requirements
     PFN_xrGetOpenGLGraphicsRequirementsKHR pfnGetOpenGLGraphicsRequirementsKHR = NULL;
 
     // Struct storing OpenGL requirements
     XrGraphicsRequirementsOpenGLKHR opengl_reqs;
 
-    // each graphics API requires the use of a specialized struct
+    // Each graphics API requires the use of a specialized struct
 #ifdef XR_USE_PLATFORM_WIN32
     XrGraphicsBindingOpenGLWin32KHR graphics_binding_gl;
 #else
@@ -189,7 +255,7 @@ public:
     // The window size
     std::vector<unsigned int> windowSize;
 
-    // internal OpenGL framebuffer ID
+    // Internal OpenGL framebuffer ID
     GLuint glFrameBufferId = 0;
 
     std::atomic<bool> initialized{false};

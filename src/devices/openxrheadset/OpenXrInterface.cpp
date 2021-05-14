@@ -578,21 +578,81 @@ bool OpenXrInterface::prepareXrActions()
             return false;
     }
 
-    using bindingVector = std::vector<XrActionSuggestedBinding>;
-
-    bindingVector basicBindings = {
+    std::vector<XrActionSuggestedBinding> poseBindings = {
         {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
         {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
     };
 
-    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/khr/simple_controller", basicBindings))
+    std::initializer_list<std::pair<const char*, const char*>> khrButtonsList =
+    {
+        {"/user/hand/left/input/select/click",  "khr_left_select"},
+        {"/user/hand/right/input/select/click", "khr_right_select"},
+        {"/user/hand/left/input/menu/click",    "khr_left_menu"},
+        {"/user/hand/right/input/menu/click",   "khr_right_menu"}
+    };
+
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/khr/simple_controller", poseBindings, khrButtonsList))
         return false;
 
-    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/htc/vive_controller", basicBindings))
+    std::initializer_list<std::pair<const char*, const char*>> oculusButtonsList =
+    {
+        {"/user/hand/right/input/a/click",          "oculus_right_a"},
+        {"/user/hand/right/input/b/click",          "oculus_right_b"},
+        {"/user/hand/right/input/thumbstick/click", "oculus_right_thumbstick_click"},
+        {"/user/hand/left/input/menu/click",        "oculus_left_menu"},
+        {"/user/hand/left/input/x/click",           "oculus_left_x"},
+        {"/user/hand/left/input/y/click",           "oculus_left_y"},
+        {"/user/hand/left/input/thumbstick/click",  "oculus_left_thumbstick_click"}
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> oculusAxisList =
+    {
+        {"/user/hand/left/input/trigger/value",  "oculus_left_trigger"},
+        {"/user/hand/right/input/trigger/value", "oculus_right_trigger"},
+        {"/user/hand/left/input/squeeze/value",  "oculus_left_squeeze"},
+        {"/user/hand/right/input/squeeze/value", "oculus_right_squeeze"},
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> oculusThumbStickList =
+    {
+        {"/user/hand/left/input/thumbstick",  "oculus_left_thumbstick"},
+        {"/user/hand/right/input/thumbstick", "oculus_right_thumbstick"}
+    };
+
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/oculus/touch_controller", poseBindings,
+                                                    oculusButtonsList, oculusAxisList, oculusThumbStickList))
         return false;
 
-    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/oculus/touch_controller", basicBindings))
+    std::initializer_list<std::pair<const char*, const char*>> viveButtonsList =
+    {
+        {"/user/hand/left/input/menu/click",      "vive_left_menu"},
+        {"/user/hand/left/input/trigger/click",   "vive_left_trigger_click"},
+        {"/user/hand/left/input/squeeze/click",   "vive_left_squeeze_click"},
+        {"/user/hand/left/input/trackpad/click",  "vive_left_trackpad_click"},
+        {"/user/hand/right/input/menu/click",     "vive_right_menu"},
+        {"/user/hand/right/input/trigger/click",  "vive_right_trigger_click"},
+        {"/user/hand/right/input/squeeze/click",  "vive_right_squeeze_click"},
+        {"/user/hand/right/input/trackpad/click", "vive_right_trackpad_click"}
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> viveAxisList =
+    {
+        {"/user/hand/left/input/trigger/value",  "vive_left_trigger"},
+        {"/user/hand/right/input/trigger/value", "vive_right_trigger"},
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> viveThumbStickList =
+    {
+        {"/user/hand/left/input/trackpad",  "vive_left_trackpad"},
+        {"/user/hand/right/input/trackpad", "vive_right_trackpad"}
+    };
+
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/htc/vive_controller", poseBindings,
+                                                    viveButtonsList, viveAxisList, viveThumbStickList))
         return false;
+
+    //This is the case where no interaction profile is available
+    m_pimpl->inputActions[NO_INTERACTION_PROFILE_TAG].clear();
 
     return true;
 }
@@ -666,6 +726,8 @@ void OpenXrInterface::pollXrEvents()
                 {
                     m_pimpl->closing = true;
                 }
+
+                yCInfo(OPENXRHEADSET) << "Current hand interaction profile:" << m_pimpl->currentHandInteractionProfile;
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -677,7 +739,7 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
 
-            std::string previous_interaction_profile = m_pimpl->current_interaction_profile;
+            std::string previous_interaction_profile = m_pimpl->currentHandInteractionProfile;
 
             if (!updateInteractionProfile())
             {
@@ -686,7 +748,7 @@ void OpenXrInterface::pollXrEvents()
 
             for (int i = 0; i < 2; i++) {
                 yCWarning(OPENXRHEADSET, "Interaction profile changed from %s to %s for %d. It seems that the headset controllers changed.",
-                          previous_interaction_profile.c_str(), m_pimpl->current_interaction_profile.c_str(), i);
+                          previous_interaction_profile.c_str(), m_pimpl->currentHandInteractionProfile.c_str(), i);
             }
             break;
         }
@@ -797,7 +859,8 @@ void OpenXrInterface::updateXrActions()
         return;
 
     // query each value / location with a subaction path != XR_NULL_PATH
-    // resulting in individual values per hand/.
+    // resulting in individual values per hand.
+    //We update the location of the hands independently from the current interaction profile
     for (int i = 0; i < 2; i++) {
         XrActionStatePose hand_pose_state = {.type = XR_TYPE_ACTION_STATE_POSE, .next = NULL};
         {
@@ -822,6 +885,7 @@ bool OpenXrInterface::updateInteractionProfile()
 {
     XrInteractionProfileState state = {.type = XR_TYPE_INTERACTION_PROFILE_STATE};
 
+    std::string handInteractionProfiles[2] = {NO_INTERACTION_PROFILE_TAG, NO_INTERACTION_PROFILE_TAG};
     for (int i = 0; i < 2; i++) {
         XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, m_pimpl->hand_paths[i], &state);
         if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile for %d", i))
@@ -836,17 +900,21 @@ bool OpenXrInterface::updateInteractionProfile()
             result = xrPathToString(m_pimpl->instance, prof, XR_MAX_PATH_LENGTH, &strl, interactionProfile);
             if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile path str for %d", i))
             {
-                m_pimpl->current_interaction_profile.clear();
+                m_pimpl->currentHandInteractionProfile.clear();
                 return false;
             }
 
-            m_pimpl->current_interaction_profile = interactionProfile;
-        }
-        else
-        {
-            m_pimpl->current_interaction_profile.clear();
+            handInteractionProfiles[i] = interactionProfile;
         }
     }
+
+    if (handInteractionProfiles[0] != handInteractionProfiles[1])
+    {
+        yCError(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
+        return false;
+    }
+
+    m_pimpl->currentHandInteractionProfile = handInteractionProfiles[0];
 
     return true;
 }
