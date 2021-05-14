@@ -94,6 +94,8 @@ class OpenXrInterface
 
     void updateXrActions();
 
+    bool updateInteractionProfile();
+
     void render();
 
     void endXrFrame();

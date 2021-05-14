@@ -153,6 +153,8 @@ public:
     XrSpace hand_pose_spaces[2];
     // Location of the hands
     XrSpaceLocation hand_locations[2];
+    // Current interaction profile
+    std::string current_interaction_profile;
 
     //Buffer containing the submitted layers
     std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;
@@ -203,7 +205,30 @@ public:
         output.rotation = toEigen(spaceLocation.pose.orientation);
 
         return output;
-    };
+    }
+
+    bool suggestInteractionProfileBindings(const std::string& interactionProfile,
+                                           const std::vector<XrActionSuggestedBinding>& suggestedBindings)
+    {
+        XrPath interaction_profile_path;
+        XrResult result = xrStringToPath(instance, interactionProfile.c_str(),
+                                &interaction_profile_path);
+        if (!checkXrOutput(result, "Failed to get interaction profile %s.", interactionProfile.c_str()))
+            return false;
+
+        const XrInteractionProfileSuggestedBinding suggested_bindings = {
+            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
+            .next = NULL,
+            .interactionProfile = interaction_profile_path,
+            .countSuggestedBindings = static_cast<uint32_t>(suggestedBindings.size()),
+            .suggestedBindings = suggestedBindings.data()};
+
+        result = xrSuggestInteractionProfileBindings(instance, &suggested_bindings);
+        if (!checkXrOutput(result, "Failed to suggest bindings for %s.", interactionProfile.c_str()))
+            return false;
+
+        return true;
+    }
 };
 
 bool OpenXrInterface::checkExtensions()
@@ -775,55 +800,22 @@ bool OpenXrInterface::prepareXrActions()
             return false;
     }
 
-    // suggest actions for simple controller
-    {
-        XrPath interaction_profile_path;
-        result = xrStringToPath(m_pimpl->instance, "/interaction_profiles/khr/simple_controller",
-                                &interaction_profile_path);
-        if (!m_pimpl->checkXrOutput(result, "failed to get interaction profile"))
-            return false;
+    using bindingVector = std::vector<XrActionSuggestedBinding>;
 
-        std::vector<XrActionSuggestedBinding> bindings = {
-            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
-            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
-        };
+    bindingVector basicBindings = {
+        {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
+        {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
+    };
 
-        const XrInteractionProfileSuggestedBinding suggested_bindings = {
-            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
-            .next = NULL,
-            .interactionProfile = interaction_profile_path,
-            .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
-            .suggestedBindings = bindings.data()};
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/khr/simple_controller", basicBindings))
+        return false;
 
-        result = xrSuggestInteractionProfileBindings(m_pimpl->instance, &suggested_bindings);
-        if (!m_pimpl->checkXrOutput(result, "Failed to suggest bindings"))
-            return false;
-    }
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/htc/vive_controller", basicBindings))
+        return false;
 
-    // suggest actions for valve index controller
-    {
-        XrPath interaction_profile_path;
-        result = xrStringToPath(m_pimpl->instance, "/interaction_profiles/valve/index_controller",
-                                &interaction_profile_path);
-        if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile"))
-            return false;
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/oculus/touch_controller", basicBindings))
+        return false;
 
-        std::vector<XrActionSuggestedBinding> bindings = {
-            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
-            {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
-        };
-
-        const XrInteractionProfileSuggestedBinding suggested_bindings = {
-            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
-            .next = NULL,
-            .interactionProfile = interaction_profile_path,
-            .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
-            .suggestedBindings = bindings.data()};
-
-        result = xrSuggestInteractionProfileBindings(m_pimpl->instance, &suggested_bindings);
-        if (!m_pimpl->checkXrOutput(result, "Failed to suggest bindings"))
-            return false;
-    }
     return true;
 }
 
@@ -888,7 +880,14 @@ void OpenXrInterface::pollXrEvents()
                     .actionSets = &m_pimpl->actionset};
                 result = xrAttachSessionActionSets(m_pimpl->session, &actionset_attach_info);
                 if (!m_pimpl->checkXrOutput(result, "Failed to attach action set"))
-                    return;
+                {
+                    m_pimpl->closing = true;
+                }
+
+                if (!updateInteractionProfile())
+                {
+                    m_pimpl->closing = true;
+                }
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -900,22 +899,16 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
 
-            XrInteractionProfileState state = {.type = XR_TYPE_INTERACTION_PROFILE_STATE};
+            std::string previous_interaction_profile = m_pimpl->current_interaction_profile;
+
+            if (!updateInteractionProfile())
+            {
+                m_pimpl->closing = true;
+            }
 
             for (int i = 0; i < 2; i++) {
-                XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, m_pimpl->hand_paths[i], &state);
-                if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile for %d", i))
-                    continue;
-
-                XrPath prof = state.interactionProfile;
-
-                uint32_t strl;
-                char profile_str[XR_MAX_PATH_LENGTH];
-                result = xrPathToString(m_pimpl->instance, prof, XR_MAX_PATH_LENGTH, &strl, profile_str);
-                if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile path str for %d", i))
-                    continue;
-
-                yCWarning(OPENXRHEADSET, "Interaction profile changed for %d: %s. It seems that the headset controllers changed.", i, profile_str);
+                yCWarning(OPENXRHEADSET, "Interaction profile changed from %s to %s for %d. It seems that the headset controllers changed.",
+                          previous_interaction_profile.c_str(), m_pimpl->current_interaction_profile.c_str(), i);
             }
             break;
         }
@@ -1045,6 +1038,39 @@ void OpenXrInterface::updateXrActions()
         if (!m_pimpl->checkXrOutput(result, "Failed to locate space %d!", i))
             return;
     }
+}
+
+bool OpenXrInterface::updateInteractionProfile()
+{
+    XrInteractionProfileState state = {.type = XR_TYPE_INTERACTION_PROFILE_STATE};
+
+    for (int i = 0; i < 2; i++) {
+        XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, m_pimpl->hand_paths[i], &state);
+        if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile for %d", i))
+            return false;
+
+        XrPath prof = state.interactionProfile;
+
+        if (prof != XR_NULL_PATH)
+        {
+            char interactionProfile[XR_MAX_PATH_LENGTH];
+            uint32_t strl;
+            result = xrPathToString(m_pimpl->instance, prof, XR_MAX_PATH_LENGTH, &strl, interactionProfile);
+            if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile path str for %d", i))
+            {
+                m_pimpl->current_interaction_profile.clear();
+                return false;
+            }
+
+            m_pimpl->current_interaction_profile = interactionProfile;
+        }
+        else
+        {
+            m_pimpl->current_interaction_profile.clear();
+        }
+    }
+
+    return true;
 }
 
 void OpenXrInterface::render()
