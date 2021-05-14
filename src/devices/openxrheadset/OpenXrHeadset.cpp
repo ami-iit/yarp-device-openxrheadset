@@ -11,8 +11,8 @@
 #include <map>
 #include <algorithm>
 
-#include "OpenXrHeadset.h"
-#include "OpenXrHeadsetLogComponent.h"
+#include <OpenXrHeadset.h>
+#include <OpenXrHeadsetLogComponent.h>
 
 typedef bool(yarp::os::Value::*valueIsType)(void) const;
 

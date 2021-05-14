@@ -17,8 +17,8 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ServiceInterfaces.h>
 #include <yarp/sig/Image.h>
-#include "OpenXrInterface.h"
-#include "PortToQuadLayer.h"
+#include <OpenXrInterface.h>
+#include <PortToQuadLayer.h>
 
 namespace yarp {
 namespace dev {

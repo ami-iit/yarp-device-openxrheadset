@@ -9,7 +9,7 @@
 #ifndef YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
 #define YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
 
-#include "OpenGLConfig.h"
+#include <OpenGLConfig.h>
 
 #include <yarp/os/BufferedPort.h>
 #include <yarp/sig/Image.h>
@@ -18,8 +18,8 @@
 #include <thread>
 #include <cassert>
 
-#include "OpenXrInterface.h"
-#include "OpenXrHeadsetLogComponent.h"
+#include <OpenXrInterface.h>
+#include <OpenXrHeadsetLogComponent.h>
 
 template <typename ImageType>
 class PortToQuadLayer

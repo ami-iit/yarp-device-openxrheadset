@@ -29,7 +29,8 @@ set(yarp_openxrheadset_SRCS
   OpenXrHeadset.cpp
   OpenXrHeadsetLogComponent.cpp
   OpenXrInterface.cpp
-  OpenXrQuadLayer.cpp
+  impl/OpenXrQuadLayer.cpp
+  impl/OpenXrInterfaceImpl.cpp
 )
 
 set(yarp_openxrheadset_HDRS
@@ -39,8 +40,9 @@ set(yarp_openxrheadset_HDRS
   OpenXrHeadsetLogComponent.h
   PortToQuadLayer.h
   OpenXrInterface.h
-  OpenXrQuadLayer.h
   OpenXrEigenConversions.h
+  impl/OpenXrQuadLayer.h
+  impl/OpenXrInterfaceImpl.h
   )
 
 target_sources(yarp_openxrheadset
@@ -64,6 +66,8 @@ target_link_libraries(yarp_openxrheadset
 if (NOT WIN32)
     target_link_libraries(yarp_openxrheadset PRIVATE ${X11_LIBRARIES})
 endif()
+
+target_include_directories(yarp_openxrheadset PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 yarp_install(
   TARGETS yarp_openxrheadset

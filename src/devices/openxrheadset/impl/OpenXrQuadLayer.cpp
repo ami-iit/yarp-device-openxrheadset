@@ -7,9 +7,9 @@
  */
 
 #include <yarp/os/LogStream.h>
-#include "OpenXrQuadLayer.h"
-#include "OpenXrHeadsetLogComponent.h"
-#include "OpenXrEigenConversions.h"
+#include <impl/OpenXrQuadLayer.h>
+#include <OpenXrHeadsetLogComponent.h>
+#include <OpenXrEigenConversions.h>
 
 OpenXrQuadLayer::OpenXrQuadLayer()
 {

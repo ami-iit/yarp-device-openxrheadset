@@ -6,6 +6,6 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include "OpenXrHeadsetLogComponent.h"
+#include <OpenXrHeadsetLogComponent.h>
 
 YARP_LOG_COMPONENT(OPENXRHEADSET, "yarp.device.openxrheadset")

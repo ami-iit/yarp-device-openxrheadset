@@ -9,7 +9,7 @@
 #ifndef YARP_DEV_OPENXREIGENCONVERSIONS_H
 #define YARP_DEV_OPENXREIGENCONVERSIONS_H
 
-#include "OpenXrConfig.h"
+#include <OpenXrConfig.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 

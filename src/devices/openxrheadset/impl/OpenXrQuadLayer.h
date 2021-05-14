@@ -11,8 +11,8 @@
 
 #include <vector>
 
-#include "OpenXrConfig.h"
-#include "OpenXrInterface.h"
+#include <OpenXrConfig.h>
+#include <OpenXrInterface.h>
 
 class OpenXrQuadLayer : public IOpenXrQuadLayer
 {
