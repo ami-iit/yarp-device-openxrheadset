@@ -1287,6 +1287,14 @@ void OpenXrInterface::close()
         m_pimpl->window = nullptr;
     }
 
+# ifndef WIN32
+    if (m_pimpl->graphics_binding_gl.xDisplay)
+    {
+        XCloseDisplay(m_pimpl->graphics_binding_gl.xDisplay);
+        m_pimpl->graphics_binding_gl.xDisplay = nullptr;
+    }
+#endif
+
     m_pimpl->initialized = false;
 
     yCInfo(OPENXRHEADSET) << "Closed";

@@ -27,6 +27,7 @@ yarp::dev::OpenXrHeadset::OpenXrHeadset()
 yarp::dev::OpenXrHeadset::~OpenXrHeadset()
 {
     yCTrace(OPENXRHEADSET);
+    this->stop();
 }
 
 bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
