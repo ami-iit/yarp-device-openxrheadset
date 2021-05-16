@@ -807,7 +807,8 @@ void OpenXrInterface::updateXrViews()
 
 
     uint32_t output_viewCount = m_pimpl->views.size();
-    XrResult result = xrLocateViews(m_pimpl->session, &view_locate_info, &(m_pimpl->view_state), m_pimpl->views.size(), &output_viewCount, m_pimpl->views.data());
+    XrResult result = xrLocateViews(m_pimpl->session, &view_locate_info, &(m_pimpl->view_state),
+                                    m_pimpl->views.size(), &output_viewCount, m_pimpl->views.data());
     if (!m_pimpl->checkXrOutput(result, "Failed to begin frame!"))
     {
         m_pimpl->closing = true;
