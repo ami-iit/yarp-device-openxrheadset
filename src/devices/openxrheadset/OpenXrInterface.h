@@ -10,6 +10,7 @@
 #define YARP_DEV_OPENXRINTERFACE_H
 
 #include <memory>
+#include <vector>
 #include <functional>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -138,6 +139,12 @@ public:
     Pose leftHandPose() const;
 
     Pose rightHandPose() const;
+
+    void getButtons(std::vector<bool>& buttons) const;
+
+    void getAxes(std::vector<float>& axes) const;
+
+    void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
 
     void close();
 };

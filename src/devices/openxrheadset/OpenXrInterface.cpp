@@ -879,6 +879,26 @@ void OpenXrInterface::updateXrActions()
         if (!m_pimpl->checkXrOutput(result, "Failed to locate space %d!", i))
             return;
     }
+
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    for (Action<bool>& button : inputs.buttons)
+    {
+        result = button.update(m_pimpl->session);
+        m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", button.name.c_str()); //Continue anyway
+    }
+
+    for (Action<float>& axis : inputs.axes)
+    {
+        result = axis.update(m_pimpl->session);
+        m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", axis.name.c_str()); //Continue anyway
+    }
+
+    for (Action<Eigen::Vector2f>& thumbstick : inputs.thumbsticks)
+    {
+        result = thumbstick.update(m_pimpl->session);
+        m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", thumbstick.name.c_str()); //Continue anyway
+    }
 }
 
 bool OpenXrInterface::updateInteractionProfile()
@@ -1233,6 +1253,42 @@ OpenXrInterface::Pose OpenXrInterface::leftHandPose() const
 OpenXrInterface::Pose OpenXrInterface::rightHandPose() const
 {
     return m_pimpl->getPose(m_pimpl->hand_locations[1]);
+}
+
+void OpenXrInterface::getButtons(std::vector<bool> &buttons) const
+{
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    buttons.resize(inputs.buttons.size());
+
+    for (size_t i = 0; i < buttons.size(); ++i)
+    {
+        buttons[i] = inputs.buttons[i].value;
+    }
+}
+
+void OpenXrInterface::getAxes(std::vector<float> &axes) const
+{
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    axes.resize(inputs.axes.size());
+
+    for (size_t i = 0; i < axes.size(); ++i)
+    {
+        axes[i] = inputs.axes[i].value;
+    }
+}
+
+void OpenXrInterface::getThumbsticks(std::vector<Eigen::Vector2f> &thumbsticks) const
+{
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    thumbsticks.resize(inputs.thumbsticks.size());
+
+    for (size_t i = 0; i < thumbsticks.size(); ++i)
+    {
+        thumbsticks[i] = inputs.thumbsticks[i].value;
+    }
 }
 
 void OpenXrInterface::close()
