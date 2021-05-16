@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <atomic>
+#include <mutex>
 
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/dev/DeviceDriver.h>
@@ -19,6 +20,8 @@
 #include <yarp/sig/Image.h>
 #include <OpenXrInterface.h>
 #include <PortToQuadLayer.h>
+
+#include <Eigen/Core>
 
 namespace yarp {
 namespace dev {
@@ -30,7 +33,8 @@ class OpenXrHeadset;
 
 class yarp::dev::OpenXrHeadset : public yarp::dev::DeviceDriver,
                                  public yarp::os::PeriodicThread,
-                                 public yarp::dev::IService
+                                 public yarp::dev::IService,
+                                 public yarp::dev::IJoypadController
 {
 public:
     OpenXrHeadset();
@@ -51,6 +55,21 @@ public:
     virtual bool updateService() override;
     virtual bool stopService() override;
 
+    // yarp::dev::IJoypadController methods
+    virtual bool getAxisCount(unsigned int& axis_count) override;
+    virtual bool getButtonCount(unsigned int& button_count) override;
+    virtual bool getTrackballCount(unsigned int& trackball_count) override;
+    virtual bool getHatCount(unsigned int& hat_count) override;
+    virtual bool getTouchSurfaceCount(unsigned int& touch_count) override;
+    virtual bool getStickCount(unsigned int& stick_count) override;
+    virtual bool getStickDoF(unsigned int stick_id, unsigned int& dof) override;
+    virtual bool getButton(unsigned int button_id, float& value) override;
+    virtual bool getTrackball(unsigned int trackball_id, yarp::sig::Vector& value) override;
+    virtual bool getHat(unsigned int hat_id, unsigned char& value) override;
+    virtual bool getAxis(unsigned int axis_id, double& value) override;
+    virtual bool getStick(unsigned int stick_id, yarp::sig::Vector& value, JoypadCtrl_coordinateMode coordinate_mode) override;
+    virtual bool getTouch(unsigned int touch_id, yarp::sig::Vector& value) override;
+
 private:
 
     struct guiParam
@@ -70,9 +89,22 @@ private:
 
     std::vector<guiParam> huds;
 
+    bool getStickAsAxis;
+
     std::atomic_bool closed{ false };
 
     OpenXrInterface openXrInterface;
+
+    OpenXrInterface::Pose headPose;
+    OpenXrInterface::Pose leftHandPose;
+    OpenXrInterface::Pose rightHandPose;
+
+
+    std::vector<bool> buttons;
+    std::vector<float> axes;
+    std::vector<Eigen::Vector2f> thumbsticks;
+
+    std::mutex m_mutex;
 
 };
 
