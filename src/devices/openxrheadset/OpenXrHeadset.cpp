@@ -16,6 +16,20 @@
 
 typedef bool(yarp::os::Value::*valueIsType)(void) const;
 
+void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output)
+{
+    Eigen::Matrix3f rotationMatrix = input.rotation.toRotationMatrix();
+    for (size_t i = 0; i < 3; ++i)
+    {
+        for (size_t j = 0; j < 3; ++j)
+        {
+            output(i,j) = rotationMatrix(i,j);
+        }
+        output(i, 3) = input.position(i);
+    }
+}
+
+
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
       yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes) // ~90 fps
@@ -34,9 +48,17 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 {
     yCTrace(OPENXRHEADSET);
 
-    m_prefix = "/OpenXrHeadset";
+    std::string name = cfg.check("name", yarp::os::Value("OpenXrHeadset")).toString();
+    if (name.front() != '/')
+    {
+        m_prefix = '/' + name;
+    }
+    else
+    {
+        m_prefix = name;
+    }
 
-    //checking all the parameter in the configuration file..
+    //checking the additional guis parameter in the configuration file..
     {
         constexpr unsigned int STRING = 0;
         constexpr unsigned int BOOL   = 1;
@@ -101,6 +123,38 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     }
 
     getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
+    left_frame     = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
+    right_frame    = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
+    head_frame     = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
+    root_frame     = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
+
+
+    //opening tf client
+    yarp::os::Property tfClientCfg;
+    tfClientCfg.put("device", cfg.check("tfDevice", yarp::os::Value("transformClient")).asString());
+    tfClientCfg.put("local",  cfg.check("tfLocal", yarp::os::Value(m_prefix + "/tf")).asString());
+    tfClientCfg.put("remote", cfg.check("tfRemote", yarp::os::Value("/transformServer")).asString());
+
+    if (!driver.open(tfClientCfg))
+    {
+        yCError(OPENXRHEADSET) << "Unable to open polydriver with the following options:" << tfClientCfg.toString();
+        return false;
+    }
+
+    if (!driver.view(tfPublisher) || tfPublisher == nullptr)
+    {
+        yCError(OPENXRHEADSET) << "Unable to view IFrameTransform interface.";
+        return false;
+    }
+    yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
+
+    headPose.resize(4,4);
+    headPose.eye();
+    leftHandPose.resize(4,4);
+    leftHandPose.eye();
+    rightHandPose.resize(4,4);
+    rightHandPose.eye();
+
     // Start the thread
     if (!this->start()) {
         yCError(OPENXRHEADSET) << "Thread start failed, aborting.";
@@ -158,6 +212,12 @@ void yarp::dev::OpenXrHeadset::threadRelease()
 
     openXrInterface.close();
 
+    if (tfPublisher)
+    {
+        driver.close();
+        tfPublisher = nullptr;
+    }
+
     closed = true;
 }
 
@@ -185,12 +245,31 @@ void yarp::dev::OpenXrHeadset::run()
 
         {
             std::lock_guard<std::mutex> lock(m_mutex);
+
             openXrInterface.getButtons(buttons);
             openXrInterface.getAxes(axes);
             openXrInterface.getThumbsticks(thumbsticks);
-            headPose = openXrInterface.headPose();
-            leftHandPose = openXrInterface.leftHandPose();
-            rightHandPose = openXrInterface.rightHandPose();
+
+            OpenXrInterface::Pose xrHead = openXrInterface.headPose();
+            if (xrHead.positionValid && xrHead.rotationValid)
+            {
+                poseToYarpMatrix(xrHead, headPose);
+                tfPublisher->setTransform(head_frame, root_frame, headPose);
+            }
+
+            OpenXrInterface::Pose xrLeftHand = openXrInterface.leftHandPose();
+            if (xrLeftHand.positionValid && xrLeftHand.rotationValid)
+            {
+                poseToYarpMatrix(xrLeftHand, leftHandPose);
+                tfPublisher->setTransform(left_frame, root_frame, leftHandPose);
+            }
+
+            OpenXrInterface::Pose xrRightHand = openXrInterface.rightHandPose();
+            if (xrRightHand.positionValid && xrRightHand.rotationValid)
+            {
+                poseToYarpMatrix(xrRightHand, rightHandPose);
+                tfPublisher->setTransform(right_frame, root_frame, rightHandPose);
+            }
         }
     }
     else

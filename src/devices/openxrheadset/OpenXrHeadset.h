@@ -15,9 +15,12 @@
 
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/dev/DeviceDriver.h>
+#include <yarp/dev/IFrameTransform.h>
+#include <yarp/dev/IJoypadController.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ServiceInterfaces.h>
 #include <yarp/sig/Image.h>
+#include <yarp/sig/Matrix.h>
 #include <OpenXrInterface.h>
 #include <PortToQuadLayer.h>
 
@@ -91,13 +94,20 @@ private:
 
     bool getStickAsAxis;
 
+    IFrameTransform* tfPublisher;
+    std::string      left_frame;
+    std::string      right_frame;
+    std::string      head_frame;
+    std::string      root_frame;
+    PolyDriver       driver;
+
     std::atomic_bool closed{ false };
 
     OpenXrInterface openXrInterface;
 
-    OpenXrInterface::Pose headPose;
-    OpenXrInterface::Pose leftHandPose;
-    OpenXrInterface::Pose rightHandPose;
+    yarp::sig::Matrix headPose;
+    yarp::sig::Matrix leftHandPose;
+    yarp::sig::Matrix rightHandPose;
 
 
     std::vector<bool> buttons;
