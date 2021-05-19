@@ -14,9 +14,11 @@
 
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/dev/DeviceDriver.h>
+#include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ServiceInterfaces.h>
-
+#include <yarp/sig/Image.h>
 #include "OpenXrInterface.h"
+#include "PortToQuadLayer.h"
 
 namespace yarp {
 namespace dev {
@@ -50,6 +52,23 @@ public:
     virtual bool stopService() override;
 
 private:
+
+    struct guiParam
+    {
+        float         width;
+        float         height;
+        float         x;
+        float         y;
+        float         z;
+        std::string    portName;
+        PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
+    };
+
+    std::string m_prefix;
+
+    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
+
+    std::vector<guiParam> huds;
 
     std::atomic_bool closed{ false };
 

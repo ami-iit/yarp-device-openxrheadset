@@ -20,6 +20,7 @@
 #include "OpenXrHeadsetLogComponent.h"
 
 #include "OpenXrInterface.h"
+#include "OpenXrQuadLayer.h"
 
 class OpenXrInterface::Implementation
 {
@@ -108,6 +109,8 @@ public:
     XrSession session = XR_NULL_HANDLE;
     // the playspace is needed to define a reference frame for the application
     XrSpace play_space = XR_NULL_HANDLE;
+    // the space fixed to the head of the operator
+    XrSpace view_space = XR_NULL_HANDLE;
     // info about the views (the "eyes")
     std::vector<XrViewConfigurationView> viewconfig_views;
     // info to create the swapchain
@@ -135,10 +138,12 @@ public:
     XrViewState view_state;
     // layer with rendered eyes projection
     XrCompositionLayerProjection projection_layer;
+    //Set of head-locked quad layers added
+    std::vector<std::shared_ptr<OpenXrQuadLayer>> headLockedQuadLayers;
     //Buffer containing the submitted layers
     std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;
     //The number of layers that have been added. This is lower or equal than the number of submitted layers
-    size_t layer_counts = 0;
+    size_t layer_count = 0;
 
     // functions pointer to get OpenGL requirements
     PFN_xrGetOpenGLGraphicsRequirementsKHR pfnGetOpenGLGraphicsRequirementsKHR = NULL;
@@ -164,22 +169,14 @@ public:
 
     std::atomic<bool> closing{false};
 
-    std::function<void (int, int, int, int)> keyCallback = [this](int key, int /*scancode*/, int action, int /*mods*/)
+    void submitLayer(const XrCompositionLayerBaseHeader* layer)
     {
-        if (GLFW_PRESS != action) {
-            return;
-        }
-
-        if (key == GLFW_KEY_ESCAPE)
+        layer_count++;
+        if (layer_count > submitted_layers.size())
         {
-            closing = true;
+            submitted_layers.resize(layer_count);
         }
-    };
-
-    static void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-    {
-        Implementation* instance = (Implementation*)glfwGetWindowUserPointer(window);
-        instance->keyCallback(key, scancode, action, mods);
+        submitted_layers[layer_count-1] = layer;
     }
 };
 
@@ -451,7 +448,7 @@ void OpenXrInterface::printSystemProperties()
     yCInfo(OPENXRHEADSET, "\tPosition Tracking   : %d", system_props.trackingProperties.positionTracking);
 }
 
-bool OpenXrInterface::prepareWindow()
+bool OpenXrInterface::prepareGL()
 {
     yCTrace(OPENXRHEADSET);
 
@@ -461,12 +458,13 @@ bool OpenXrInterface::prepareWindow()
      m_pimpl->windowSize[1] = std::max(m_pimpl->viewconfig_views[0].recommendedImageRectHeight,
                                        m_pimpl->viewconfig_views[1].recommendedImageRectHeight) / 2;
 
-    if ( !glfwInit() ) {
+    if (!glfwInit()) {
         yCError(OPENXRHEADSET, "Unable to initialize GLFW");
         return false;
     }
     glfwSetErrorCallback(&OpenXrInterface::Implementation::glfwErrorCallback);
 
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_DEPTH_BITS, 16);
     m_pimpl->window = glfwCreateWindow(m_pimpl->windowSize[0], m_pimpl->windowSize[1], "YARP OpenXr Device Window", nullptr, nullptr);
     if (!m_pimpl->window) {
@@ -474,8 +472,6 @@ bool OpenXrInterface::prepareWindow()
         return false;
     }
 
-    glfwSetWindowUserPointer(m_pimpl->window, m_pimpl.get());
-    glfwSetKeyCallback(m_pimpl->window, &OpenXrInterface::Implementation::glfwKeyCallback);
     glfwMakeContextCurrent(m_pimpl->window);
     glfwSwapInterval(1);
 
@@ -518,13 +514,18 @@ bool OpenXrInterface::prepareXrSession()
                                     .position = {.x = 0, .y = 0, .z = 0}};
 
     //The LOCAL reference frame has the origin fixed in the user initial position with +Y up, +X to the right, and -Z forward.
-    XrReferenceSpaceCreateInfo play_space_create_info = {.type = XR_TYPE_REFERENCE_SPACE_CREATE_INFO,
-                                                         .next = NULL,
-                                                         .referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL,
-                                                         .poseInReferenceSpace = identity_pose};
+    XrReferenceSpaceCreateInfo space_create_info = {.type = XR_TYPE_REFERENCE_SPACE_CREATE_INFO,
+                                                    .next = NULL,
+                                                    .referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL,
+                                                    .poseInReferenceSpace = identity_pose};
 
-    result = xrCreateReferenceSpace(m_pimpl->session, &play_space_create_info, &(m_pimpl->play_space));
+    result = xrCreateReferenceSpace(m_pimpl->session, &space_create_info, &(m_pimpl->play_space));
     if (! m_pimpl->checkXrOutput(result, "Failed to create play space!"))
+        return false;
+
+    space_create_info.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW; //This space if fixed on the head of the operator
+    result = xrCreateReferenceSpace(m_pimpl->session, &space_create_info, &(m_pimpl->view_space));
+    if (! m_pimpl->checkXrOutput(result, "Failed to create view space!"))
         return false;
 
     return true;
@@ -664,11 +665,6 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         .views = m_pimpl->projection_views.data(),
     };
 
-    //The first submitted layer is always the projection layer
-    m_pimpl->submitted_layers.resize(1);
-    m_pimpl->submitted_layers[0] = (XrCompositionLayerBaseHeader*) & (m_pimpl->projection_layer);
-    m_pimpl->layer_counts = 1;
-
     return true;
 }
 
@@ -732,6 +728,7 @@ void OpenXrInterface::pollXrEvents()
                 }
 
                 yCInfo(OPENXRHEADSET, "Session started!");
+
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -742,7 +739,7 @@ void OpenXrInterface::pollXrEvents()
         }
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
-            //TO BE USED WHEN SETTING THE CONTROLLERS
+
             break;
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);
@@ -795,9 +792,11 @@ bool OpenXrInterface::startXrFrame()
     return true;
 }
 
-void OpenXrInterface::updateXrViews()
+void OpenXrInterface::updateXrSpaces()
 {
     yCTrace(OPENXRHEADSET);
+
+    //Update location of the views
     XrViewLocateInfo view_locate_info = {.type = XR_TYPE_VIEW_LOCATE_INFO,
                                          .next = NULL,
                                          .viewConfigurationType =
@@ -880,30 +879,9 @@ void OpenXrInterface::render()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->swapchain_images[acquired_index].image, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->depth_swapchain_images[depth_acquired_index].image, 0);
 
-    // "render" to the swapchain image
-    glEnable(GL_SCISSOR_TEST);
-
-    //select left eye
-    glScissor(m_pimpl->projection_views[0].subImage.imageRect.offset.x,
-              m_pimpl->projection_views[0].subImage.imageRect.offset.y,
-              m_pimpl->projection_views[0].subImage.imageRect.extent.width,
-              m_pimpl->projection_views[0].subImage.imageRect.extent.height);
-
-    //Set green color
-    glClearColor(0, 1, 0, 1);
+    //Clear the backgorund color
+    glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //select right eye
-    glScissor(m_pimpl->projection_views[1].subImage.imageRect.offset.x,
-              m_pimpl->projection_views[1].subImage.imageRect.offset.y,
-              m_pimpl->projection_views[1].subImage.imageRect.extent.width,
-              m_pimpl->projection_views[1].subImage.imageRect.extent.height);
-
-    //Set blue color
-    glClearColor(0, 0, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glDisable(GL_SCISSOR_TEST);
 
     //------------------------------
 
@@ -946,23 +924,28 @@ void OpenXrInterface::endXrFrame()
 {
     yCTrace(OPENXRHEADSET);
 
-    int submitted_layer_count = m_pimpl->layer_counts;
+    m_pimpl->layer_count = 0; //Reset the layer count
 
-    if ((m_pimpl->view_state.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) == 0) {
-        yCDebug(OPENXRHEADSET, "Submitting 0 layers because orientation is invalid");
-        submitted_layer_count = 0;
-    }
+    if (m_pimpl->frame_state.shouldRender) {
 
-    if (!m_pimpl->frame_state.shouldRender) {
-        //submitting 0 layers because shouldRender = false
-        submitted_layer_count = 0;
+        // Here we can check m_pimpl->view_state.viewStateFlags to see if the orientation has been updated
+        // in case this is used for the rendering
+        m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) & (m_pimpl->projection_layer)); //Submit the projection layer
+
+        for (const auto& layer : m_pimpl->headLockedQuadLayers)
+        {
+            if (layer->shouldSubmit())
+            {
+                m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) &layer->layer);
+            }
+        }
     }
 
     XrFrameEndInfo frameEndInfo = {.type = XR_TYPE_FRAME_END_INFO,
                                    .next = NULL,
                                    .displayTime = m_pimpl->frame_state.predictedDisplayTime,
                                    .environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE,
-                                   .layerCount = static_cast<uint32_t>(submitted_layer_count),
+                                   .layerCount = static_cast<uint32_t>(m_pimpl->layer_count),
                                    .layers = m_pimpl->submitted_layers.data(),
                                    };
 
@@ -1001,7 +984,7 @@ bool OpenXrInterface::initialize()
 
     bool ok = prepareXrInstance();
     ok = ok && prepareXrSystem();
-    ok = ok && prepareWindow();
+    ok = ok && prepareGL();
     ok = ok && prepareXrSession();
     ok = ok && prepareXrSwapchain();
     ok = ok && prepareXrCompositionLayers();
@@ -1031,18 +1014,6 @@ void OpenXrInterface::draw()
 
     glfwPollEvents();
 
-    if (m_pimpl->closing)
-    {
-        return;
-    }
-
-    m_pimpl->closing = glfwWindowShouldClose(m_pimpl->window);
-
-    if (m_pimpl->closing)
-    {
-        return;
-    }
-
     pollXrEvents();
     if (m_pimpl->closing)
     {
@@ -1050,7 +1021,7 @@ void OpenXrInterface::draw()
     }
 
     if (startXrFrame()) {
-        updateXrViews();
+        updateXrSpaces();
         updateXrActions();
         if (m_pimpl->frame_state.shouldRender) {
             render();
@@ -1059,18 +1030,104 @@ void OpenXrInterface::draw()
     }
 }
 
+std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_pimpl->initialized)
+    {
+        yCError(OPENXRHEADSET) << "The OpenXr interface has not been initialized.";
+        return nullptr;
+    }
+
+    std::shared_ptr<OpenXrQuadLayer> newLayer = std::make_shared<OpenXrQuadLayer>();
+
+    XrSwapchainCreateInfo swapchain_create_info = {
+        .type = XR_TYPE_SWAPCHAIN_CREATE_INFO,
+        .next = NULL,
+        .createFlags = 0,
+        .usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT |
+        XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT |
+        XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT,
+        .format = GL_SRGB8_ALPHA8,
+        .sampleCount = m_pimpl->swapchain_create_info.sampleCount,
+        .width = std::min(m_pimpl->viewconfig_views[0].recommendedImageRectWidth,
+                          m_pimpl->viewconfig_views[1].recommendedImageRectWidth),
+        .height = std::min(m_pimpl->viewconfig_views[0].recommendedImageRectHeight,
+                           m_pimpl->viewconfig_views[1].recommendedImageRectHeight),
+        .faceCount = 1,
+        .arraySize = 1,
+        .mipCount = 1,
+    };
+
+    newLayer->swapchainHeight = swapchain_create_info.height;
+    newLayer->swapchainWidth = swapchain_create_info.width;
+
+    XrRect2Di initialRect =
+    {
+        .offset = {.x = 0, .y = 0},
+        .extent =
+        {
+            .width = static_cast<int32_t>(swapchain_create_info.width),
+            .height = static_cast<int32_t>(swapchain_create_info.height),
+        }
+    };
+
+    XrPosef initialPose =
+    {
+        .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
+        .position = {.x = 0.0, .y = 0.0, .z = -1.0} //The origin is in the centroid of the views
+                                                    //with +Y up, +X to the right, and -Z forward.
+                                                    //See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#reference-spaces
+    };
+
+    newLayer->layer = {
+        .type = XR_TYPE_COMPOSITION_LAYER_QUAD,
+        .next = NULL,
+        .layerFlags = 0,
+        .space = m_pimpl->view_space,        //Head fixed
+        .eyeVisibility = XR_EYE_VISIBILITY_BOTH,
+        .subImage = {
+            .swapchain = XR_NULL_HANDLE,
+            .imageRect = initialRect,
+            .imageArrayIndex = 0
+        },
+        .pose = initialPose,
+        .size = {.width = 1.75, .height = 1.75} //These numbers have been heuristically found
+                                                //to fit almost the entirety of the screen when
+                                                //at 1 meter distance. This, of course, will
+                                                //depend on the FOV. They can be edited at any time
+    };
+
+    XrResult result = xrCreateSwapchain(m_pimpl->session, &(swapchain_create_info), &(newLayer->layer.subImage.swapchain));
+    if (!m_pimpl->checkXrOutput(result, "Failed to create swapchain for the new head fixed quad layer."))
+        return nullptr;
+
+    uint32_t swapchain_images_count = 0;
+    result = xrEnumerateSwapchainImages(newLayer->layer.subImage.swapchain, 0, &swapchain_images_count, NULL);
+    if (!m_pimpl->checkXrOutput(result, "Failed to enumerate swapchain images for the new head fixed quad layer."))
+        return nullptr;
+
+    XrSwapchainImageOpenGLKHR dummy;
+    dummy.type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
+    dummy.next = nullptr;
+    newLayer->swapchain_images.resize(swapchain_images_count, dummy);
+
+    result = xrEnumerateSwapchainImages(newLayer->layer.subImage.swapchain, swapchain_images_count, &swapchain_images_count,
+                                        (XrSwapchainImageBaseHeader*)(newLayer->swapchain_images.data()));
+    if (!m_pimpl->checkXrOutput(result, "Failed to enumerate swapchain images"))
+        return nullptr;
+
+    m_pimpl->headLockedQuadLayers.push_back(newLayer);
+
+    return newLayer;
+}
+
 bool OpenXrInterface::isRunning() const
 {
     yCTrace(OPENXRHEADSET);
 
     return m_pimpl->initialized && !m_pimpl->closing;
-}
-
-void OpenXrInterface::setKeyCallback(std::function<void (int, int, int, int)> keyCallback)
-{
-    yCTrace(OPENXRHEADSET);
-
-    m_pimpl->keyCallback = keyCallback;
 }
 
 void OpenXrInterface::close()
@@ -1107,14 +1164,16 @@ void OpenXrInterface::close()
         m_pimpl->system_id = XR_NULL_SYSTEM_ID;
         m_pimpl->session = XR_NULL_HANDLE;
         m_pimpl->play_space = XR_NULL_HANDLE;
+        m_pimpl->view_space = XR_NULL_HANDLE;
     }
 
     m_pimpl->viewconfig_views.clear();
     m_pimpl->projection_views.clear();
     m_pimpl->depth_projection_views.clear();
     m_pimpl->views.clear();
+    m_pimpl->headLockedQuadLayers.clear();
     m_pimpl->submitted_layers.clear();
-    m_pimpl->layer_counts = 0;
+    m_pimpl->layer_count = 0;
 
     if (m_pimpl->window)
     {
