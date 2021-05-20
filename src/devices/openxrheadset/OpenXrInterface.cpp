@@ -1291,6 +1291,11 @@ void OpenXrInterface::getThumbsticks(std::vector<Eigen::Vector2f> &thumbsticks) 
     }
 }
 
+int64_t OpenXrInterface::currentNanosecondsSinceEpoch() const
+{
+    return m_pimpl->frame_state.predictedDisplayTime;
+}
+
 void OpenXrInterface::close()
 {
     yCTrace(OPENXRHEADSET);

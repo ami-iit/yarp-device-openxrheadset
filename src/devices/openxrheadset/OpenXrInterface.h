@@ -146,6 +146,8 @@ public:
 
     void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
 
+    int64_t currentNanosecondsSinceEpoch() const;
+
     void close();
 };
 

@@ -16,7 +16,7 @@
 
 typedef bool(yarp::os::Value::*valueIsType)(void) const;
 
-void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output)
+inline void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output)
 {
     Eigen::Matrix3f rotationMatrix = input.rotation.toRotationMatrix();
     for (size_t i = 0; i < 3; ++i)
@@ -29,10 +29,40 @@ void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& out
     }
 }
 
+inline void writeVec3OnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port, const Eigen::Vector3f& vec3, yarp::os::Stamp& stamp)
+{
+    if (port)
+    {
+        yarp::os::Bottle& output = port->prepare();
+        output.clear();
+        output.addFloat64(vec3[0]);
+        output.addFloat64(vec3[1]);
+        output.addFloat64(vec3[2]);
+        port->setEnvelope(stamp);
+        port->write();
+    }
+}
+
+inline void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port, const Eigen::Quaternionf& vec3, yarp::os::Stamp& stamp)
+{
+    if (port)
+    {
+        yarp::os::Bottle& output = port->prepare();
+        output.clear();
+        output.addFloat64(vec3.w());
+        output.addFloat64(vec3.x());
+        output.addFloat64(vec3.y());
+        output.addFloat64(vec3.z());
+        port->setEnvelope(stamp);
+        port->write();
+    }
+}
+
 
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
-      yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes) // ~90 fps
+      yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes), // ~90 fps
+      stamp(0,0.0)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -148,6 +178,33 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     }
     yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
 
+    //opening ports
+    std::initializer_list<std::pair<yarp::os::BufferedPort<yarp::os::Bottle>**,
+                                    std::string>> ports =
+    {
+        { &orientationPort,                  "quaternion"                   },
+        { &positionPort,                     "position"                     },
+        { &angularVelocityPort,              "angularVelocity"              },
+        { &linearVelocityPort,               "linearVelocity"               }
+    };
+
+    for (auto port : ports)
+    {
+        std::string name;
+
+        *port.first = new yarp::os::BufferedPort<yarp::os::Bottle>;
+        name        = m_prefix + "/headpose/" + port.second + ":o";
+
+        if (!(*port.first)->open(name))
+        {
+            yCError(OPENXRHEADSET) << "Cannot open" << port.second << "port";
+            this->close();
+            return false;
+        }
+
+        (*port.first)->setWriteOnly();
+    }
+
     headPose.resize(4,4);
     headPose.eye();
     leftHandPose.resize(4,4);
@@ -218,6 +275,22 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         tfPublisher = nullptr;
     }
 
+    //Closing and deleting ports
+    std::initializer_list<yarp::os::BufferedPort<yarp::os::Bottle>**> ports =
+    {
+        &orientationPort,
+        &positionPort,
+        &angularVelocityPort,
+        &linearVelocityPort,
+    };
+
+    for (auto port : ports)
+    {
+        (*port)->close();
+
+        delete *port;
+    }
+
     closed = true;
 }
 
@@ -250,11 +323,31 @@ void yarp::dev::OpenXrHeadset::run()
             openXrInterface.getAxes(axes);
             openXrInterface.getThumbsticks(thumbsticks);
 
+            stamp.update(openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
+
             OpenXrInterface::Pose xrHead = openXrInterface.headPose();
             if (xrHead.positionValid && xrHead.rotationValid)
             {
                 poseToYarpMatrix(xrHead, headPose);
                 tfPublisher->setTransform(head_frame, root_frame, headPose);
+            }
+
+            if (xrHead.positionValid)
+            {
+                writeVec3OnPort(positionPort, xrHead.position, stamp);
+            }
+            else
+            {
+                yCWarningThrottle(OPENXRHEADSET, 5) << "Head position not valid.";
+            }
+
+            if (xrHead.rotationValid)
+            {
+                writeQuaternionOnPort(orientationPort, xrHead.rotation, stamp);
+            }
+            else
+            {
+                yCWarningThrottle(OPENXRHEADSET, 5) << "Head rotation not valid.";
             }
 
             OpenXrInterface::Pose xrLeftHand = openXrInterface.leftHandPose();
@@ -263,12 +356,36 @@ void yarp::dev::OpenXrHeadset::run()
                 poseToYarpMatrix(xrLeftHand, leftHandPose);
                 tfPublisher->setTransform(left_frame, root_frame, leftHandPose);
             }
+            else
+            {
+                if (!xrLeftHand.positionValid)
+                {
+                    yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand position not valid.";
+                }
+
+                if (!xrLeftHand.rotationValid)
+                {
+                    yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand rotation not valid.";
+                }
+            }
 
             OpenXrInterface::Pose xrRightHand = openXrInterface.rightHandPose();
             if (xrRightHand.positionValid && xrRightHand.rotationValid)
             {
                 poseToYarpMatrix(xrRightHand, rightHandPose);
                 tfPublisher->setTransform(right_frame, root_frame, rightHandPose);
+            }
+            else
+            {
+                if (!xrRightHand.positionValid)
+                {
+                    yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand position not valid.";
+                }
+
+                if (!xrRightHand.rotationValid)
+                {
+                    yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand rotation not valid.";
+                }
             }
         }
     }

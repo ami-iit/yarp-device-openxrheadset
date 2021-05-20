@@ -21,6 +21,7 @@
 #include <yarp/dev/ServiceInterfaces.h>
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
+#include <yarp/os/Stamp.h>
 #include <OpenXrInterface.h>
 #include <PortToQuadLayer.h>
 
@@ -85,6 +86,12 @@ private:
         std::string    portName;
         PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
     };
+
+    yarp::os::BufferedPort<yarp::os::Bottle>* orientationPort;
+    yarp::os::BufferedPort<yarp::os::Bottle>* positionPort;
+    yarp::os::BufferedPort<yarp::os::Bottle>* angularVelocityPort;
+    yarp::os::BufferedPort<yarp::os::Bottle>* linearVelocityPort;
+    yarp::os::Stamp stamp;
 
     std::string m_prefix;
 
