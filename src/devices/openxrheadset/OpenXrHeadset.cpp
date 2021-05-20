@@ -322,72 +322,94 @@ void yarp::dev::OpenXrHeadset::run()
             openXrInterface.getButtons(buttons);
             openXrInterface.getAxes(axes);
             openXrInterface.getThumbsticks(thumbsticks);
+        }
 
-            stamp.update(openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
+        stamp.update(openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
 
-            OpenXrInterface::Pose xrHead = openXrInterface.headPose();
-            if (xrHead.positionValid && xrHead.rotationValid)
+        OpenXrInterface::Pose xrHead = openXrInterface.headPose();
+        if (xrHead.positionValid && xrHead.rotationValid)
+        {
+            poseToYarpMatrix(xrHead, headPose);
+            tfPublisher->setTransform(head_frame, root_frame, headPose);
+        }
+
+        if (xrHead.positionValid)
+        {
+            writeVec3OnPort(positionPort, xrHead.position, stamp);
+        }
+        else
+        {
+            yCWarningThrottle(OPENXRHEADSET, 5) << "Head position not valid.";
+        }
+
+        if (xrHead.rotationValid)
+        {
+            writeQuaternionOnPort(orientationPort, xrHead.rotation, stamp);
+        }
+        else
+        {
+            yCWarningThrottle(OPENXRHEADSET, 5) << "Head rotation not valid.";
+        }
+
+        OpenXrInterface::Velocity xrHeadVelocity = openXrInterface.headVelocity();
+
+        if (xrHeadVelocity.linearValid)
+        {
+            writeVec3OnPort(linearVelocityPort, xrHeadVelocity.linear, stamp);
+        }
+        else
+        {
+            yCWarningThrottle(OPENXRHEADSET, 5) << "Head linear velocity not valid.";
+        }
+
+        if (xrHeadVelocity.angularValid)
+        {
+            writeVec3OnPort(angularVelocityPort, xrHeadVelocity.angular, stamp);
+        }
+        else
+        {
+            yCWarningThrottle(OPENXRHEADSET, 5) << "Head angular velocity not valid.";
+        }
+
+
+        OpenXrInterface::Pose xrLeftHand = openXrInterface.leftHandPose();
+        if (xrLeftHand.positionValid && xrLeftHand.rotationValid)
+        {
+            poseToYarpMatrix(xrLeftHand, leftHandPose);
+            tfPublisher->setTransform(left_frame, root_frame, leftHandPose);
+        }
+        else
+        {
+            if (!xrLeftHand.positionValid)
             {
-                poseToYarpMatrix(xrHead, headPose);
-                tfPublisher->setTransform(head_frame, root_frame, headPose);
+                yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand position not valid.";
             }
 
-            if (xrHead.positionValid)
+            if (!xrLeftHand.rotationValid)
             {
-                writeVec3OnPort(positionPort, xrHead.position, stamp);
-            }
-            else
-            {
-                yCWarningThrottle(OPENXRHEADSET, 5) << "Head position not valid.";
-            }
-
-            if (xrHead.rotationValid)
-            {
-                writeQuaternionOnPort(orientationPort, xrHead.rotation, stamp);
-            }
-            else
-            {
-                yCWarningThrottle(OPENXRHEADSET, 5) << "Head rotation not valid.";
-            }
-
-            OpenXrInterface::Pose xrLeftHand = openXrInterface.leftHandPose();
-            if (xrLeftHand.positionValid && xrLeftHand.rotationValid)
-            {
-                poseToYarpMatrix(xrLeftHand, leftHandPose);
-                tfPublisher->setTransform(left_frame, root_frame, leftHandPose);
-            }
-            else
-            {
-                if (!xrLeftHand.positionValid)
-                {
-                    yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand position not valid.";
-                }
-
-                if (!xrLeftHand.rotationValid)
-                {
-                    yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand rotation not valid.";
-                }
-            }
-
-            OpenXrInterface::Pose xrRightHand = openXrInterface.rightHandPose();
-            if (xrRightHand.positionValid && xrRightHand.rotationValid)
-            {
-                poseToYarpMatrix(xrRightHand, rightHandPose);
-                tfPublisher->setTransform(right_frame, root_frame, rightHandPose);
-            }
-            else
-            {
-                if (!xrRightHand.positionValid)
-                {
-                    yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand position not valid.";
-                }
-
-                if (!xrRightHand.rotationValid)
-                {
-                    yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand rotation not valid.";
-                }
+                yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand rotation not valid.";
             }
         }
+
+        OpenXrInterface::Pose xrRightHand = openXrInterface.rightHandPose();
+        if (xrRightHand.positionValid && xrRightHand.rotationValid)
+        {
+            poseToYarpMatrix(xrRightHand, rightHandPose);
+            tfPublisher->setTransform(right_frame, root_frame, rightHandPose);
+        }
+        else
+        {
+            if (!xrRightHand.positionValid)
+            {
+                yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand position not valid.";
+            }
+
+            if (!xrRightHand.rotationValid)
+            {
+                yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand rotation not valid.";
+            }
+        }
+
     }
     else
     {

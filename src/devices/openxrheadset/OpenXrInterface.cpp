@@ -241,15 +241,21 @@ bool OpenXrInterface::prepareXrSystem()
     m_pimpl->view_state.next = NULL;
 
     // Initialization for the head location
+    m_pimpl->view_space_velocity.type = XR_TYPE_SPACE_VELOCITY;
+    m_pimpl->view_space_velocity.next = NULL;
+    m_pimpl->view_space_velocity.velocityFlags = 0;
     m_pimpl->view_space_location.type = XR_TYPE_SPACE_LOCATION;
-    m_pimpl->view_space_location.next = NULL; //Here it is possible to put the address of an XrSpaceVelocity struct to get also the velocity
+    m_pimpl->view_space_location.next = &(m_pimpl->view_space_velocity);
     m_pimpl->view_space_location.locationFlags = 0;
 
-    // Initialize the hands locations
+    // Initialize the hands locations and velocities
     for (size_t i = 0; i < 2; ++i)
     {
+        m_pimpl->hand_velocities[i].type = XR_TYPE_SPACE_VELOCITY;
+        m_pimpl->hand_velocities[i].next = NULL;
+        m_pimpl->hand_velocities[i].velocityFlags = 0;
         m_pimpl->hand_locations[i].type = XR_TYPE_SPACE_LOCATION;
-        m_pimpl->hand_locations[i].next = NULL;
+        m_pimpl->hand_locations[i].next = &(m_pimpl->hand_velocities[i]);
     }
 
     // OpenXR requires checking graphics requirements before creating a session.
@@ -1245,14 +1251,29 @@ OpenXrInterface::Pose OpenXrInterface::headPose() const
     return m_pimpl->getPose(m_pimpl->view_space_location);
 }
 
+OpenXrInterface::Velocity OpenXrInterface::headVelocity() const
+{
+    return m_pimpl->getVelocity(m_pimpl->view_space_velocity);
+}
+
 OpenXrInterface::Pose OpenXrInterface::leftHandPose() const
 {
     return m_pimpl->getPose(m_pimpl->hand_locations[0]);
 }
 
+OpenXrInterface::Velocity OpenXrInterface::leftHandVelocity() const
+{
+    return m_pimpl->getVelocity(m_pimpl->hand_velocities[0]);
+}
+
 OpenXrInterface::Pose OpenXrInterface::rightHandPose() const
 {
     return m_pimpl->getPose(m_pimpl->hand_locations[1]);
+}
+
+OpenXrInterface::Velocity OpenXrInterface::rightHandVelocity() const
+{
+    return m_pimpl->getVelocity(m_pimpl->hand_velocities[1]);
 }
 
 void OpenXrInterface::getButtons(std::vector<bool> &buttons) const

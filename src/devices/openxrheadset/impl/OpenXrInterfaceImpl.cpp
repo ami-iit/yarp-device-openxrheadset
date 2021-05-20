@@ -133,6 +133,18 @@ OpenXrInterface::Pose OpenXrInterface::Implementation::getPose(const XrSpaceLoca
     return output;
 }
 
+OpenXrInterface::Velocity OpenXrInterface::Implementation::getVelocity(const XrSpaceVelocity &spaceVelocity)
+{
+    Velocity output;
+    output.linearValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+    output.linear = toEigen(spaceVelocity.linearVelocity);
+
+    output.angularValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+    output.angular = toEigen(spaceVelocity.angularVelocity);
+
+    return output;
+}
+
 bool OpenXrInterface::Implementation::suggestInteractionProfileBindings(const std::string &interactionProfileName,
                                                                         const std::vector<XrActionSuggestedBinding> &poseBindings,
                                                                         std::initializer_list<std::pair<const char*, const char*>> buttonsList,

@@ -112,6 +112,15 @@ public:
         Eigen::Quaternionf rotation;
     };
 
+    struct Velocity
+    {
+        bool linearValid{false};
+        bool angularValid{false};
+
+        Eigen::Vector3f linear;
+        Eigen::Vector3f angular;
+    };
+
     OpenXrInterface();
 
     ~OpenXrInterface();
@@ -136,9 +145,15 @@ public:
 
     Pose headPose() const;
 
+    Velocity headVelocity() const;
+
     Pose leftHandPose() const;
 
+    Velocity leftHandVelocity() const;
+
     Pose rightHandPose() const;
+
+    Velocity rightHandVelocity() const;
 
     void getButtons(std::vector<bool>& buttons) const;
 

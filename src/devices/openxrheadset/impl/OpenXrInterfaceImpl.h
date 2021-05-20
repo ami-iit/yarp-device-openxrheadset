@@ -140,6 +140,8 @@ public:
 
     OpenXrInterface::Pose getPose(const XrSpaceLocation& spaceLocation);
 
+    OpenXrInterface::Velocity getVelocity(const XrSpaceVelocity& spaceVelocity);
+
     bool suggestInteractionProfileBindings(const std::string &interactionProfileName,
                                            const std::vector<XrActionSuggestedBinding> &poseBindings,
                                            std::initializer_list<std::pair<const char*, const char*>> buttonsList = {},
@@ -209,6 +211,9 @@ public:
     // Location of the head with respect to the play_space
     XrSpaceLocation view_space_location;
 
+    //Head velocity
+    XrSpaceVelocity view_space_velocity;
+
     // Top level path for the two hands. The first is the left
     XrPath hand_paths[2];
 
@@ -218,8 +223,11 @@ public:
     // Action related to the hand poses
     XrAction hand_pose_action;
 
-    // poses can't be queried directly, we need to create a space for each
+    // Poses can't be queried directly, we need to create a space for each
     XrSpace hand_pose_spaces[2];
+
+    // Velocity of the hands
+    XrSpaceVelocity hand_velocities[2];
 
     // Location of the hands
     XrSpaceLocation hand_locations[2];
