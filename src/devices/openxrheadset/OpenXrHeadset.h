@@ -12,6 +12,7 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <unordered_map>
 
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/dev/DeviceDriver.h>
@@ -76,7 +77,7 @@ public:
 
 private:
 
-    struct guiParam
+    struct GuiParam
     {
         float         width;
         float         height;
@@ -87,17 +88,47 @@ private:
         PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
     };
 
-    yarp::os::BufferedPort<yarp::os::Bottle>* orientationPort;
-    yarp::os::BufferedPort<yarp::os::Bottle>* positionPort;
-    yarp::os::BufferedPort<yarp::os::Bottle>* angularVelocityPort;
-    yarp::os::BufferedPort<yarp::os::Bottle>* linearVelocityPort;
+    class FramePorts
+    {
+        yarp::os::BufferedPort<yarp::os::Bottle>* m_orientationPort{nullptr};
+        yarp::os::BufferedPort<yarp::os::Bottle>* m_positionPort{nullptr};
+        yarp::os::BufferedPort<yarp::os::Bottle>* m_angularVelocityPort{nullptr};
+        yarp::os::BufferedPort<yarp::os::Bottle>* m_linearVelocityPort{nullptr};
+
+        IFrameTransform* m_tfPublisher;
+
+        std::string m_tfFrame;
+        std::string m_rootFrame;
+        std::string m_name;
+
+        std::unordered_map<const char*, double> m_lastWarning;
+
+        yarp::sig::Matrix m_localPose;
+
+
+    public:
+
+        bool open(const std::string& name, const std::string& portPrefix,
+                  IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+
+        void close();
+
+        void publishFrame(const OpenXrInterface::Pose& pose,
+                          const OpenXrInterface::Velocity& velocity,
+                          yarp::os::Stamp& stamp);
+    };
+
+    FramePorts headFramePorts;
+    FramePorts leftHandFramePorts;
+    FramePorts rightHandFramePorts;
+
     yarp::os::Stamp stamp;
 
     std::string m_prefix;
 
     std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
 
-    std::vector<guiParam> huds;
+    std::vector<GuiParam> huds;
 
     bool getStickAsAxis;
 
@@ -111,11 +142,6 @@ private:
     std::atomic_bool closed{ false };
 
     OpenXrInterface openXrInterface;
-
-    yarp::sig::Matrix headPose;
-    yarp::sig::Matrix leftHandPose;
-    yarp::sig::Matrix rightHandPose;
-
 
     std::vector<bool> buttons;
     std::vector<float> axes;

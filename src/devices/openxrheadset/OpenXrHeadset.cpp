@@ -58,6 +58,145 @@ inline void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const
     }
 }
 
+bool yarp::dev::OpenXrHeadset::FramePorts::open(const std::string &name, const std::string &portPrefix, IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
+{
+    //opening ports
+    std::initializer_list<std::pair<yarp::os::BufferedPort<yarp::os::Bottle>**,
+                                    std::string>> ports =
+    {
+        { &m_orientationPort,                  "quaternion"                   },
+        { &m_positionPort,                     "position"                     },
+        { &m_angularVelocityPort,              "angularVelocity"              },
+        { &m_linearVelocityPort,               "linearVelocity"               }
+    };
+
+    for (auto port : ports)
+    {
+        if (*port.first)
+        {
+            yCError(OPENXRHEADSET) << port.second <<  "is already open.";
+            continue;
+        }
+
+        std::string portName;
+
+        *port.first = new yarp::os::BufferedPort<yarp::os::Bottle>;
+        portName        = portPrefix + "/" + port.second + ":o";
+
+        if (!(*port.first)->open(portName))
+        {
+            yCError(OPENXRHEADSET) << "Cannot open" << portName << "port";
+            close();
+            return false;
+        }
+
+        (*port.first)->setWriteOnly();
+    }
+
+    double timeNow = yarp::os::Time::now();
+    m_lastWarning["quaternion"] = timeNow - 10.0;
+    m_lastWarning["position"] = timeNow - 10.0;
+    m_lastWarning["angularVelocity"] = timeNow - 10.0;
+    m_lastWarning["linearVelocity"] = timeNow - 10.0;
+
+    m_name = name;
+    m_tfPublisher = tfPublisher;
+    m_tfFrame = tfFrame;
+    m_rootFrame = rootFrame;
+
+    m_localPose.resize(4,4);
+    m_localPose.eye();
+
+    return true;
+}
+
+void yarp::dev::OpenXrHeadset::FramePorts::close()
+{
+    //Closing and deleting ports
+    std::initializer_list<yarp::os::BufferedPort<yarp::os::Bottle>**> ports =
+    {
+        &m_orientationPort,
+        &m_positionPort,
+        &m_angularVelocityPort,
+        &m_linearVelocityPort,
+    };
+
+    for (auto port : ports)
+    {
+        if (*port)
+        {
+            (*port)->close();
+
+            delete *port;
+
+            *port = nullptr;
+        }
+    }
+}
+
+void yarp::dev::OpenXrHeadset::FramePorts::publishFrame(const OpenXrInterface::Pose &pose, const OpenXrInterface::Velocity &velocity, os::Stamp &stamp)
+{
+    if (pose.positionValid && pose.rotationValid)
+    {
+        poseToYarpMatrix(pose, m_localPose);
+        if (!m_tfPublisher->setTransform(m_tfFrame, m_rootFrame, m_localPose))
+        {
+            yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
+        }
+    }
+
+    if (pose.positionValid)
+    {
+        writeVec3OnPort(m_positionPort, pose.position, stamp);
+    }
+    else
+    {
+        if (yarp::os::Time::now() - m_lastWarning["position"] > 5.0)
+        {
+            yCWarning(OPENXRHEADSET) << m_name << "position not valid.";
+            m_lastWarning["position"] = yarp::os::Time::now();
+        }
+    }
+
+    if (pose.rotationValid)
+    {
+        writeQuaternionOnPort(m_orientationPort, pose.rotation, stamp);
+    }
+    else
+    {
+        if (yarp::os::Time::now() - m_lastWarning["quaternion"] > 5.0)
+        {
+            yCWarning(OPENXRHEADSET) << m_name << "rotation not valid.";
+            m_lastWarning["quaternion"] = yarp::os::Time::now();
+        }
+    }
+
+    if (velocity.linearValid)
+    {
+        writeVec3OnPort(m_linearVelocityPort, velocity.linear, stamp);
+    }
+    else
+    {
+        if (yarp::os::Time::now() - m_lastWarning["linearVelocity"] > 5.0)
+        {
+            yCWarning(OPENXRHEADSET) << m_name << "linear velocity not valid.";
+            m_lastWarning["linearVelocity"] = yarp::os::Time::now();
+        }
+    }
+
+    if (velocity.angularValid)
+    {
+        writeVec3OnPort(m_angularVelocityPort, velocity.angular, stamp);
+    }
+    else
+    {
+        if (yarp::os::Time::now() - m_lastWarning["angularVelocity"] > 5.0)
+        {
+            yCWarning(OPENXRHEADSET) << m_name << "angular velocity not valid.";
+            m_lastWarning["angularVelocity"] = yarp::os::Time::now();
+        }
+    }
+}
 
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
@@ -178,39 +317,20 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     }
     yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
 
-    //opening ports
-    std::initializer_list<std::pair<yarp::os::BufferedPort<yarp::os::Bottle>**,
-                                    std::string>> ports =
+    if (!headFramePorts.open("Head", m_prefix + "/headpose", tfPublisher, head_frame, root_frame))
     {
-        { &orientationPort,                  "quaternion"                   },
-        { &positionPort,                     "position"                     },
-        { &angularVelocityPort,              "angularVelocity"              },
-        { &linearVelocityPort,               "linearVelocity"               }
-    };
-
-    for (auto port : ports)
-    {
-        std::string name;
-
-        *port.first = new yarp::os::BufferedPort<yarp::os::Bottle>;
-        name        = m_prefix + "/headpose/" + port.second + ":o";
-
-        if (!(*port.first)->open(name))
-        {
-            yCError(OPENXRHEADSET) << "Cannot open" << port.second << "port";
-            this->close();
-            return false;
-        }
-
-        (*port.first)->setWriteOnly();
+        return false;
     }
 
-    headPose.resize(4,4);
-    headPose.eye();
-    leftHandPose.resize(4,4);
-    leftHandPose.eye();
-    rightHandPose.resize(4,4);
-    rightHandPose.eye();
+    if (!leftHandFramePorts.open("Left Hand", m_prefix + "/left_hand", tfPublisher, left_frame, root_frame))
+    {
+        return false;
+    }
+
+    if (!rightHandFramePorts.open("Right Hand", m_prefix + "/right_hand", tfPublisher, right_frame, root_frame))
+    {
+        return false;
+    }
 
     // Start the thread
     if (!this->start()) {
@@ -247,7 +367,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         displayPorts[eye].setVisibility(eye == 0 ? IOpenXrQuadLayer::Visibility::LEFT_EYE : IOpenXrQuadLayer::Visibility::RIGHT_EYE);
     }
 
-    for (guiParam& gui : huds)
+    for (GuiParam& gui : huds)
     {
         if (!gui.layer.initialize(openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
             yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
@@ -275,21 +395,9 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         tfPublisher = nullptr;
     }
 
-    //Closing and deleting ports
-    std::initializer_list<yarp::os::BufferedPort<yarp::os::Bottle>**> ports =
-    {
-        &orientationPort,
-        &positionPort,
-        &angularVelocityPort,
-        &linearVelocityPort,
-    };
-
-    for (auto port : ports)
-    {
-        (*port)->close();
-
-        delete *port;
-    }
+    headFramePorts.close();
+    leftHandFramePorts.close();
+    rightHandFramePorts.close();
 
     closed = true;
 }
@@ -307,7 +415,7 @@ void yarp::dev::OpenXrHeadset::run()
             }
         }
 
-        for (guiParam& gui : huds)
+        for (GuiParam& gui : huds)
         {
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
@@ -326,89 +434,9 @@ void yarp::dev::OpenXrHeadset::run()
 
         stamp.update(openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
 
-        OpenXrInterface::Pose xrHead = openXrInterface.headPose();
-        if (xrHead.positionValid && xrHead.rotationValid)
-        {
-            poseToYarpMatrix(xrHead, headPose);
-            tfPublisher->setTransform(head_frame, root_frame, headPose);
-        }
-
-        if (xrHead.positionValid)
-        {
-            writeVec3OnPort(positionPort, xrHead.position, stamp);
-        }
-        else
-        {
-            yCWarningThrottle(OPENXRHEADSET, 5) << "Head position not valid.";
-        }
-
-        if (xrHead.rotationValid)
-        {
-            writeQuaternionOnPort(orientationPort, xrHead.rotation, stamp);
-        }
-        else
-        {
-            yCWarningThrottle(OPENXRHEADSET, 5) << "Head rotation not valid.";
-        }
-
-        OpenXrInterface::Velocity xrHeadVelocity = openXrInterface.headVelocity();
-
-        if (xrHeadVelocity.linearValid)
-        {
-            writeVec3OnPort(linearVelocityPort, xrHeadVelocity.linear, stamp);
-        }
-        else
-        {
-            yCWarningThrottle(OPENXRHEADSET, 5) << "Head linear velocity not valid.";
-        }
-
-        if (xrHeadVelocity.angularValid)
-        {
-            writeVec3OnPort(angularVelocityPort, xrHeadVelocity.angular, stamp);
-        }
-        else
-        {
-            yCWarningThrottle(OPENXRHEADSET, 5) << "Head angular velocity not valid.";
-        }
-
-
-        OpenXrInterface::Pose xrLeftHand = openXrInterface.leftHandPose();
-        if (xrLeftHand.positionValid && xrLeftHand.rotationValid)
-        {
-            poseToYarpMatrix(xrLeftHand, leftHandPose);
-            tfPublisher->setTransform(left_frame, root_frame, leftHandPose);
-        }
-        else
-        {
-            if (!xrLeftHand.positionValid)
-            {
-                yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand position not valid.";
-            }
-
-            if (!xrLeftHand.rotationValid)
-            {
-                yCWarningThrottle(OPENXRHEADSET, 5) << "Left hand rotation not valid.";
-            }
-        }
-
-        OpenXrInterface::Pose xrRightHand = openXrInterface.rightHandPose();
-        if (xrRightHand.positionValid && xrRightHand.rotationValid)
-        {
-            poseToYarpMatrix(xrRightHand, rightHandPose);
-            tfPublisher->setTransform(right_frame, root_frame, rightHandPose);
-        }
-        else
-        {
-            if (!xrRightHand.positionValid)
-            {
-                yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand position not valid.";
-            }
-
-            if (!xrRightHand.rotationValid)
-            {
-                yCWarningThrottle(OPENXRHEADSET, 5) << "Right hand rotation not valid.";
-            }
-        }
+        headFramePorts.publishFrame(openXrInterface.headPose(), openXrInterface.headVelocity(), stamp);
+        leftHandFramePorts.publishFrame(openXrInterface.leftHandPose(), openXrInterface.leftHandVelocity(), stamp);
+        rightHandFramePorts.publishFrame(openXrInterface.rightHandPose(), openXrInterface.rightHandVelocity(), stamp);
 
     }
     else
@@ -652,3 +680,5 @@ bool yarp::dev::OpenXrHeadset::getTouch(unsigned int /*touch_id*/, yarp::sig::Ve
     yCError(OPENXRHEADSET) << "No touch devices are considered in this device.";
     return false;
 }
+
+
