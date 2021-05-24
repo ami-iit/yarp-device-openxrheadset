@@ -269,6 +269,8 @@ public:
     std::atomic<bool> initialized{false};
 
     std::atomic<bool> closing{false};
+
+    std::atomic<bool> closed{true};
 };
 
 

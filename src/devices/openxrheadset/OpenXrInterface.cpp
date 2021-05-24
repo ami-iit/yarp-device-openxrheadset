@@ -956,7 +956,7 @@ void OpenXrInterface::render()
     XrResult result = xrAcquireSwapchainImage(m_pimpl->swapchain, &acquire_info, &acquired_index);
     if (!m_pimpl->checkXrOutput(result, "Failed to acquire swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -965,7 +965,7 @@ void OpenXrInterface::render()
     result = xrWaitSwapchainImage(m_pimpl->swapchain, &wait_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to wait for swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -976,7 +976,7 @@ void OpenXrInterface::render()
                                      &depth_acquired_index);
     if (!m_pimpl->checkXrOutput(result, "Failed to acquire depth swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -985,7 +985,7 @@ void OpenXrInterface::render()
     result = xrWaitSwapchainImage(m_pimpl->depth_swapchain, &depth_wait_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to wait for depth swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -1019,7 +1019,7 @@ void OpenXrInterface::render()
     result = xrReleaseSwapchainImage(m_pimpl->swapchain, &release_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to release swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -1028,7 +1028,7 @@ void OpenXrInterface::render()
     result = xrReleaseSwapchainImage(m_pimpl->depth_swapchain, &depth_release_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to release depth swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -1083,7 +1083,10 @@ OpenXrInterface::OpenXrInterface()
 OpenXrInterface::~OpenXrInterface()
 {
     yCTrace(OPENXRHEADSET);
-    close();
+    if (!m_pimpl->closed)
+    {
+        close();
+    }
 }
 
 bool OpenXrInterface::initialize()
@@ -1097,6 +1100,7 @@ bool OpenXrInterface::initialize()
     }
 
     m_pimpl->closing = false;
+    m_pimpl->closed = false;
 
     bool ok = prepareXrInstance();
     ok = ok && prepareXrSystem();
@@ -1380,4 +1384,6 @@ void OpenXrInterface::close()
     m_pimpl->initialized = false;
 
     yCInfo(OPENXRHEADSET) << "Closed";
+
+    m_pimpl->closed = true;
 }
