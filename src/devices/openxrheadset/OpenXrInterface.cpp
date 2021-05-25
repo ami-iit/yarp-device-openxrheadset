@@ -322,6 +322,16 @@ bool OpenXrInterface::prepareGL()
     glfwMakeContextCurrent(m_pimpl->window);
     glfwSwapInterval(1);
 
+    // Initialize the GLEW OpenGL 3.x bindings
+    // GLEW must be initialized after creating the window
+    glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        yCError(OPENXRHEADSET) << "glewInit failed, aborting.";
+        return false;
+    }
+    yCInfo(OPENXRHEADSET) << "Using GLEW" << (const char*)glewGetString(GLEW_VERSION);
+
     glDebugMessageCallback(&OpenXrInterface::Implementation::GLMessageCallback, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
