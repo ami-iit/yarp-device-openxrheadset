@@ -70,7 +70,7 @@ find_package(YCM REQUIRED)
 find_package(YARP 3.4 COMPONENTS os sig dev math REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenXR 1.0 REQUIRED)
-find_package(glfw3 REQUIRED)
+find_package(GLFW3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 ## This is to select the newest version of OpenGL
