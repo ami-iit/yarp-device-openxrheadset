@@ -10,6 +10,7 @@
 #define YARP_DEV_OPENXRHEADSET_H
 
 #include <vector>
+#include <array>
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
