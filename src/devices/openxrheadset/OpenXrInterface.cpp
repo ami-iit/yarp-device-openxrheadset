@@ -8,6 +8,8 @@
 
 #include <impl/OpenXrInterfaceImpl.h>
 
+#define DEBUG_RENDERING 1
+
 
 bool OpenXrInterface::checkExtensions()
 {
@@ -1008,6 +1010,36 @@ void OpenXrInterface::render()
     //Clear the backgorund color
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+#ifdef DEBUG_RENDERING
+    // "render" to the swapchain image
+    glEnable(GL_SCISSOR_TEST);
+
+    //select left eye
+    glScissor(m_pimpl->projection_views[0].subImage.imageRect.offset.x,
+              m_pimpl->projection_views[0].subImage.imageRect.offset.y,
+              m_pimpl->projection_views[0].subImage.imageRect.extent.width,
+              m_pimpl->projection_views[0].subImage.imageRect.extent.height);
+
+    //Set green color
+    glClearColor(0, 1, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //select right eye
+    glScissor(m_pimpl->projection_views[1].subImage.imageRect.offset.x,
+              m_pimpl->projection_views[1].subImage.imageRect.offset.y,
+              m_pimpl->projection_views[1].subImage.imageRect.extent.width,
+              m_pimpl->projection_views[1].subImage.imageRect.extent.height);
+
+    //Set blue color
+    glClearColor(0, 0, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //Restore default clear
+    glClearColor(0, 0, 0, 0);
+
+    glDisable(GL_SCISSOR_TEST);
+#endif
 
     //------------------------------
 
