@@ -85,6 +85,19 @@ struct InputActions
     void clear();
 };
 
+struct SwapChainData
+{
+    // the swapchain is a series of buffers that allows the application to render an image on a buffer differnt from the one in use
+    XrSwapchain swapchain;
+
+    // array of view_count array of swapchain_length containers holding an OpenGL texture
+    // that is allocated by the runtime
+    std::vector<XrSwapchainImageOpenGLKHR> swapchain_images;
+
+    //Acquired index for the swapchain
+    uint32_t acquired_index;
+};
+
 
 class OpenXrInterface::Implementation
 {
@@ -169,20 +182,13 @@ public:
     std::vector<XrViewConfigurationView> viewconfig_views;
 
     // info to create the swapchain
-    XrSwapchainCreateInfo swapchain_create_info;
+    std::vector<XrSwapchainCreateInfo> projection_view_swapchain_create_info;
 
-    // the swapchain is a series of buffers that allows the application to render an image on a buffer differnt from the one in use
-    XrSwapchain swapchain;
+    // Swapchain for what the eyes see in the 3D world
+    std::vector<SwapChainData> projection_view_swapchains;
 
-    // array of view_count array of swapchain_length containers holding an OpenGL texture
-    // that is allocated by the runtime
-    std::vector<XrSwapchainImageOpenGLKHR> swapchain_images;
-
-    // a separate swapchain only for the depth buffer
-    XrSwapchain depth_swapchain;
-
-    // imges for the depth swapchain
-    std::vector<XrSwapchainImageOpenGLKHR> depth_swapchain_images;
+    // Swapchain for the depth of what the eyes see in the 3D world
+    std::vector<SwapChainData> projection_view_depth_swapchains;
 
     // containers for submitting swapchains with rendered VR frames
     std::vector<XrCompositionLayerProjectionView> projection_views;
