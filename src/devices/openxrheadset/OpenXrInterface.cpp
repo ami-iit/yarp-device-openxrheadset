@@ -480,7 +480,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
     // Prepare projection views structures for the rendering
     m_pimpl->projection_views.resize(m_pimpl->viewconfig_views.size());
     int xOffset = 0;
-    for (int i = 1; i >=0; i--) {
+    for (int i = m_pimpl->projection_views.size() - 1; i >=0; i--) {
         m_pimpl->projection_views[i].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
         m_pimpl->projection_views[i].next = NULL;
         m_pimpl->projection_views[i].subImage.swapchain = m_pimpl->swapchain;
@@ -498,7 +498,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
     };
 
     m_pimpl->depth_projection_views.resize(m_pimpl->viewconfig_views.size());
-    for (int i = 0; i >=0 ; i--) {
+    for (int i = m_pimpl->depth_projection_views.size() - 1; i >=0 ; i--) {
         m_pimpl->depth_projection_views[i].type = XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR;
         m_pimpl->depth_projection_views[i].next = NULL;
         m_pimpl->depth_projection_views[i].minDepth = 0.f;
