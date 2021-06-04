@@ -1243,7 +1243,7 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
     XrPosef initialPose =
     {
         .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
-        .position = {.x = 0.0, .y = 0.0, .z = -2.0} //The origin is in the centroid of the views
+        .position = {.x = 0.0, .y = 0.0, .z = -1.0} //The origin is in the centroid of the views
                                                     //with +Y up, +X to the right, and -Z forward.
                                                     //See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#reference-spaces
     };

@@ -378,6 +378,12 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         gui.layer.setPosition({gui.x, gui.y, gui.z});
     }
 
+    for (size_t i = 0; i < 10 && openXrInterface.isRunning(); ++i)
+    {
+        run(); //dry run. This is to make sure that the number of buttons is correctly retrieved by the JoypadControlServer
+        yarp::os::Time::delay(this->getPeriod());
+    }
+
     return true;
 }
 
