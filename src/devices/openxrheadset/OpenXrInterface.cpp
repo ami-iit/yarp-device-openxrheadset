@@ -8,7 +8,7 @@
 
 #include <impl/OpenXrInterfaceImpl.h>
 
-#define DEBUG_RENDERING 1
+//#define DEBUG_RENDERING
 
 
 bool OpenXrInterface::checkExtensions()
@@ -313,7 +313,9 @@ bool OpenXrInterface::prepareGL()
     }
     glfwSetErrorCallback(&OpenXrInterface::Implementation::glfwErrorCallback);
 
+#ifndef DEBUG_RENDERING
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+#endif
     glfwWindowHint(GLFW_DEPTH_BITS, 16);
     m_pimpl->window = glfwCreateWindow(m_pimpl->windowSize[0], m_pimpl->windowSize[1], "YARP OpenXr Device Window", nullptr, nullptr);
     if (!m_pimpl->window) {
@@ -336,6 +338,9 @@ bool OpenXrInterface::prepareGL()
 
     glDebugMessageCallback(&OpenXrInterface::Implementation::GLMessageCallback, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_TEXTURE_2D);
+
 
     return true;
 }
@@ -475,7 +480,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
     // Prepare projection views structures for the rendering
     m_pimpl->projection_views.resize(m_pimpl->viewconfig_views.size());
     int xOffset = 0;
-    for (uint32_t i = 0; i < m_pimpl->projection_views.size(); i++) {
+    for (int i = 1; i >=0; i--) {
         m_pimpl->projection_views[i].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
         m_pimpl->projection_views[i].next = NULL;
         m_pimpl->projection_views[i].subImage.swapchain = m_pimpl->swapchain;
@@ -493,7 +498,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
     };
 
     m_pimpl->depth_projection_views.resize(m_pimpl->viewconfig_views.size());
-    for (uint32_t i = 0; i < m_pimpl->depth_projection_views.size(); i++) {
+    for (int i = 0; i >=0 ; i--) {
         m_pimpl->depth_projection_views[i].type = XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR;
         m_pimpl->depth_projection_views[i].next = NULL;
         m_pimpl->depth_projection_views[i].minDepth = 0.f;
@@ -1238,7 +1243,7 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
     XrPosef initialPose =
     {
         .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
-        .position = {.x = 0.0, .y = 0.0, .z = -1.0} //The origin is in the centroid of the views
+        .position = {.x = 0.0, .y = 0.0, .z = -2.0} //The origin is in the centroid of the views
                                                     //with +Y up, +X to the right, and -Z forward.
                                                     //See https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#reference-spaces
     };
