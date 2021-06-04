@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2021 Istituto Italiano di Tecnologia (IIT)
  * All rights reserved.
  *
@@ -72,17 +72,18 @@ public:
         //Generate internal framebuffer
         glGenFramebuffers(1, &(m_glWriteBufferId));
         glGenFramebuffers(1, &(m_glReadBufferId));
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_glReadBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_glReadBufferId);
         glGenTextures(1, &m_imageTexture);
 
         //Trying to preallocate texture for read frame buffer
         glBindTexture(GL_TEXTURE_2D, m_imageTexture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_2D, m_imageTexture, 0);
         glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, quadLayer->imageMaxWidth(), quadLayer->imageMaxHeight(), 0,
-                     m_pixelFormat, GL_UNSIGNED_BYTE, NULL);
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            m_pixelFormat, GL_UNSIGNED_BYTE, NULL);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
         m_quadLayer = quadLayer;
@@ -135,31 +136,26 @@ public:
 
         //First bind the read framebuffer, using the input image as source
         //This has to be called from the same thread where the initialize method has been called
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_glReadBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_glReadBufferId);
         glBindTexture(GL_TEXTURE_2D, m_imageTexture);
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                               GL_TEXTURE_2D, m_imageTexture, 0);
         glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, img->width(), img->height(),
-                     0, m_pixelFormat, GL_UNSIGNED_BYTE, img->getRawImage());
+            0, m_pixelFormat, GL_UNSIGNED_BYTE, img->getRawImage());
 
         //Then bind the write framebuffer, using the OpenXr texture as target texture
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glWriteBufferId);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureImage, 0);
 
-        int32_t destWidth = std::min(static_cast<int32_t>(img->width()), m_quadLayer->imageMaxWidth());
-        int32_t destHeight = std::min(static_cast<int32_t>(img->height()), m_quadLayer->imageMaxHeight());
-
         //Copy from the read framebuffer to the draw framebuffer
         glBlitFramebuffer(0, img->height(), img->width(), 0,
-                          0, 0, destWidth, destHeight,
-                          GL_COLOR_BUFFER_BIT, GL_NEAREST); // When writing the texture, OpenGl starts from the bottom left corner and
-                                                            // goes from left to right, bottom to up.
-                                                            // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
-                                                            // In Yarp, the first pixel is the top left, so we have to flip vertically.
+            0, 0, m_quadLayer->imageMaxWidth(), m_quadLayer->imageMaxHeight(),
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);   // When writing the texture, OpenGl starts from the bottom left corner and
+                                                // goes from left to right, bottom to up.
+                                                // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+                                                // In Yarp, the first pixel is the top left, so we have to flip vertically.
 
         //Resetting read and draw framebuffers
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         //Adjust the aspect ratio
         float aspectRatio = img->width()/ (float) img->height();
@@ -177,7 +173,7 @@ public:
 
         m_quadLayer->setDimensions(newWidth, newHeight);
 
-        if (!m_quadLayer->submitImage(0, 0, destWidth, destHeight))
+        if (!m_quadLayer->submitImage())
         {
             yCError(OPENXRHEADSET) << "Failed to submit texture image.";
             return false;
