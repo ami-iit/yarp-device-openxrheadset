@@ -61,9 +61,9 @@ void handleSigInt()
 }
 
 
-struct FrameViewier
+struct FrameViewer
 {
-    std::shared_ptr<FrameViewier> parent{nullptr};
+    std::shared_ptr<FrameViewer> parent{nullptr};
     std::string name;
     size_t vizIndex;
     iDynTree::Transform transform;
@@ -114,30 +114,30 @@ int main(int /*argc*/, char** /*argv*/)
     openXrInertial.setPosition(iDynTree::Position::Zero());
     openXrInertial.setRotation(openXrInertialRotation);
 
-    std::vector<std::shared_ptr<FrameViewier>> frames;
+    std::vector<std::shared_ptr<FrameViewer>> frames;
 
-    std::shared_ptr<FrameViewier> rootFrame = std::make_shared<FrameViewier>();
+    std::shared_ptr<FrameViewer> rootFrame = std::make_shared<FrameViewer>();
     rootFrame->name = "openxr_origin";
     rootFrame->transform = openXrInertial;
     rootFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
     visualizer.frames().getFrameLabel(rootFrame->vizIndex)->setText(rootFrame->name);
     frames.push_back(rootFrame);
 
-    std::shared_ptr<FrameViewier> headFrame = std::make_shared<FrameViewier>();
+    std::shared_ptr<FrameViewer> headFrame = std::make_shared<FrameViewer>();
     headFrame->name = "openxr_head";
     headFrame->parent = rootFrame;
     headFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
     visualizer.frames().getFrameLabel(headFrame->vizIndex)->setText(headFrame->name);
     frames.push_back(headFrame);
 
-    std::shared_ptr<FrameViewier> leftHandFrame = std::make_shared<FrameViewier>();
+    std::shared_ptr<FrameViewer> leftHandFrame = std::make_shared<FrameViewer>();
     leftHandFrame->name = "openxr_left_hand";
     leftHandFrame->parent = rootFrame;
     leftHandFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
     visualizer.frames().getFrameLabel(leftHandFrame->vizIndex)->setText(leftHandFrame->name);
     frames.push_back(leftHandFrame);
 
-    std::shared_ptr<FrameViewier> rightHandFrame = std::make_shared<FrameViewier>();
+    std::shared_ptr<FrameViewer> rightHandFrame = std::make_shared<FrameViewer>();
     rightHandFrame->name = "openxr_right_hand";
     rightHandFrame->parent = rootFrame;
     rightHandFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
