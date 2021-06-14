@@ -4,6 +4,10 @@
 # This software may be modified and distributed under the terms of the
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
-add_subdirectory(devices)
-add_subdirectory(utils)
+find_package(iDynTree 3.0.0 QUIET)
 
+option(COMPILE_FRAME_VIZ "Compile the frame visualization utility" ${iDynTree_FOUND})
+
+if (COMPILE_FRAME_VIZ)
+    add_subdirectory(OpenXrFrameViz)
+endif()
