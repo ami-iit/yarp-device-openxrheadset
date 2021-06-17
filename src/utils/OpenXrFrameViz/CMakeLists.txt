@@ -5,7 +5,7 @@
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
 
-find_package(iDynTree 3.3.0 REQUIRED)
+find_package(iDynTree 4.0.0 REQUIRED)
 
 add_executable(OpenXrFrameViz main.cpp)
 

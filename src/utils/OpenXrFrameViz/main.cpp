@@ -119,7 +119,7 @@ int main(int /*argc*/, char** /*argv*/)
     std::shared_ptr<FrameViewer> rootFrame = std::make_shared<FrameViewer>();
     rootFrame->name = "openxr_origin";
     rootFrame->transform = openXrInertial;
-    rootFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
+    rootFrame->vizIndex = visualizer.frames().addFrame(openXrInertial, 0.5);
     visualizer.frames().getFrameLabel(rootFrame->vizIndex)->setText(rootFrame->name);
     frames.push_back(rootFrame);
 
