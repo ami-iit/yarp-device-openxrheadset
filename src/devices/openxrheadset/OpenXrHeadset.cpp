@@ -352,6 +352,13 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         return false;
     }
 
+    this->yarp().attachAsServer(this->m_rpcPort);
+    if(!m_rpcPort.open(m_prefix + "/rpc"))
+    {
+        yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
+        return false;
+    }
+
     // Start the thread
     if (!this->start()) {
         yCError(OPENXRHEADSET) << "Thread start failed, aborting.";
@@ -424,6 +431,8 @@ void yarp::dev::OpenXrHeadset::threadRelease()
     headFramePorts.close();
     leftHandFramePorts.close();
     rightHandFramePorts.close();
+
+    m_rpcPort.close();
 
     closed = true;
 }

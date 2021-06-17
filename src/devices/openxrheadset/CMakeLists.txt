@@ -23,8 +23,6 @@ if(NOT ENABLE_openxrheadset)
   return()
 endif()
 
-yarp_add_plugin(yarp_openxrheadset)
-
 set(yarp_openxrheadset_SRCS
   OpenXrHeadset.cpp
   OpenXrHeadsetLogComponent.cpp
@@ -45,10 +43,17 @@ set(yarp_openxrheadset_HDRS
   impl/OpenXrInterfaceImpl.h
   )
 
+set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)
+
+yarp_add_idl(yarp_openxrheadset_GEN_FILES ${THRIFTS})
+
+yarp_add_plugin(yarp_openxrheadset)
+
 target_sources(yarp_openxrheadset
   PRIVATE
     ${yarp_openxrheadset_SRCS}
     ${yarp_openxrheadset_HDRS}
+    ${yarp_openxrheadset_GEN_FILES}
 )
 
 target_link_libraries(yarp_openxrheadset

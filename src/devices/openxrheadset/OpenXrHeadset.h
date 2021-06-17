@@ -26,6 +26,7 @@
 #include <yarp/os/Stamp.h>
 #include <OpenXrInterface.h>
 #include <PortToQuadLayer.h>
+#include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
 
@@ -40,7 +41,8 @@ class OpenXrHeadset;
 class yarp::dev::OpenXrHeadset : public yarp::dev::DeviceDriver,
                                  public yarp::os::PeriodicThread,
                                  public yarp::dev::IService,
-                                 public yarp::dev::IJoypadController
+                                 public yarp::dev::IJoypadController,
+                                 public OpenXrHeadsetCommands
 {
 public:
     OpenXrHeadset();
@@ -140,6 +142,8 @@ private:
     std::string      head_frame;
     std::string      root_frame;
     PolyDriver       driver;
+
+    yarp::os::Port m_rpcPort;
 
     std::atomic_bool closed{ false };
 
