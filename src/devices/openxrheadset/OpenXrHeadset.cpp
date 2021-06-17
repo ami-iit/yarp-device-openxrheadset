@@ -352,13 +352,6 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         return false;
     }
 
-    this->yarp().attachAsServer(this->m_rpcPort);
-    if(!m_rpcPort.open(m_prefix + "/rpc"))
-    {
-        yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
-        return false;
-    }
-
     // Start the thread
     if (!this->start()) {
         yCError(OPENXRHEADSET) << "Thread start failed, aborting.";
@@ -409,6 +402,13 @@ bool yarp::dev::OpenXrHeadset::threadInit()
     {
         run(); //dry run. This is to make sure that the number of buttons is correctly retrieved by the JoypadControlServer
         yarp::os::Time::delay(this->getPeriod());
+    }
+
+    this->yarp().attachAsServer(this->m_rpcPort);
+    if(!m_rpcPort.open(m_prefix + "/rpc"))
+    {
+        yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
+        return false;
     }
 
     return true;
@@ -714,6 +714,89 @@ bool yarp::dev::OpenXrHeadset::getTouch(unsigned int /*touch_id*/, yarp::sig::Ve
     value.clear();
     yCError(OPENXRHEADSET) << "No touch devices are considered in this device.";
     return false;
+}
+
+std::string yarp::dev::OpenXrHeadset::getInteractionProfile()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return openXrInterface.currentHandInteractionProfile();
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageDimensions()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = displayPorts[0].layerWidth();
+    output[1] = displayPorts[0].layerHeight();
+
+    return output;
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getRightImageDimensions()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = displayPorts[1].layerWidth();
+    output[1] = displayPorts[1].layerHeight();
+
+    return output;
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageAnglesOffsets()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = displayPorts[0].azimuthOffset();
+    output[1] = displayPorts[0].elevationOffset();
+
+    return output;
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getRightImageAnglesOffsets()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = displayPorts[1].azimuthOffset();
+    output[1] = displayPorts[1].elevationOffset();
+
+    return output;
+}
+
+bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, const double elevation)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    displayPorts[0].setAnglesOffsets(azimuth, elevation);
+
+    return true;
+}
+
+bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, const double elevation)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    displayPorts[1].setAnglesOffsets(azimuth, elevation);
+
+    return true;
 }
 
 

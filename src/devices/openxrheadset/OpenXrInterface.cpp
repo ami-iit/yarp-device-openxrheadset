@@ -1347,6 +1347,26 @@ OpenXrInterface::Velocity OpenXrInterface::rightHandVelocity() const
     return m_pimpl->getVelocity(m_pimpl->hand_velocities[1]);
 }
 
+std::string OpenXrInterface::currentHandInteractionProfile() const
+{
+    if (m_pimpl->currentHandInteractionProfile == "/interaction_profiles/khr/simple_controller")
+    {
+        return "khr_simple_controller";
+    }
+
+    if (m_pimpl->currentHandInteractionProfile == "/interaction_profiles/htc/vive_controller")
+    {
+        return "htc_vive_controller";
+    }
+
+    if (m_pimpl->currentHandInteractionProfile == "/interaction_profiles/oculus/touch_controller")
+    {
+        return "oculus_touch_controller";
+    }
+
+    return "none";
+}
+
 void OpenXrInterface::getButtons(std::vector<bool> &buttons) const
 {
     InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];

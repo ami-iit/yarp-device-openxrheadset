@@ -11,6 +11,7 @@
 
 #include <OpenGLConfig.h>
 
+#include <Eigen/Geometry>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/sig/Image.h>
 #include <yarp/os/LogStream.h>
@@ -30,6 +31,10 @@ class PortToQuadLayer
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
     GLint m_pixelFormat;
+    float m_azimuthOffset = 0;
+    float m_elevationOffset = 0;
+    Eigen::Quaternionf m_desiredRotation;
+    Eigen::Quaternionf m_rotationOffset;
     std::thread::id m_initThreadID;
 
 public:
@@ -96,6 +101,9 @@ public:
             yCError(OPENXRHEADSET) << "Failed to open the port named" << portName << ".";
             return false;
         }
+
+        m_desiredRotation.setIdentity();
+        m_rotationOffset.setIdentity();
 
         m_portPtr->setReadOnly();
 
@@ -193,7 +201,9 @@ public:
             return;
         }
 
-        m_quadLayer->setPose(position, rotation);
+        m_desiredRotation = rotation;
+
+        m_quadLayer->setPose(position, m_rotationOffset * m_desiredRotation);
     }
 
     void setPosition(const Eigen::Vector3f& position)
@@ -219,7 +229,40 @@ public:
             return;
         }
 
-        m_quadLayer->setRotation(rotation);
+        m_desiredRotation = rotation;
+
+        m_quadLayer->setRotation(m_rotationOffset * m_desiredRotation);
+    }
+
+    void setAnglesOffsets(double azimuth, double elevation)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return;
+        }
+
+        m_azimuthOffset = azimuth;
+        m_elevationOffset = elevation;
+
+        m_rotationOffset = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
+                           Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
+
+        m_quadLayer->setRotation(m_rotationOffset * m_desiredRotation);
+    }
+
+    double azimuthOffset() const
+    {
+        yCTrace(OPENXRHEADSET);
+        return m_azimuthOffset;
+    }
+
+    double elevationOffset() const
+    {
+        yCTrace(OPENXRHEADSET);
+        return m_elevationOffset;
     }
 
     void setDimensions(float widthInMeters, float heightInMeters)
@@ -246,6 +289,32 @@ public:
         }
 
         m_quadLayer->setVisibility(visibility);
+    }
+
+    float layerWidth() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return 0.0;
+        }
+
+        return m_quadLayer->layerWidth();
+    }
+
+    float layerHeight() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return 0.0;
+        }
+
+        return m_quadLayer->layerHeight();
     }
 
 };

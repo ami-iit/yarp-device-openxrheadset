@@ -78,6 +78,54 @@ public:
     virtual bool getStick(unsigned int stick_id, yarp::sig::Vector& value, JoypadCtrl_coordinateMode coordinate_mode) override;
     virtual bool getTouch(unsigned int touch_id, yarp::sig::Vector& value) override;
 
+    //OpenXrHeadsetCommands
+    /**
+     * Get the current interaction profile
+     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+     * @return a string indicating the interaction profile in use.
+     */
+    virtual std::string getInteractionProfile();
+
+    /**
+     * Get the left image width and height.
+     * @return A vector of two elements with the left image width and height, in this order
+     */
+    virtual std::vector<double> getLeftImageDimensions() override;
+
+    /**
+     * Get the right image width and height.
+     * @return A vector of two elements with the right image width and height, in this order
+     */
+    virtual std::vector<double> getRightImageDimensions() override;
+
+    /**
+     * Get the left image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @return A vector of two elements with the left image azimuth and elevation offsets in radians, in this order
+     */
+    virtual std::vector<double> getLeftImageAnglesOffsets() override;
+
+    /**
+     * Get the right image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @return A vector of two elements with the left image azimuth and elevation offsets in radians, in this order
+     */
+    virtual std::vector<double> getRightImageAnglesOffsets() override;
+
+    /**
+     * Set the left image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @param azimuth The azimuth angle offset in radians (positive anticlockwise)
+     * @param elevation The elevation angle offset in radians (positive upwards)
+     * @return True if successfull
+     */
+    virtual bool setLeftImageAnglesOffsets(const double azimuth, const double elevation) override;
+
+    /**
+     * Set the right image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @param azimuth The azimuth angle offset in radians (positive anticlockwise)
+     * @param elevation The elevation angle offset in radians (positive upwards)
+     * @return True if successfull
+     */
+    virtual bool setRightImageAnglesOffsets(const double azimuth, const double elevation) override;
+
 private:
 
     struct GuiParam

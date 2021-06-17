@@ -155,6 +155,8 @@ public:
 
     Velocity rightHandVelocity() const;
 
+    std::string currentHandInteractionProfile() const;
+
     void getButtons(std::vector<bool>& buttons) const;
 
     void getAxes(std::vector<float>& axes) const;
