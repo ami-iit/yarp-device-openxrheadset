@@ -93,6 +93,10 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
     endif()
 endif()
 
+option(BUILD_TESTING "Create tests using CMake" OFF)
+if(BUILD_TESTING)
+    enable_testing()
+endif()
 
 if (NOT "${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
     message( FATAL_ERROR "Only 64 bit builds supported." )

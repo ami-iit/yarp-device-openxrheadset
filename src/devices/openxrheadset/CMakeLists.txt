@@ -74,22 +74,34 @@ if (MSVC)
     target_compile_options(yarp_openxrheadset PRIVATE /std:c++latest)
 endif()
 
-add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS}  ${yarp_openxrheadset_HDRS})
+if(BUILD_TESTING)
 
-target_link_libraries(openxrheadset_test
-  PRIVATE
-    ${YARP_LIBRARIES}
-    OpenXR::openxr_loader
-    glfw
-    OpenGL::GL
-    Eigen3::Eigen
-)
+    add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS}  ${yarp_openxrheadset_HDRS})
 
-if (NOT WIN32)
-    target_link_libraries(openxrheadset_test PRIVATE ${X11_LIBRARIES})
+    target_link_libraries(openxrheadset_test
+        PRIVATE
+        ${YARP_LIBRARIES}
+        OpenXR::openxr_loader
+        glfw
+        GLEW::GLEW
+        OpenGL::GL
+        Eigen3::Eigen
+        )
+
+    if (NOT WIN32)
+        target_link_libraries(openxrheadset_test PRIVATE ${X11_LIBRARIES})
+    endif()
+
+    target_include_directories(openxrheadset_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+    if (MSVC)
+        target_compile_options(openxrheadset_test PRIVATE /std:c++latest)
+    endif()
+
+    add_test(NAME openxrheadset_test COMMAND openxrheadset_test)
+
 endif()
 
-target_include_directories(openxrheadset_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 yarp_install(
   TARGETS yarp_openxrheadset
