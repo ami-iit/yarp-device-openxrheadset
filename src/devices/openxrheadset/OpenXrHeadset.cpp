@@ -316,7 +316,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     right_frame    = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
     head_frame     = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
     root_frame     = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
-
+    m_leftAzimuthOffset   = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asDouble();
+    m_leftElevationOffset = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asDouble();
+    m_eyeZPosition = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asDouble())); //make sure that z is negative and that is at least 0.01 in modulus
+    m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asDouble();
+    m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asDouble();
 
     //opening tf client
     yarp::os::Property tfClientCfg;
@@ -384,8 +388,13 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             yCError(OPENXRHEADSET) << "Cannot initialize" << (eye == 0 ? "left" : "right") << "display texture.";
             return false;
         }
-        displayPorts[eye].setVisibility(eye == 0 ? IOpenXrQuadLayer::Visibility::LEFT_EYE : IOpenXrQuadLayer::Visibility::RIGHT_EYE);
     }
+    displayPorts[0].setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
+    displayPorts[0].setAnglesOffsets(m_leftAzimuthOffset, m_leftElevationOffset);
+    displayPorts[0].setPosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    displayPorts[1].setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
+    displayPorts[1].setAnglesOffsets(m_rightAzimuthOffset, m_rightElevationOffset);
+    displayPorts[1].setPosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
     for (GuiParam& gui : huds)
     {

@@ -180,6 +180,12 @@ private:
 
     std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
 
+    double m_leftAzimuthOffset;
+    double m_leftElevationOffset;
+    double m_eyeZPosition;
+    double m_rightAzimuthOffset;
+    double m_rightElevationOffset;
+
     std::vector<GuiParam> huds;
 
     bool getStickAsAxis;
