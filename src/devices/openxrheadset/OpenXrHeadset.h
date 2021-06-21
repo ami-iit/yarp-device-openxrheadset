@@ -105,6 +105,7 @@ private:
         std::unordered_map<const char*, double> m_lastWarning;
 
         yarp::sig::Matrix m_localPose;
+        bool m_localPoseValid{false};
 
 
     public:
