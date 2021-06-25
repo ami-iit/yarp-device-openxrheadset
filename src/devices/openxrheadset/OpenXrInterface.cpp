@@ -6,179 +6,8 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include "OpenXrConfig.h"
+#include <impl/OpenXrInterfaceImpl.h>
 
-#include <cstdio>
-#include <vector>
-#include <array>
-#include <cstring>
-#include <cstdarg>
-#include <atomic>
-
-#include <yarp/os/LogStream.h>
-
-#include "OpenXrHeadsetLogComponent.h"
-
-#include "OpenXrInterface.h"
-#include "OpenXrQuadLayer.h"
-
-class OpenXrInterface::Implementation
-{
-public:
-
-    bool checkXrOutput(XrResult result, const char* format, ...)
-    {
-        if (XR_SUCCEEDED(result))
-            return true;
-
-        if (instance)
-        {
-            char resultString[XR_MAX_RESULT_STRING_SIZE];
-            xrResultToString(instance, result, resultString);
-
-            char formatRes[XR_MAX_RESULT_STRING_SIZE + 1024];
-            snprintf(formatRes, XR_MAX_RESULT_STRING_SIZE + 1023, "%s [%s]", format, resultString);
-
-            char output[XR_MAX_RESULT_STRING_SIZE + 1024];
-
-            va_list args;
-            va_start(args, format);
-            vsprintf(output, formatRes, args);
-            va_end(args);
-
-            yCError(OPENXRHEADSET) << output;
-        }
-        else
-        {
-            yCError(OPENXRHEADSET) << format;
-        }
-
-
-
-        return false;
-    }
-
-    static XrBool32 OpenXrDebugCallback(XrDebugUtilsMessageSeverityFlagsEXT severity,
-                                        XrDebugUtilsMessageTypeFlagsEXT /*type*/,
-                                        const XrDebugUtilsMessengerCallbackDataEXT* data,
-                                        void* /*userData*/) {
-        yCTrace(OPENXRHEADSET);
-
-        if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-        {
-            yCError(OPENXRHEADSET) << data->functionName + std::string(": ") + data->message;
-        }
-        else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-        {
-            yCWarning(OPENXRHEADSET) << data->functionName + std::string(": ") + data->message;
-        }
-        else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-        {
-            yCInfo(OPENXRHEADSET) << data->functionName + std::string(": ") + data->message;
-        }
-        else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
-        {
-            yCDebug(OPENXRHEADSET) << data->functionName + std::string(": ") + data->message;
-        }
-
-        return XR_TRUE;
-    }
-
-    static void glfwErrorCallback(int error, const char* description)
-    {
-        yCError(OPENXRHEADSET) << "GLFW Error:" << error << description;
-    }
-
-    static void GLMessageCallback(GLenum /*source*/,
-                                  GLenum type,
-                                  GLuint /*id*/,
-                                  GLenum severity,
-                                  GLsizei /*length*/,
-                                  const GLchar* message,
-                                  const void* /*userParam*/) {
-        yCError(OPENXRHEADSET, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s",
-                ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-                type, severity, message );
-    }
-
-    // the instance handle can be thought of as the basic connection to the OpenXR runtime
-    XrInstance instance = XR_NULL_HANDLE;
-    // the system represents an (opaque) set of XR devices in use, managed by the runtime
-    XrSystemId system_id = XR_NULL_SYSTEM_ID;
-    // the session deals with the renderloop submitting frames to the runtime
-    XrSession session = XR_NULL_HANDLE;
-    // the playspace is needed to define a reference frame for the application
-    XrSpace play_space = XR_NULL_HANDLE;
-    // the space fixed to the head of the operator
-    XrSpace view_space = XR_NULL_HANDLE;
-    // info about the views (the "eyes")
-    std::vector<XrViewConfigurationView> viewconfig_views;
-    // info to create the swapchain
-    XrSwapchainCreateInfo swapchain_create_info;
-    // the swapchain is a series of buffers that allows the application to render an image on a buffer differnt from the one in use
-    XrSwapchain swapchain;
-    // array of view_count array of swapchain_length containers holding an OpenGL texture
-    // that is allocated by the runtime
-    std::vector<XrSwapchainImageOpenGLKHR> swapchain_images;
-    // a separate swapchain only for the depth buffer
-    XrSwapchain depth_swapchain;
-    // imges for the depth swapchain
-    std::vector<XrSwapchainImageOpenGLKHR> depth_swapchain_images;
-    // containers for submitting swapchains with rendered VR frames
-    std::vector<XrCompositionLayerProjectionView> projection_views;
-    // containers for submitting swapchains with rendered VR depth frames
-    std::vector<XrCompositionLayerDepthInfoKHR> depth_projection_views;
-    // array of views, filled by the runtime with current HMD display pose (basically the position of each eye)
-    std::vector<XrView> views;
-    // state of the application
-    XrSessionState state = XR_SESSION_STATE_UNKNOWN;
-    // state of the frame during the rendering loop
-    XrFrameState frame_state;
-    // state of the eyes
-    XrViewState view_state;
-    // layer with rendered eyes projection
-    XrCompositionLayerProjection projection_layer;
-    //Set of head-locked quad layers added
-    std::vector<std::shared_ptr<OpenXrQuadLayer>> headLockedQuadLayers;
-    //Buffer containing the submitted layers
-    std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;
-    //The number of layers that have been added. This is lower or equal than the number of submitted layers
-    size_t layer_count = 0;
-
-    // functions pointer to get OpenGL requirements
-    PFN_xrGetOpenGLGraphicsRequirementsKHR pfnGetOpenGLGraphicsRequirementsKHR = NULL;
-    // Struct storing OpenGL requirements
-    XrGraphicsRequirementsOpenGLKHR opengl_reqs;
-
-    // each graphics API requires the use of a specialized struct
-#ifdef XR_USE_PLATFORM_WIN32
-    XrGraphicsBindingOpenGLWin32KHR graphics_binding_gl;
-#else
-    XrGraphicsBindingOpenGLXlibKHR graphics_binding_gl;
-#endif
-
-    // GLFW window to mirror what the user sees
-    GLFWwindow* window = nullptr;
-    // The window size
-    std::vector<unsigned int> windowSize;
-
-    // internal OpenGL framebuffer ID
-    GLuint glFrameBufferId = 0;
-
-    std::atomic<bool> initialized{false};
-
-    std::atomic<bool> closing{false};
-
-    void submitLayer(const XrCompositionLayerBaseHeader* layer)
-    {
-        layer_count++;
-        if (layer_count > submitted_layers.size())
-        {
-            submitted_layers.resize(layer_count);
-        }
-        submitted_layers[layer_count-1] = layer;
-    }
-};
 
 bool OpenXrInterface::checkExtensions()
 {
@@ -410,6 +239,24 @@ bool OpenXrInterface::prepareXrSystem()
     // Initialization for view state
     m_pimpl->view_state.type = XR_TYPE_VIEW_STATE;
     m_pimpl->view_state.next = NULL;
+
+    // Initialization for the head location
+    m_pimpl->view_space_velocity.type = XR_TYPE_SPACE_VELOCITY;
+    m_pimpl->view_space_velocity.next = NULL;
+    m_pimpl->view_space_velocity.velocityFlags = 0;
+    m_pimpl->view_space_location.type = XR_TYPE_SPACE_LOCATION;
+    m_pimpl->view_space_location.next = &(m_pimpl->view_space_velocity);
+    m_pimpl->view_space_location.locationFlags = 0;
+
+    // Initialize the hands locations and velocities
+    for (size_t i = 0; i < 2; ++i)
+    {
+        m_pimpl->hand_velocities[i].type = XR_TYPE_SPACE_VELOCITY;
+        m_pimpl->hand_velocities[i].next = NULL;
+        m_pimpl->hand_velocities[i].velocityFlags = 0;
+        m_pimpl->hand_locations[i].type = XR_TYPE_SPACE_LOCATION;
+        m_pimpl->hand_locations[i].next = &(m_pimpl->hand_velocities[i]);
+    }
 
     // OpenXR requires checking graphics requirements before creating a session.
     XrGraphicsRequirementsOpenGLKHR opengl_reqs;
@@ -671,7 +518,148 @@ bool OpenXrInterface::prepareXrCompositionLayers()
 bool OpenXrInterface::prepareXrActions()
 {
     yCTrace(OPENXRHEADSET);
-//TODO
+    xrStringToPath(m_pimpl->instance, "/user/hand/left", &m_pimpl->hand_paths[0]);
+    xrStringToPath(m_pimpl->instance, "/user/hand/right", &m_pimpl->hand_paths[1]);
+
+    XrPath trigger_value_path[2];
+    xrStringToPath(m_pimpl->instance, "/user/hand/left/input/trigger/value",
+                   &trigger_value_path[0]);
+    xrStringToPath(m_pimpl->instance, "/user/hand/right/input/trigger/value",
+                   &trigger_value_path[1]);
+
+    //The grip position:
+    //  For tracked hands: The user’s palm centroid when closing the fist, at the surface of the palm.
+    //  For handheld motion controllers: A fixed position within the controller that generally lines up
+    //  with the palm centroid when held by a hand in a neutral position.
+    //  This position should be adjusted left or right to center the position within the controller’s grip.
+
+    //The grip orientation:
+    //  +X axis: When you completely open your hand to form a flat 5-finger pose, the ray that is normal to the user’s
+    //           palm (away from the palm in the left hand, into the palm in the right hand).
+    //  -Z axis: When you close your hand partially (as if holding the controller), the ray that goes through the center
+    //           of the tube formed by your non-thumb fingers, in the direction of little finger to thumb.
+    //  +Y axis: orthogonal to +Z and +X using the right-hand rule.
+    XrPath grip_pose_path[2];
+    xrStringToPath(m_pimpl->instance, "/user/hand/left/input/grip/pose", &grip_pose_path[0]);
+    xrStringToPath(m_pimpl->instance, "/user/hand/right/input/grip/pose", &grip_pose_path[1]);
+
+
+    XrActionSetCreateInfo actionset_info = {
+        .type = XR_TYPE_ACTION_SET_CREATE_INFO, .next = NULL, .priority = 0};
+    strcpy(actionset_info.actionSetName, "yarp_device_actionset");
+    strcpy(actionset_info.localizedActionSetName, "YARP Device Actions");
+
+    XrResult result = xrCreateActionSet(m_pimpl->instance, &actionset_info, &m_pimpl->actionset);
+    if (!m_pimpl->checkXrOutput(result, "Failed to create actionset"))
+        return false;
+
+
+    XrActionCreateInfo action_info = {.type = XR_TYPE_ACTION_CREATE_INFO,
+                                      .next = NULL,
+                                      .actionType = XR_ACTION_TYPE_POSE_INPUT,
+                                      .countSubactionPaths = 2,
+                                      .subactionPaths = m_pimpl->hand_paths};
+    strcpy(action_info.actionName, "handpose");
+    strcpy(action_info.localizedActionName, "Hand Pose");
+
+    result = xrCreateAction(m_pimpl->actionset, &action_info, &m_pimpl->hand_pose_action);
+    if (!m_pimpl->checkXrOutput(result, "Failed to create hand pose action"))
+        return false;
+
+    XrPosef identity_pose =
+    {
+        .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
+        .position = {.x = 0.0, .y = 0.0, .z = 0.0}
+    };
+
+    for (int hand = 0; hand < 2; hand++) {
+        XrActionSpaceCreateInfo action_space_info = {.type = XR_TYPE_ACTION_SPACE_CREATE_INFO,
+                                                     .next = NULL,
+                                                     .action = m_pimpl->hand_pose_action,
+                                                     .subactionPath = m_pimpl->hand_paths[hand],
+                                                     .poseInActionSpace = identity_pose};
+
+        result = xrCreateActionSpace(m_pimpl->session, &action_space_info, &m_pimpl->hand_pose_spaces[hand]);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create hand %d pose space", hand))
+            return false;
+    }
+
+    std::vector<XrActionSuggestedBinding> poseBindings = {
+        {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[0]},
+        {.action = m_pimpl->hand_pose_action, .binding = grip_pose_path[1]}
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> khrButtonsList =
+    {
+        {"/user/hand/left/input/select/click",  "khr_left_select"},
+        {"/user/hand/right/input/select/click", "khr_right_select"},
+        {"/user/hand/left/input/menu/click",    "khr_left_menu"},
+        {"/user/hand/right/input/menu/click",   "khr_right_menu"}
+    };
+
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/khr/simple_controller", poseBindings, khrButtonsList))
+        return false;
+
+    std::initializer_list<std::pair<const char*, const char*>> oculusButtonsList =
+    {
+        {"/user/hand/right/input/a/click",          "oculus_right_a"},
+        {"/user/hand/right/input/b/click",          "oculus_right_b"},
+        {"/user/hand/right/input/thumbstick/click", "oculus_right_thumbstick_click"},
+        {"/user/hand/left/input/menu/click",        "oculus_left_menu"},
+        {"/user/hand/left/input/x/click",           "oculus_left_x"},
+        {"/user/hand/left/input/y/click",           "oculus_left_y"},
+        {"/user/hand/left/input/thumbstick/click",  "oculus_left_thumbstick_click"}
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> oculusAxisList =
+    {
+        {"/user/hand/left/input/trigger/value",  "oculus_left_trigger"},
+        {"/user/hand/right/input/trigger/value", "oculus_right_trigger"},
+        {"/user/hand/left/input/squeeze/value",  "oculus_left_squeeze"},
+        {"/user/hand/right/input/squeeze/value", "oculus_right_squeeze"},
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> oculusThumbStickList =
+    {
+        {"/user/hand/left/input/thumbstick",  "oculus_left_thumbstick"},
+        {"/user/hand/right/input/thumbstick", "oculus_right_thumbstick"}
+    };
+
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/oculus/touch_controller", poseBindings,
+                                                    oculusButtonsList, oculusAxisList, oculusThumbStickList))
+        return false;
+
+    std::initializer_list<std::pair<const char*, const char*>> viveButtonsList =
+    {
+        {"/user/hand/left/input/menu/click",      "vive_left_menu"},
+        {"/user/hand/left/input/trigger/click",   "vive_left_trigger_click"},
+        {"/user/hand/left/input/squeeze/click",   "vive_left_squeeze_click"},
+        {"/user/hand/left/input/trackpad/click",  "vive_left_trackpad_click"},
+        {"/user/hand/right/input/menu/click",     "vive_right_menu"},
+        {"/user/hand/right/input/trigger/click",  "vive_right_trigger_click"},
+        {"/user/hand/right/input/squeeze/click",  "vive_right_squeeze_click"},
+        {"/user/hand/right/input/trackpad/click", "vive_right_trackpad_click"}
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> viveAxisList =
+    {
+        {"/user/hand/left/input/trigger/value",  "vive_left_trigger"},
+        {"/user/hand/right/input/trigger/value", "vive_right_trigger"},
+    };
+
+    std::initializer_list<std::pair<const char*, const char*>> viveThumbStickList =
+    {
+        {"/user/hand/left/input/trackpad",  "vive_left_trackpad"},
+        {"/user/hand/right/input/trackpad", "vive_right_trackpad"}
+    };
+
+    if (!m_pimpl->suggestInteractionProfileBindings("/interaction_profiles/htc/vive_controller", poseBindings,
+                                                    viveButtonsList, viveAxisList, viveThumbStickList))
+        return false;
+
+    //This is the case where no interaction profile is available
+    m_pimpl->inputActions[NO_INTERACTION_PROFILE_TAG].clear();
+
     return true;
 }
 
@@ -729,6 +717,23 @@ void OpenXrInterface::pollXrEvents()
 
                 yCInfo(OPENXRHEADSET, "Session started!");
 
+                XrSessionActionSetsAttachInfo actionset_attach_info = {
+                    .type = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO,
+                    .next = NULL,
+                    .countActionSets = 1,
+                    .actionSets = &m_pimpl->actionset};
+                result = xrAttachSessionActionSets(m_pimpl->session, &actionset_attach_info);
+                if (!m_pimpl->checkXrOutput(result, "Failed to attach action set"))
+                {
+                    m_pimpl->closing = true;
+                }
+
+                if (!updateInteractionProfile())
+                {
+                    m_pimpl->closing = true;
+                }
+
+                yCInfo(OPENXRHEADSET) << "Current hand interaction profile:" << m_pimpl->currentHandInteractionProfile;
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -740,6 +745,17 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
 
+            std::string previous_interaction_profile = m_pimpl->currentHandInteractionProfile;
+
+            if (!updateInteractionProfile())
+            {
+                m_pimpl->closing = true;
+            }
+
+            for (int i = 0; i < 2; i++) {
+                yCWarning(OPENXRHEADSET, "Interaction profile changed from %s to %s for %d. It seems that the headset controllers changed.",
+                          previous_interaction_profile.c_str(), m_pimpl->currentHandInteractionProfile.c_str(), i);
+            }
             break;
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);
@@ -808,7 +824,7 @@ void OpenXrInterface::updateXrSpaces()
     uint32_t output_viewCount = m_pimpl->views.size();
     XrResult result = xrLocateViews(m_pimpl->session, &view_locate_info, &(m_pimpl->view_state),
                                     m_pimpl->views.size(), &output_viewCount, m_pimpl->views.data());
-    if (!m_pimpl->checkXrOutput(result, "Failed to begin frame!"))
+    if (!m_pimpl->checkXrOutput(result, "Failed to locate the views!"))
     {
         m_pimpl->closing = true;
         return;
@@ -820,13 +836,113 @@ void OpenXrInterface::updateXrSpaces()
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
+    result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space,
+                           m_pimpl->frame_state.predictedDisplayTime, &m_pimpl->view_space_location);
+
+    if (!m_pimpl->checkXrOutput(result, "Failed to locate the head space!"))
+    {
+        m_pimpl->closing = true;
+        return;
+    }
+
 }
 
 void OpenXrInterface::updateXrActions()
 {
     yCTrace(OPENXRHEADSET);
-    //TODO
 
+    XrActiveActionSet active_actionsets =
+        {.actionSet = m_pimpl->actionset,
+         .subactionPath = XR_NULL_PATH};
+
+    XrActionsSyncInfo actions_sync_info = {
+        .type = XR_TYPE_ACTIONS_SYNC_INFO,
+        .countActiveActionSets = 1,
+        .activeActionSets = &active_actionsets,
+    };
+    XrResult result = xrSyncActions(m_pimpl->session, &actions_sync_info);
+    if (!m_pimpl->checkXrOutput(result, "Failed to sync actions!"))
+        return;
+
+    // query each value / location with a subaction path != XR_NULL_PATH
+    // resulting in individual values per hand.
+    //We update the location of the hands independently from the current interaction profile
+    for (int i = 0; i < 2; i++) {
+        XrActionStatePose hand_pose_state = {.type = XR_TYPE_ACTION_STATE_POSE, .next = NULL};
+        {
+            XrActionStateGetInfo get_info = {.type = XR_TYPE_ACTION_STATE_GET_INFO,
+                                             .next = NULL,
+                                             .action = m_pimpl->hand_pose_action,
+                                             .subactionPath = m_pimpl->hand_paths[i]};
+            result = xrGetActionStatePose(m_pimpl->session, &get_info, &hand_pose_state);
+            if (!m_pimpl->checkXrOutput(result, "Failed to get pose value!"))
+                return;
+        }
+
+        result = xrLocateSpace(m_pimpl->hand_pose_spaces[i], m_pimpl->play_space,
+                               m_pimpl->frame_state.predictedDisplayTime,
+                               &m_pimpl->hand_locations[i]);
+        if (!m_pimpl->checkXrOutput(result, "Failed to locate space %d!", i))
+            return;
+    }
+
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    for (Action<bool>& button : inputs.buttons)
+    {
+        result = button.update(m_pimpl->session);
+        m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", button.name.c_str()); //Continue anyway
+    }
+
+    for (Action<float>& axis : inputs.axes)
+    {
+        result = axis.update(m_pimpl->session);
+        m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", axis.name.c_str()); //Continue anyway
+    }
+
+    for (Action<Eigen::Vector2f>& thumbstick : inputs.thumbsticks)
+    {
+        result = thumbstick.update(m_pimpl->session);
+        m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", thumbstick.name.c_str()); //Continue anyway
+    }
+}
+
+bool OpenXrInterface::updateInteractionProfile()
+{
+    XrInteractionProfileState state = {.type = XR_TYPE_INTERACTION_PROFILE_STATE};
+
+    std::string handInteractionProfiles[2] = {NO_INTERACTION_PROFILE_TAG, NO_INTERACTION_PROFILE_TAG};
+    for (int i = 0; i < 2; i++) {
+        XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, m_pimpl->hand_paths[i], &state);
+        if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile for %d", i))
+            return false;
+
+        XrPath prof = state.interactionProfile;
+
+        if (prof != XR_NULL_PATH)
+        {
+            char interactionProfile[XR_MAX_PATH_LENGTH];
+            uint32_t strl;
+            result = xrPathToString(m_pimpl->instance, prof, XR_MAX_PATH_LENGTH, &strl, interactionProfile);
+            if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile path str for %d", i))
+            {
+                m_pimpl->currentHandInteractionProfile.clear();
+                return false;
+            }
+
+            handInteractionProfiles[i] = interactionProfile;
+        }
+    }
+
+    if (handInteractionProfiles[0] != handInteractionProfiles[1])
+    {
+        yCError(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
+        return false;
+    }
+
+    m_pimpl->currentHandInteractionProfile = handInteractionProfiles[0];
+
+    return true;
 }
 
 void OpenXrInterface::render()
@@ -840,7 +956,7 @@ void OpenXrInterface::render()
     XrResult result = xrAcquireSwapchainImage(m_pimpl->swapchain, &acquire_info, &acquired_index);
     if (!m_pimpl->checkXrOutput(result, "Failed to acquire swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -849,7 +965,7 @@ void OpenXrInterface::render()
     result = xrWaitSwapchainImage(m_pimpl->swapchain, &wait_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to wait for swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -860,7 +976,7 @@ void OpenXrInterface::render()
                                      &depth_acquired_index);
     if (!m_pimpl->checkXrOutput(result, "Failed to acquire depth swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -869,7 +985,7 @@ void OpenXrInterface::render()
     result = xrWaitSwapchainImage(m_pimpl->depth_swapchain, &depth_wait_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to wait for depth swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -903,7 +1019,7 @@ void OpenXrInterface::render()
     result = xrReleaseSwapchainImage(m_pimpl->swapchain, &release_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to release swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -912,7 +1028,7 @@ void OpenXrInterface::render()
     result = xrReleaseSwapchainImage(m_pimpl->depth_swapchain, &depth_release_info);
     if (!m_pimpl->checkXrOutput(result, "Failed to release depth swapchain image!"))
     {
-        m_pimpl->closing = false;
+        m_pimpl->closing = true;
         return;
     }
 
@@ -967,7 +1083,10 @@ OpenXrInterface::OpenXrInterface()
 OpenXrInterface::~OpenXrInterface()
 {
     yCTrace(OPENXRHEADSET);
-    close();
+    if (!m_pimpl->closed)
+    {
+        close();
+    }
 }
 
 bool OpenXrInterface::initialize()
@@ -981,6 +1100,7 @@ bool OpenXrInterface::initialize()
     }
 
     m_pimpl->closing = false;
+    m_pimpl->closed = false;
 
     bool ok = prepareXrInstance();
     ok = ok && prepareXrSystem();
@@ -1130,6 +1250,77 @@ bool OpenXrInterface::isRunning() const
     return m_pimpl->initialized && !m_pimpl->closing;
 }
 
+OpenXrInterface::Pose OpenXrInterface::headPose() const
+{
+    return m_pimpl->getPose(m_pimpl->view_space_location);
+}
+
+OpenXrInterface::Velocity OpenXrInterface::headVelocity() const
+{
+    return m_pimpl->getVelocity(m_pimpl->view_space_velocity);
+}
+
+OpenXrInterface::Pose OpenXrInterface::leftHandPose() const
+{
+    return m_pimpl->getPose(m_pimpl->hand_locations[0]);
+}
+
+OpenXrInterface::Velocity OpenXrInterface::leftHandVelocity() const
+{
+    return m_pimpl->getVelocity(m_pimpl->hand_velocities[0]);
+}
+
+OpenXrInterface::Pose OpenXrInterface::rightHandPose() const
+{
+    return m_pimpl->getPose(m_pimpl->hand_locations[1]);
+}
+
+OpenXrInterface::Velocity OpenXrInterface::rightHandVelocity() const
+{
+    return m_pimpl->getVelocity(m_pimpl->hand_velocities[1]);
+}
+
+void OpenXrInterface::getButtons(std::vector<bool> &buttons) const
+{
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    buttons.resize(inputs.buttons.size());
+
+    for (size_t i = 0; i < buttons.size(); ++i)
+    {
+        buttons[i] = inputs.buttons[i].value;
+    }
+}
+
+void OpenXrInterface::getAxes(std::vector<float> &axes) const
+{
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    axes.resize(inputs.axes.size());
+
+    for (size_t i = 0; i < axes.size(); ++i)
+    {
+        axes[i] = inputs.axes[i].value;
+    }
+}
+
+void OpenXrInterface::getThumbsticks(std::vector<Eigen::Vector2f> &thumbsticks) const
+{
+    InputActions& inputs = m_pimpl->inputActions[m_pimpl->currentHandInteractionProfile];
+
+    thumbsticks.resize(inputs.thumbsticks.size());
+
+    for (size_t i = 0; i < thumbsticks.size(); ++i)
+    {
+        thumbsticks[i] = inputs.thumbsticks[i].value;
+    }
+}
+
+int64_t OpenXrInterface::currentNanosecondsSinceEpoch() const
+{
+    return m_pimpl->frame_state.predictedDisplayTime;
+}
+
 void OpenXrInterface::close()
 {
     yCTrace(OPENXRHEADSET);
@@ -1182,7 +1373,17 @@ void OpenXrInterface::close()
         m_pimpl->window = nullptr;
     }
 
+# ifndef WIN32
+    if (m_pimpl->graphics_binding_gl.xDisplay)
+    {
+        XCloseDisplay(m_pimpl->graphics_binding_gl.xDisplay);
+        m_pimpl->graphics_binding_gl.xDisplay = nullptr;
+    }
+#endif
+
     m_pimpl->initialized = false;
 
     yCInfo(OPENXRHEADSET) << "Closed";
+
+    m_pimpl->closed = true;
 }

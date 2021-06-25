@@ -7,8 +7,9 @@
  */
 
 #include <yarp/os/LogStream.h>
-#include "OpenXrQuadLayer.h"
-#include "OpenXrHeadsetLogComponent.h"
+#include <impl/OpenXrQuadLayer.h>
+#include <OpenXrHeadsetLogComponent.h>
+#include <OpenXrEigenConversions.h>
 
 OpenXrQuadLayer::OpenXrQuadLayer()
 {
@@ -23,17 +24,12 @@ void OpenXrQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quat
 
 void OpenXrQuadLayer::setPosition(const Eigen::Vector3f &position)
 {
-    layer.pose.position.x = position[0];
-    layer.pose.position.y = position[1];
-    layer.pose.position.z = position[2];
+    layer.pose.position = toXr(position);
 }
 
 void OpenXrQuadLayer::setRotation(const Eigen::Quaternionf &rotation)
 {
-    layer.pose.orientation.w = rotation.w();
-    layer.pose.orientation.x = rotation.x();
-    layer.pose.orientation.y = rotation.y();
-    layer.pose.orientation.z = rotation.z();
+    layer.pose.orientation = toXr(rotation);
 }
 
 void OpenXrQuadLayer::setDimensions(float widthInMeters, float heightInMeters)
@@ -184,21 +180,12 @@ float OpenXrQuadLayer::layerHeight() const
 
 Eigen::Vector3f OpenXrQuadLayer::layerPosition() const
 {
-    Eigen::Vector3f position;
-    position[0] = layer.pose.position.x;
-    position[1] = layer.pose.position.y;
-    position[2] = layer.pose.position.z;
-    return position;
+    return toEigen(layer.pose.position);
 }
 
 Eigen::Quaternionf OpenXrQuadLayer::layerQuaternion() const
 {
-    Eigen::Quaternionf quaternion;
-    quaternion.w() = layer.pose.orientation.w;
-    quaternion.x() = layer.pose.orientation.x;
-    quaternion.y() = layer.pose.orientation.y;
-    quaternion.z() = layer.pose.orientation.z;
-    return quaternion;
+    return toEigen(layer.pose.orientation);
 }
 
 bool OpenXrQuadLayer::shouldSubmit() const

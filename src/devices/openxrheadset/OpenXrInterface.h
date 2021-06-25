@@ -10,6 +10,7 @@
 #define YARP_DEV_OPENXRINTERFACE_H
 
 #include <memory>
+#include <vector>
 #include <functional>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -94,11 +95,31 @@ class OpenXrInterface
 
     void updateXrActions();
 
+    bool updateInteractionProfile();
+
     void render();
 
     void endXrFrame();
 
 public:
+
+    struct Pose
+    {
+        bool positionValid{false};
+        bool rotationValid{false};
+
+        Eigen::Vector3f position;
+        Eigen::Quaternionf rotation;
+    };
+
+    struct Velocity
+    {
+        bool linearValid{false};
+        bool angularValid{false};
+
+        Eigen::Vector3f linear;
+        Eigen::Vector3f angular;
+    };
 
     OpenXrInterface();
 
@@ -121,6 +142,26 @@ public:
     std::shared_ptr<IOpenXrQuadLayer> addHeadFixedQuadLayer();
 
     bool isRunning() const;
+
+    Pose headPose() const;
+
+    Velocity headVelocity() const;
+
+    Pose leftHandPose() const;
+
+    Velocity leftHandVelocity() const;
+
+    Pose rightHandPose() const;
+
+    Velocity rightHandVelocity() const;
+
+    void getButtons(std::vector<bool>& buttons) const;
+
+    void getAxes(std::vector<float>& axes) const;
+
+    void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
+
+    int64_t currentNanosecondsSinceEpoch() const;
 
     void close();
 };

@@ -9,14 +9,17 @@
 #ifndef YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
 #define YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
 
-#include "OpenGLConfig.h"
+#include <OpenGLConfig.h>
 
 #include <yarp/os/BufferedPort.h>
 #include <yarp/sig/Image.h>
 #include <yarp/os/LogStream.h>
 
-#include "OpenXrInterface.h"
-#include "OpenXrHeadsetLogComponent.h"
+#include <thread>
+#include <cassert>
+
+#include <OpenXrInterface.h>
+#include <OpenXrHeadsetLogComponent.h>
 
 template <typename ImageType>
 class PortToQuadLayer
@@ -27,6 +30,7 @@ class PortToQuadLayer
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
     GLint m_pixelFormat;
+    std::thread::id m_initThreadID;
 
 public:
 
@@ -40,10 +44,13 @@ public:
             return false;
         }
 
+        //This has to be called from the same thread where the window has been created
         if (!glfwInit()) {
             yCError(OPENXRHEADSET, "Unable to initialize GLFW");
             return false;
         }
+
+        m_initThreadID = std::this_thread::get_id();
 
         ImageType dummyImage; //Needed to get the pixel code
         int pixelCode = dummyImage.getPixelCode();
@@ -97,6 +104,8 @@ public:
     bool updateTexture()
     {
         yCTrace(OPENXRHEADSET);
+        assert(m_initThreadID == std::this_thread::get_id() &&
+               "The updateTexture has to be called from the same thread in which it has been initialized.");
 
         ImageType* img = m_portPtr->read(false);
 
@@ -125,6 +134,7 @@ public:
         }
 
         //First bind the read framebuffer, using the input image as source
+        //This has to be called from the same thread where the initialize method has been called
         glBindFramebuffer(GL_READ_FRAMEBUFFER, m_glReadBufferId);
         glBindTexture(GL_TEXTURE_2D, m_imageTexture);
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,

@@ -11,7 +11,7 @@
 
 #define XR_USE_GRAPHICS_API_OPENGL
 
-#include "OpenGLConfig.h"
+#include <OpenGLConfig.h>
 
 #if defined(_WIN32)
  #define XR_USE_PLATFORM_WIN32
