@@ -70,9 +70,7 @@ endif()
 
 target_include_directories(yarp_openxrheadset PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (MSVC)
-    target_compile_options(yarp_openxrheadset PRIVATE /std:c++latest)
-endif()
+target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for the designated initialization of structs
 
 if(BUILD_TESTING)
 
@@ -94,9 +92,7 @@ if(BUILD_TESTING)
 
     target_include_directories(openxrheadset_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-    if (MSVC)
-        target_compile_options(openxrheadset_test PRIVATE /std:c++latest)
-    endif()
+    target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for the designated initialization of structs
 
     add_test(NAME openxrheadset_test COMMAND openxrheadset_test)
 

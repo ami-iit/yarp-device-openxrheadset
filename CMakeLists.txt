@@ -4,7 +4,7 @@
 # This software may be modified and distributed under the terms of the
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(yarp-device-openxrheadset
         LANGUAGES C CXX
