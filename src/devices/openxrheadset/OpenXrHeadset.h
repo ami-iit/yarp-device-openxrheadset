@@ -170,15 +170,15 @@ private:
                           yarp::os::Stamp& stamp);
     };
 
-    FramePorts headFramePorts;
-    FramePorts leftHandFramePorts;
-    FramePorts rightHandFramePorts;
+    FramePorts m_headFramePorts;
+    FramePorts m_leftHandFramePorts;
+    FramePorts m_rightHandFramePorts;
 
-    yarp::os::Stamp stamp;
+    yarp::os::Stamp m_stamp;
 
     std::string m_prefix;
 
-    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
+    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> m_displayPorts;
 
     double m_leftAzimuthOffset;
     double m_leftElevationOffset;
@@ -186,26 +186,26 @@ private:
     double m_rightAzimuthOffset;
     double m_rightElevationOffset;
 
-    std::vector<GuiParam> huds;
+    std::vector<GuiParam> m_huds;
 
-    bool getStickAsAxis;
+    bool m_getStickAsAxis;
 
-    IFrameTransform* tfPublisher;
-    std::string      left_frame;
-    std::string      right_frame;
-    std::string      head_frame;
-    std::string      root_frame;
-    PolyDriver       driver;
+    IFrameTransform* m_tfPublisher;
+    std::string      m_leftFrame;
+    std::string      m_rightFrame;
+    std::string      m_headFrame;
+    std::string      m_rootFrame;
+    PolyDriver       m_driver;
 
     yarp::os::Port m_rpcPort;
 
-    std::atomic_bool closed{ false };
+    std::atomic_bool m_closed{ false };
 
-    OpenXrInterface openXrInterface;
+    OpenXrInterface m_openXrInterface;
 
-    std::vector<bool> buttons;
-    std::vector<float> axes;
-    std::vector<Eigen::Vector2f> thumbsticks;
+    std::vector<bool> m_buttons;
+    std::vector<float> m_axes;
+    std::vector<Eigen::Vector2f> m_thumbsticks;
 
     std::mutex m_mutex;
 
