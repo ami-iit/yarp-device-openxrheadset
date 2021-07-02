@@ -24,7 +24,6 @@ if(NOT ENABLE_openxrheadset)
 endif()
 
 set(yarp_openxrheadset_SRCS
-  OpenXrHeadset.cpp
   OpenXrHeadsetLogComponent.cpp
   OpenXrInterface.cpp
   impl/OpenXrQuadLayer.cpp
@@ -34,7 +33,6 @@ set(yarp_openxrheadset_SRCS
 set(yarp_openxrheadset_HDRS
   OpenXrConfig.h
   OpenGLConfig.h
-  OpenXrHeadset.h
   OpenXrHeadsetLogComponent.h
   PortToQuadLayer.h
   OpenXrInterface.h
@@ -51,6 +49,8 @@ yarp_add_plugin(yarp_openxrheadset)
 
 target_sources(yarp_openxrheadset
   PRIVATE
+    OpenXrHeadset.cpp
+    OpenXrHeadset.h
     ${yarp_openxrheadset_SRCS}
     ${yarp_openxrheadset_HDRS}
     ${yarp_openxrheadset_GEN_FILES}
@@ -79,12 +79,15 @@ target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for
 
 if(BUILD_TESTING)
 
-    add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS}  ${yarp_openxrheadset_HDRS} ${yarp_openxrheadset_GEN_FILES}
-)
+    add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS}  ${yarp_openxrheadset_HDRS})
 
     target_link_libraries(openxrheadset_test
         PRIVATE
-        ${YARP_LIBRARIES}
+        YARP::YARP_os
+        YARP::YARP_sig
+        YARP::YARP_dev
+        YARP::YARP_math
+        YARP::YARP_init
         OpenXR::openxr_loader
         glfw
         GLEW::GLEW

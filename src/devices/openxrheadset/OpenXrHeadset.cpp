@@ -359,11 +359,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_leftEyeFrame         = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
     m_rightEyeFrame        = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
     m_rootFrame            = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
-    m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asDouble();
-    m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asDouble();
-    m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asDouble())); //make sure that z is negative and that is at least 0.01 in modulus
-    m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asDouble();
-    m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asDouble();
+    m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+    m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+    m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+    m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
 
     //opening tf client
     yarp::os::Property tfClientCfg;
