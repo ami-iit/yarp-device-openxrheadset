@@ -219,6 +219,32 @@ public:
         m_quadLayer->setPosition(position);
     }
 
+    Eigen::Vector3f layerPosition() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return Eigen::Vector3f::Zero();
+        }
+
+        return m_quadLayer->layerPosition();
+    }
+
+    Eigen::Quaternionf layerQuaternion() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return Eigen::Quaternionf::Identity();
+        }
+
+        return m_quadLayer->layerQuaternion();
+    }
+
     void setRotation(const Eigen::Quaternionf &rotation)
     {
         yCTrace(OPENXRHEADSET);

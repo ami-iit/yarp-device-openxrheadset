@@ -16,17 +16,22 @@
 
 typedef bool(yarp::os::Value::*valueIsType)(void) const;
 
-inline void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output)
+inline void poseToYarpMatrix(const Eigen::Vector3f& inputPosition, const Eigen::Quaternionf& inputQuaternion, yarp::sig::Matrix& output)
 {
-    Eigen::Matrix3f rotationMatrix = input.rotation.toRotationMatrix();
+    Eigen::Matrix3f rotationMatrix = inputQuaternion.toRotationMatrix();
     for (size_t i = 0; i < 3; ++i)
     {
         for (size_t j = 0; j < 3; ++j)
         {
             output(i,j) = rotationMatrix(i,j);
         }
-        output(i, 3) = input.position(i);
+        output(i, 3) = inputPosition(i);
     }
+}
+
+inline void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output)
+{
+    poseToYarpMatrix(input.position, input.rotation, output);
 }
 
 inline void writeVec3OnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port, const Eigen::Vector3f& vec3, yarp::os::Stamp& stamp)
@@ -218,6 +223,42 @@ void yarp::dev::OpenXrHeadset::FramePorts::publishFrame(const OpenXrInterface::P
     }
 }
 
+bool yarp::dev::OpenXrHeadset::EyesPorts::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &inputPortName,
+                                               IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
+{
+    yCTrace(OPENXRHEADSET);
+    if (!initialize(quadLayer, inputPortName)) {
+        return false;
+    }
+
+    if (!tfPublisher)
+    {
+        yCError(OPENXRHEADSET) << "The transform server interface is not valid.";
+        return false;
+    }
+
+    m_tfPublisher = tfPublisher;
+    m_tfFrame = tfFrame;
+    m_rootFrame = rootFrame;
+
+    return true;
+}
+
+void yarp::dev::OpenXrHeadset::EyesPorts::publishEyeTransform()
+{
+    if (!m_tfPublisher)
+    {
+        yCError(OPENXRHEADSET) << "The method open has not been called";
+        return;
+    }
+
+    poseToYarpMatrix(layerPosition(), layerQuaternion(), m_localPose);
+    if (!m_tfPublisher->setTransform(m_tfFrame, m_rootFrame, m_localPose))
+    {
+        yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
+    }
+}
+
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
       yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes), // ~90 fps
@@ -311,14 +352,16 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         }
     }
 
-    m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
-    m_leftFrame     = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
-    m_rightFrame    = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
-    m_headFrame     = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
-    m_rootFrame     = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
-    m_leftAzimuthOffset   = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asDouble();
-    m_leftElevationOffset = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asDouble();
-    m_eyeZPosition = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asDouble())); //make sure that z is negative and that is at least 0.01 in modulus
+    m_getStickAsAxis       = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
+    m_leftFrame            = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
+    m_rightFrame           = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
+    m_headFrame            = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
+    m_leftEyeFrame         = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
+    m_rightEyeFrame        = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
+    m_rootFrame            = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
+    m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asDouble();
+    m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asDouble();
+    m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asDouble())); //make sure that z is negative and that is at least 0.01 in modulus
     m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asDouble();
     m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asDouble();
 
@@ -382,16 +425,22 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         return false;
     }
 
-    for (size_t eye = 0; eye < 2; ++eye) {
-        if (!m_displayPorts[eye].initialize(m_openXrInterface.addHeadFixedQuadLayer(),
-                                          (eye == 0 ? m_prefix + "/display/left:i" : m_prefix + "/display/right:i"))) {
-            yCError(OPENXRHEADSET) << "Cannot initialize" << (eye == 0 ? "left" : "right") << "display texture.";
-            return false;
-        }
+    if (!m_displayPorts[0].open(m_openXrInterface.addHeadFixedQuadLayer(),
+                                  m_prefix + "/display/left:i",
+                                  m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
+        yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
+        return false;
     }
     m_displayPorts[0].setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
     m_displayPorts[0].setAnglesOffsets(m_leftAzimuthOffset, m_leftElevationOffset);
     m_displayPorts[0].setPosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+    if (!m_displayPorts[1].open(m_openXrInterface.addHeadFixedQuadLayer(),
+                                  m_prefix + "/display/right:i",
+                                  m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
+        yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
+        return false;
+    }
     m_displayPorts[1].setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
     m_displayPorts[1].setAnglesOffsets(m_rightAzimuthOffset, m_rightElevationOffset);
     m_displayPorts[1].setPosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
@@ -481,6 +530,10 @@ void yarp::dev::OpenXrHeadset::run()
         m_headFramePorts.publishFrame(m_openXrInterface.headPose(), m_openXrInterface.headVelocity(), m_stamp);
         m_leftHandFramePorts.publishFrame(m_openXrInterface.leftHandPose(), m_openXrInterface.leftHandVelocity(), m_stamp);
         m_rightHandFramePorts.publishFrame(m_openXrInterface.rightHandPose(), m_openXrInterface.rightHandVelocity(), m_stamp);
+
+        for (int eye = 0; eye < 2; ++eye) {
+            m_displayPorts[eye].publishEyeTransform();
+        }
 
     }
     else
@@ -807,5 +860,3 @@ bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, 
 
     return true;
 }
-
-

@@ -84,7 +84,7 @@ public:
      * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
      * @return a string indicating the interaction profile in use.
      */
-    virtual std::string getInteractionProfile();
+    virtual std::string getInteractionProfile() override;
 
     /**
      * Get the left image width and height.
@@ -170,6 +170,21 @@ private:
                           yarp::os::Stamp& stamp);
     };
 
+    class EyesPorts : public PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>
+    {
+        yarp::sig::Matrix m_localPose;
+        IFrameTransform* m_tfPublisher{nullptr};
+        std::string m_tfFrame;
+        std::string m_rootFrame;
+
+    public:
+
+        bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& inputPortName,
+                  IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+
+        void publishEyeTransform();
+    };
+
     FramePorts m_headFramePorts;
     FramePorts m_leftHandFramePorts;
     FramePorts m_rightHandFramePorts;
@@ -178,7 +193,7 @@ private:
 
     std::string m_prefix;
 
-    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> m_displayPorts;
+    std::array<EyesPorts, 2> m_displayPorts;
 
     double m_leftAzimuthOffset;
     double m_leftElevationOffset;
@@ -194,6 +209,8 @@ private:
     std::string      m_leftFrame;
     std::string      m_rightFrame;
     std::string      m_headFrame;
+    std::string      m_leftEyeFrame;
+    std::string      m_rightEyeFrame;
     std::string      m_rootFrame;
     PolyDriver       m_driver;
 
