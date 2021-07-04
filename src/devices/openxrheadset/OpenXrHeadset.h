@@ -170,17 +170,42 @@ private:
                           yarp::os::Stamp& stamp);
     };
 
-    class EyesPorts : public PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>
+    class EyePort
     {
         yarp::sig::Matrix m_localPose;
         IFrameTransform* m_tfPublisher{nullptr};
         std::string m_tfFrame;
         std::string m_rootFrame;
+        float m_azimuthOffset = 0;
+        float m_elevationOffset = 0;
+        Eigen::Quaternionf m_desiredRotation;
+        Eigen::Quaternionf m_rotationOffset;
+        Eigen::Vector3f m_eyeRelativePosition;
+        PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
+        bool m_initialized{false};
 
     public:
 
         bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& inputPortName,
                   IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+
+        void setEyeRotationOffset(double azimuth, double elevation);
+
+        void setEyeRotation(double azimuth, double elevation);
+
+        double azimuthOffset() const;
+
+        double elevationOffset() const;
+
+        void setEyeRelativePosition(const Eigen::Vector3f& position);
+
+        void setVisibility(const IOpenXrQuadLayer::Visibility& visibility);
+
+        float layerWidth() const;
+
+        float layerHeight() const;
+
+        bool updateTexture();
 
         void publishEyeTransform();
     };
@@ -193,7 +218,7 @@ private:
 
     std::string m_prefix;
 
-    std::array<EyesPorts, 2> m_displayPorts;
+    std::array<EyePort, 2> m_displayPorts;
 
     double m_leftAzimuthOffset;
     double m_leftElevationOffset;

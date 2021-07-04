@@ -223,11 +223,12 @@ void yarp::dev::OpenXrHeadset::FramePorts::publishFrame(const OpenXrInterface::P
     }
 }
 
-bool yarp::dev::OpenXrHeadset::EyesPorts::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &inputPortName,
+bool yarp::dev::OpenXrHeadset::EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &inputPortName,
                                                IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
 {
     yCTrace(OPENXRHEADSET);
-    if (!initialize(quadLayer, inputPortName)) {
+    m_initialized = false;
+    if (!m_layer.initialize(quadLayer, inputPortName)) {
         return false;
     }
 
@@ -237,26 +238,149 @@ bool yarp::dev::OpenXrHeadset::EyesPorts::open(std::shared_ptr<IOpenXrQuadLayer>
         return false;
     }
 
+    m_desiredRotation.setIdentity();
+    m_rotationOffset.setIdentity();
+    m_eyeRelativePosition.setZero();
+    m_eyeRelativePosition[2] = -1.0;
+
     m_tfPublisher = tfPublisher;
     m_tfFrame = tfFrame;
     m_rootFrame = rootFrame;
 
+    m_initialized = true;
+
     return true;
 }
 
-void yarp::dev::OpenXrHeadset::EyesPorts::publishEyeTransform()
+void yarp::dev::OpenXrHeadset::EyePort::publishEyeTransform()
 {
-    if (!m_tfPublisher)
+    if (!m_initialized)
     {
-        yCError(OPENXRHEADSET) << "The method open has not been called";
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
         return;
     }
 
-    poseToYarpMatrix(layerPosition(), layerQuaternion(), m_localPose);
+    poseToYarpMatrix(m_layer.layerPosition(), m_layer.layerQuaternion(), m_localPose);
     if (!m_tfPublisher->setTransform(m_tfFrame, m_rootFrame, m_localPose))
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
     }
+}
+
+void yarp::dev::OpenXrHeadset::EyePort::setEyeRotationOffset(double azimuth, double elevation)
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return;
+    }
+
+    m_azimuthOffset = azimuth;
+    m_elevationOffset = elevation;
+
+    m_rotationOffset = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
+            Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
+
+    Eigen::Quaternionf desiredRotation = m_rotationOffset * m_desiredRotation;
+    m_layer.setPose(desiredRotation * m_eyeRelativePosition, desiredRotation);
+}
+
+void yarp::dev::OpenXrHeadset::EyePort::setEyeRotation(double azimuth, double elevation)
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return;
+    }
+
+    m_desiredRotation = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
+            Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
+
+    Eigen::Quaternionf desiredRotation = m_rotationOffset * m_desiredRotation;
+    m_layer.setPose(desiredRotation * m_eyeRelativePosition, desiredRotation);
+}
+
+double yarp::dev::OpenXrHeadset::EyePort::azimuthOffset() const
+{
+    yCTrace(OPENXRHEADSET);
+    return m_azimuthOffset;
+}
+
+double yarp::dev::OpenXrHeadset::EyePort::elevationOffset() const
+{
+    yCTrace(OPENXRHEADSET);
+    return m_elevationOffset;
+}
+
+void yarp::dev::OpenXrHeadset::EyePort::setEyeRelativePosition(const Eigen::Vector3f &position)
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return;
+    }
+
+    m_eyeRelativePosition = position;
+
+    m_layer.setPosition(m_rotationOffset * m_desiredRotation * m_eyeRelativePosition);
+}
+
+void yarp::dev::OpenXrHeadset::EyePort::setVisibility(const IOpenXrQuadLayer::Visibility &visibility)
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return;
+    }
+
+    m_layer.setVisibility(visibility);
+}
+
+float yarp::dev::OpenXrHeadset::EyePort::layerWidth() const
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return 0.0;
+    }
+
+    return m_layer.layerWidth();
+}
+
+float yarp::dev::OpenXrHeadset::EyePort::layerHeight() const
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return 0.0;
+    }
+
+    return m_layer.layerHeight();
+}
+
+bool yarp::dev::OpenXrHeadset::EyePort::updateTexture()
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return false;
+    }
+
+    return m_layer.updateTexture();
 }
 
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
@@ -432,8 +556,8 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         return false;
     }
     m_displayPorts[0].setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-    m_displayPorts[0].setAnglesOffsets(m_leftAzimuthOffset, m_leftElevationOffset);
-    m_displayPorts[0].setPosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    m_displayPorts[0].setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
+    m_displayPorts[0].setEyeRelativePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
     if (!m_displayPorts[1].open(m_openXrInterface.addHeadFixedQuadLayer(),
                                   m_prefix + "/display/right:i",
@@ -442,8 +566,8 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         return false;
     }
     m_displayPorts[1].setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
-    m_displayPorts[1].setAnglesOffsets(m_rightAzimuthOffset, m_rightElevationOffset);
-    m_displayPorts[1].setPosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    m_displayPorts[1].setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
+    m_displayPorts[1].setEyeRelativePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
     for (GuiParam& gui : m_huds)
     {
@@ -845,7 +969,7 @@ bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, c
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_displayPorts[0].setAnglesOffsets(azimuth, elevation);
+    m_displayPorts[0].setEyeRotationOffset(azimuth, elevation);
 
     return true;
 }
@@ -856,7 +980,7 @@ bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, 
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_displayPorts[1].setAnglesOffsets(azimuth, elevation);
+    m_displayPorts[1].setEyeRotationOffset(azimuth, elevation);
 
     return true;
 }

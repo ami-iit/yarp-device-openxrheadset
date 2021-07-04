@@ -31,10 +31,6 @@ class PortToQuadLayer
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
     GLint m_pixelFormat;
-    float m_azimuthOffset = 0;
-    float m_elevationOffset = 0;
-    Eigen::Quaternionf m_desiredRotation;
-    Eigen::Quaternionf m_rotationOffset;
     std::thread::id m_initThreadID;
 
 public:
@@ -101,9 +97,6 @@ public:
             yCError(OPENXRHEADSET) << "Failed to open the port named" << portName << ".";
             return false;
         }
-
-        m_desiredRotation.setIdentity();
-        m_rotationOffset.setIdentity();
 
         m_portPtr->setReadOnly();
 
@@ -201,9 +194,7 @@ public:
             return;
         }
 
-        m_desiredRotation = rotation;
-
-        m_quadLayer->setPose(position, m_rotationOffset * m_desiredRotation);
+        m_quadLayer->setPose(position, rotation);
     }
 
     void setPosition(const Eigen::Vector3f& position)
@@ -232,6 +223,19 @@ public:
         return m_quadLayer->layerPosition();
     }
 
+    void setRotation(const Eigen::Quaternionf &rotation)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return;
+        }
+
+        m_quadLayer->setRotation(rotation);
+    }
+
     Eigen::Quaternionf layerQuaternion() const
     {
         yCTrace(OPENXRHEADSET);
@@ -243,52 +247,6 @@ public:
         }
 
         return m_quadLayer->layerQuaternion();
-    }
-
-    void setRotation(const Eigen::Quaternionf &rotation)
-    {
-        yCTrace(OPENXRHEADSET);
-
-        if (!m_quadLayer)
-        {
-            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
-            return;
-        }
-
-        m_desiredRotation = rotation;
-
-        m_quadLayer->setRotation(m_rotationOffset * m_desiredRotation);
-    }
-
-    void setAnglesOffsets(double azimuth, double elevation)
-    {
-        yCTrace(OPENXRHEADSET);
-
-        if (!m_quadLayer)
-        {
-            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
-            return;
-        }
-
-        m_azimuthOffset = azimuth;
-        m_elevationOffset = elevation;
-
-        m_rotationOffset = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
-                           Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
-
-        m_quadLayer->setRotation(m_rotationOffset * m_desiredRotation);
-    }
-
-    double azimuthOffset() const
-    {
-        yCTrace(OPENXRHEADSET);
-        return m_azimuthOffset;
-    }
-
-    double elevationOffset() const
-    {
-        yCTrace(OPENXRHEADSET);
-        return m_elevationOffset;
     }
 
     void setDimensions(float widthInMeters, float heightInMeters)
