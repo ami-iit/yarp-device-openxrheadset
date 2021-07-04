@@ -271,12 +271,6 @@ void yarp::dev::OpenXrHeadset::EyePort::setEyeRotationOffset(double azimuth, dou
 {
     yCTrace(OPENXRHEADSET);
 
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return;
-    }
-
     m_azimuthOffset = azimuth;
     m_elevationOffset = elevation;
 
@@ -291,17 +285,11 @@ void yarp::dev::OpenXrHeadset::EyePort::setEyeRotation(double azimuth, double el
 {
     yCTrace(OPENXRHEADSET);
 
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return;
-    }
-
     m_desiredRotation = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
             Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
 
     Eigen::Quaternionf desiredRotation = m_rotationOffset * m_desiredRotation;
-    m_layer.setPose(desiredRotation * m_eyeRelativePosition, desiredRotation);
+    m_layer.setNewImageDesiredPose(desiredRotation * m_eyeRelativePosition, desiredRotation);
 }
 
 double yarp::dev::OpenXrHeadset::EyePort::azimuthOffset() const
@@ -320,12 +308,6 @@ void yarp::dev::OpenXrHeadset::EyePort::setEyeRelativePosition(const Eigen::Vect
 {
     yCTrace(OPENXRHEADSET);
 
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return;
-    }
-
     m_eyeRelativePosition = position;
 
     m_layer.setPosition(m_rotationOffset * m_desiredRotation * m_eyeRelativePosition);
@@ -335,24 +317,12 @@ void yarp::dev::OpenXrHeadset::EyePort::setVisibility(const IOpenXrQuadLayer::Vi
 {
     yCTrace(OPENXRHEADSET);
 
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return;
-    }
-
     m_layer.setVisibility(visibility);
 }
 
 float yarp::dev::OpenXrHeadset::EyePort::layerWidth() const
 {
     yCTrace(OPENXRHEADSET);
-
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return 0.0;
-    }
 
     return m_layer.layerWidth();
 }
@@ -361,24 +331,12 @@ float yarp::dev::OpenXrHeadset::EyePort::layerHeight() const
 {
     yCTrace(OPENXRHEADSET);
 
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return 0.0;
-    }
-
     return m_layer.layerHeight();
 }
 
 bool yarp::dev::OpenXrHeadset::EyePort::updateTexture()
 {
     yCTrace(OPENXRHEADSET);
-
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return false;
-    }
 
     return m_layer.updateTexture();
 }

@@ -31,6 +31,8 @@ class PortToQuadLayer
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
     GLint m_pixelFormat;
+    Eigen::Vector3f m_newImageDesiredPosition;
+    Eigen::Quaternionf m_newImageDesiredRotation;
     std::thread::id m_initThreadID;
 
 public:
@@ -89,6 +91,9 @@ public:
 
         m_quadLayer = quadLayer;
         m_quadLayer->useAlphaChannel(m_pixelFormat == GL_RGBA);
+
+        m_newImageDesiredPosition = m_quadLayer->layerPosition();
+        m_newImageDesiredRotation = m_quadLayer->layerQuaternion();
 
         m_portPtr = std::make_shared<yarp::os::BufferedPort<ImageType>>();
 
@@ -173,6 +178,7 @@ public:
         }
 
         m_quadLayer->setDimensions(newWidth, newHeight);
+        m_quadLayer->setPose(m_newImageDesiredPosition, m_newImageDesiredRotation);
 
         if (!m_quadLayer->submitImage())
         {
@@ -194,7 +200,18 @@ public:
             return;
         }
 
+        setNewImageDesiredPose(position, rotation);
+
         m_quadLayer->setPose(position, rotation);
+    }
+
+    void setNewImageDesiredPose(const Eigen::Vector3f& position,
+                                const Eigen::Quaternionf &rotation)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        setNewImageDesiredPosition(position);
+        setNewImageDesiredRotation(rotation);
     }
 
     void setPosition(const Eigen::Vector3f& position)
@@ -207,7 +224,16 @@ public:
             return;
         }
 
+        setNewImageDesiredPosition(position);
+
         m_quadLayer->setPosition(position);
+    }
+
+    void setNewImageDesiredPosition(const Eigen::Vector3f& position)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        m_newImageDesiredPosition = position;
     }
 
     Eigen::Vector3f layerPosition() const
@@ -233,7 +259,16 @@ public:
             return;
         }
 
+        setNewImageDesiredRotation(rotation);
+
         m_quadLayer->setRotation(rotation);
+    }
+
+    void setNewImageDesiredRotation(const Eigen::Quaternionf &rotation)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        m_newImageDesiredRotation = rotation;
     }
 
     Eigen::Quaternionf layerQuaternion() const
