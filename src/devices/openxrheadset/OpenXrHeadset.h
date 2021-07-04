@@ -10,7 +10,6 @@
 #define YARP_DEV_OPENXRHEADSET_H
 
 #include <vector>
-#include <array>
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
@@ -218,7 +217,7 @@ private:
 
     std::string m_prefix;
 
-    std::array<EyePort, 2> m_displayPorts;
+    EyePort m_leftEye, m_rightEye;
 
     double m_leftAzimuthOffset;
     double m_leftElevationOffset;

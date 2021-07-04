@@ -549,25 +549,25 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         return false;
     }
 
-    if (!m_displayPorts[0].open(m_openXrInterface.addHeadFixedQuadLayer(),
+    if (!m_leftEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
                                   m_prefix + "/display/left:i",
                                   m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
         yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
         return false;
     }
-    m_displayPorts[0].setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-    m_displayPorts[0].setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
-    m_displayPorts[0].setEyeRelativePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    m_leftEye.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
+    m_leftEye.setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
+    m_leftEye.setEyeRelativePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
-    if (!m_displayPorts[1].open(m_openXrInterface.addHeadFixedQuadLayer(),
+    if (!m_rightEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
                                   m_prefix + "/display/right:i",
                                   m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
         yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
         return false;
     }
-    m_displayPorts[1].setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
-    m_displayPorts[1].setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
-    m_displayPorts[1].setEyeRelativePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    m_rightEye.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
+    m_rightEye.setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
+    m_rightEye.setEyeRelativePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
     for (GuiParam& gui : m_huds)
     {
@@ -625,11 +625,14 @@ void yarp::dev::OpenXrHeadset::run()
 
     if (m_openXrInterface.isRunning())
     {
-        for (int eye = 0; eye < 2; ++eye) {
-            if (!m_displayPorts[eye].updateTexture()) {
-                yCError(OPENXRHEADSET) << "Failed to update" << (eye == 0 ? "left" : "right") << "display texture.";
-                return;
-            }
+        if (!m_leftEye.updateTexture()) {
+            yCError(OPENXRHEADSET) << "Failed to update left eye.";
+            return;
+        }
+
+        if (!m_rightEye.updateTexture()) {
+            yCError(OPENXRHEADSET) << "Failed to update right eye.";
+            return;
         }
 
         for (GuiParam& gui : m_huds)
@@ -655,9 +658,8 @@ void yarp::dev::OpenXrHeadset::run()
         m_leftHandFramePorts.publishFrame(m_openXrInterface.leftHandPose(), m_openXrInterface.leftHandVelocity(), m_stamp);
         m_rightHandFramePorts.publishFrame(m_openXrInterface.rightHandPose(), m_openXrInterface.rightHandVelocity(), m_stamp);
 
-        for (int eye = 0; eye < 2; ++eye) {
-            m_displayPorts[eye].publishEyeTransform();
-        }
+        m_leftEye.publishEyeTransform();
+        m_rightEye.publishEyeTransform();
 
     }
     else
@@ -918,8 +920,8 @@ std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageDimensions()
     std::lock_guard<std::mutex> lock(m_mutex);
 
     std::vector<double> output(2);
-    output[0] = m_displayPorts[0].layerWidth();
-    output[1] = m_displayPorts[0].layerHeight();
+    output[0] = m_leftEye.layerWidth();
+    output[1] = m_leftEye.layerHeight();
 
     return output;
 }
@@ -931,8 +933,8 @@ std::vector<double> yarp::dev::OpenXrHeadset::getRightImageDimensions()
     std::lock_guard<std::mutex> lock(m_mutex);
 
     std::vector<double> output(2);
-    output[0] = m_displayPorts[1].layerWidth();
-    output[1] = m_displayPorts[1].layerHeight();
+    output[0] = m_rightEye.layerWidth();
+    output[1] = m_rightEye.layerHeight();
 
     return output;
 }
@@ -944,8 +946,8 @@ std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageAnglesOffsets()
     std::lock_guard<std::mutex> lock(m_mutex);
 
     std::vector<double> output(2);
-    output[0] = m_displayPorts[0].azimuthOffset();
-    output[1] = m_displayPorts[0].elevationOffset();
+    output[0] = m_leftEye.azimuthOffset();
+    output[1] = m_leftEye.elevationOffset();
 
     return output;
 }
@@ -957,8 +959,8 @@ std::vector<double> yarp::dev::OpenXrHeadset::getRightImageAnglesOffsets()
     std::lock_guard<std::mutex> lock(m_mutex);
 
     std::vector<double> output(2);
-    output[0] = m_displayPorts[1].azimuthOffset();
-    output[1] = m_displayPorts[1].elevationOffset();
+    output[0] = m_rightEye.azimuthOffset();
+    output[1] = m_rightEye.elevationOffset();
 
     return output;
 }
@@ -969,7 +971,7 @@ bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, c
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_displayPorts[0].setEyeRotationOffset(azimuth, elevation);
+    m_leftEye.setEyeRotationOffset(azimuth, elevation);
 
     return true;
 }
@@ -980,7 +982,7 @@ bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, 
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_displayPorts[1].setEyeRotationOffset(azimuth, elevation);
+    m_rightEye.setEyeRotationOffset(azimuth, elevation);
 
     return true;
 }
