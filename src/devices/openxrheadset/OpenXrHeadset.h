@@ -175,11 +175,12 @@ private:
         IFrameTransform* m_tfPublisher{nullptr};
         std::string m_tfFrame;
         std::string m_rootFrame;
-        float m_azimuthOffset = 0;
-        float m_elevationOffset = 0;
+        float m_azimuthOffset {0.0};
+        float m_elevationOffset {0.0};
         Eigen::Quaternionf m_desiredRotation;
         Eigen::Quaternionf m_rotationOffset;
-        Eigen::Vector3f m_eyeRelativePosition;
+        Eigen::Vector3f m_eyePosition;
+        Eigen::Vector3f m_eyeRelativeImagePosition;
         PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
         bool m_initialized{false};
 
@@ -187,6 +188,8 @@ private:
 
         bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& inputPortName,
                   IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+
+        void setEyePosition(const Eigen::Vector3f& position);
 
         void setEyeRotationOffset(double azimuth, double elevation);
 
@@ -196,7 +199,7 @@ private:
 
         double elevationOffset() const;
 
-        void setEyeRelativePosition(const Eigen::Vector3f& position);
+        void setEyeRelativeImagePosition(const Eigen::Vector3f& position);
 
         void setVisibility(const IOpenXrQuadLayer::Visibility& visibility);
 
