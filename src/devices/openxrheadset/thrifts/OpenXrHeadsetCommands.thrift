@@ -55,4 +55,39 @@ service OpenXrHeadsetCommands
      */
     bool setRightImageAnglesOffsets(1:double azimuth, 2:double elevation);
 
+    /**
+     * Check if the left eye is visualizing images.
+     * @return True if the left eye is active. False otherwise
+     */
+    bool isLeftEyeActive();
+
+    /**
+     * Check if the right eye is visualizing images.
+     * @return True if the right eye is active. False otherwise
+     */
+    bool isRightEyeActive();
+
+   /**
+    * Get the current Z position (i.e. the location on the axis perpendicular to the screens) of the eyes visualization
+    * @return The (signed) value of the eyes Z position. The Z axis is pointing backward, hence this value will be negative.
+    */
+    double getEyesZPosition();
+
+    /**
+     * Set the Z position (i.e. the location on the axis perpendicular to the screens) of the eyes visualization
+     * @return True if successfull, false otherwise
+     */
+    bool setEyesZPosition(1: double eyesZPosition);
+
+   /**
+    * Get the current interpupillary distance, i.e. the lateral distance between the visualization of the robot cameras.
+    * @return The IPD in meters.
+    */
+    double getIPD();
+
+   /**
+    * Set the interpupillary distance, i.e. the lateral distance between the visualization of the robot cameras, in meters.
+    * @return True if successfull.
+    */
+    bool setIPD(1:double ipd);
 }

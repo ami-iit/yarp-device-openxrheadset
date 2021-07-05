@@ -65,6 +65,8 @@ public:
     bool update();
 
     void publishEyeTransform();
+
+    bool active() const;
 };
 
 #endif // YARP_DEV_EYEPORT_H

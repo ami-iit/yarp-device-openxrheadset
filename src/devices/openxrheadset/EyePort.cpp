@@ -39,6 +39,9 @@ bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::strin
     m_eyeRelativeImagePosition[2] = -1.0;
     m_eyePosition.setZero();
 
+    m_localPose.resize(4,4);
+    m_localPose.eye();
+
     m_tfPublisher = tfPublisher;
     m_tfFrame = tfFrame;
     m_rootFrame = rootFrame;
@@ -85,6 +88,13 @@ void EyePort::publishEyeTransform()
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
     }
+}
+
+bool EyePort::active() const
+{
+    yCTrace(OPENXRHEADSET);
+
+    return m_initialized && m_layer.active();
 }
 
 void EyePort::setEyeRotationOffset(double azimuth, double elevation)

@@ -127,6 +127,42 @@ public:
      */
     virtual bool setRightImageAnglesOffsets(const double azimuth, const double elevation) override;
 
+    /**
+     * Check if the left eye is visualizing images.
+     * @return True if the left eye is active. False otherwise
+     */
+    virtual bool isLeftEyeActive() override;
+
+    /**
+     * Check if the right eye is visualizing images.
+     * @return True if the right eye is active. False otherwise
+     */
+    virtual bool isRightEyeActive() override;
+
+    /**
+     * Get the current Z position (i.e. the location on the axis perpendicular to the screens) of the eyes visualization
+     * @return The (signed) value of the eyes Z position. The Z axis is pointing backward, hence this value will be negative.
+     */
+    virtual double getEyesZPosition() override;
+
+    /**
+     * Set the Z position (i.e. the location on the axis perpendicular to the screens) of the eyes visualization
+     * @return True if successfull, false otherwise
+     */
+    virtual bool setEyesZPosition(const double eyesZPosition) override;
+
+    /**
+     * Get the current interpupillary distance, i.e. the lateral distance between the visualization of the robot cameras.
+     * @return The IPD in meters.
+     */
+    virtual double getIPD() override;
+
+    /**
+     * Set the interpupillary distance, i.e. the lateral distance between the visualization of the robot cameras, in meters.
+     * @return True if successfull.
+     */
+    virtual bool setIPD(const double ipd) override;
+
 private:
 
     struct GuiParam
@@ -184,6 +220,7 @@ private:
     double m_leftAzimuthOffset;
     double m_leftElevationOffset;
     double m_eyeZPosition;
+    double m_IPD;
     double m_rightAzimuthOffset;
     double m_rightElevationOffset;
 

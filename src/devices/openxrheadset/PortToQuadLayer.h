@@ -34,6 +34,7 @@ class PortToQuadLayer
     Eigen::Vector3f m_newImageDesiredPosition;
     Eigen::Quaternionf m_newImageDesiredRotation;
     std::thread::id m_initThreadID;
+    bool m_active{false};
 
 public:
 
@@ -186,6 +187,8 @@ public:
             return false;
         }
 
+        m_active = true;
+
         return true;
     }
 
@@ -334,6 +337,13 @@ public:
         }
 
         return m_quadLayer->layerHeight();
+    }
+
+    bool active() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        return m_active;
     }
 
 };

@@ -280,6 +280,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+    m_IPD                  = std::abs(cfg.check("IPD", yarp::os::Value(0.0)).asFloat64());
     m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
 
@@ -337,43 +338,50 @@ bool yarp::dev::OpenXrHeadset::close()
 bool yarp::dev::OpenXrHeadset::threadInit()
 {
     yCTrace(OPENXRHEADSET);
-    if (!m_openXrInterface.initialize())
+
     {
-        yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
-        return false;
-    }
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (!m_leftEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
-                                  m_prefix + "/display/left:i",
-                                  m_prefix + "/eyeAngles/left:i",
-                                  m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
-        yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
-        return false;
-    }
-    m_leftEye.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-    m_leftEye.setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
-    m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
-
-    if (!m_rightEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
-                                  m_prefix + "/display/right:i",
-                                  m_prefix + "/eyeAngles/right:i",
-                                  m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
-        yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
-        return false;
-    }
-    m_rightEye.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
-    m_rightEye.setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
-    m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
-
-    for (GuiParam& gui : m_huds)
-    {
-        if (!gui.layer.initialize(m_openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
-            yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
+        if (!m_openXrInterface.initialize())
+        {
+            yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
             return false;
         }
-        gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
-        gui.layer.setDimensions(gui.width, gui.height);
-        gui.layer.setPosition({gui.x, gui.y, gui.z});
+
+        if (!m_leftEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
+                            m_prefix + "/display/left:i",
+                            m_prefix + "/eyeAngles/left:i",
+                            m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
+            return false;
+        }
+        m_leftEye.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
+        m_leftEye.setEyePosition(Eigen::Vector3f(-m_IPD / 2.0, 0.0, 0.0));
+        m_leftEye.setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
+        m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+        if (!m_rightEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
+                             m_prefix + "/display/right:i",
+                             m_prefix + "/eyeAngles/right:i",
+                             m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
+            return false;
+        }
+        m_rightEye.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
+        m_rightEye.setEyePosition(Eigen::Vector3f(m_IPD / 2.0, 0.0, 0.0));
+        m_rightEye.setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
+        m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+        for (GuiParam& gui : m_huds)
+        {
+            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
+                yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
+                return false;
+            }
+            gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            gui.layer.setDimensions(gui.width, gui.height);
+            gui.layer.setPosition({gui.x, gui.y, gui.z});
+        }
     }
 
     for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
@@ -395,6 +403,8 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 void yarp::dev::OpenXrHeadset::threadRelease()
 {
     yCTrace(OPENXRHEADSET);
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     if (m_closed)
         return;
 
@@ -421,6 +431,8 @@ void yarp::dev::OpenXrHeadset::run()
 {
     yCTrace(OPENXRHEADSET);
 
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     if (m_openXrInterface.isRunning())
     {
         if (!m_leftEye.update()) {
@@ -442,13 +454,9 @@ void yarp::dev::OpenXrHeadset::run()
         }
         m_openXrInterface.draw();
 
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-
-            m_openXrInterface.getButtons(m_buttons);
-            m_openXrInterface.getAxes(m_axes);
-            m_openXrInterface.getThumbsticks(m_thumbsticks);
-        }
+        m_openXrInterface.getButtons(m_buttons);
+        m_openXrInterface.getAxes(m_axes);
+        m_openXrInterface.getThumbsticks(m_thumbsticks);
 
         m_stamp.update(m_openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
 
@@ -781,6 +789,71 @@ bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, 
     std::lock_guard<std::mutex> lock(m_mutex);
 
     m_rightEye.setEyeRotationOffset(azimuth, elevation);
+
+    return true;
+}
+
+bool yarp::dev::OpenXrHeadset::isLeftEyeActive()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_leftEye.active();
+}
+
+bool yarp::dev::OpenXrHeadset::isRightEyeActive()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_rightEye.active();
+}
+
+double yarp::dev::OpenXrHeadset::getEyesZPosition()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_eyeZPosition;
+}
+
+bool yarp::dev::OpenXrHeadset::setEyesZPosition(const double eyesZPosition)
+{
+
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    m_eyeZPosition = -std::max(0.01, std::abs(eyesZPosition));
+
+    m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+    return true;
+}
+
+double yarp::dev::OpenXrHeadset::getIPD()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_IPD;
+}
+
+bool yarp::dev::OpenXrHeadset::setIPD(const double ipd)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    m_IPD = std::abs(ipd);
+
+    m_leftEye.setEyePosition(Eigen::Vector3f(-m_IPD / 2.0, 0.0, 0.0));
+    m_rightEye.setEyePosition(Eigen::Vector3f(m_IPD / 2.0, 0.0, 0.0));
 
     return true;
 }
