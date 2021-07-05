@@ -23,8 +23,10 @@
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
 #include <yarp/os/Stamp.h>
+#include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
 #include <PortToQuadLayer.h>
+#include <EyePort.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -167,49 +169,6 @@ private:
         void publishFrame(const OpenXrInterface::Pose& pose,
                           const OpenXrInterface::Velocity& velocity,
                           yarp::os::Stamp& stamp);
-    };
-
-    class EyePort
-    {
-        yarp::sig::Matrix m_localPose;
-        IFrameTransform* m_tfPublisher{nullptr};
-        std::string m_tfFrame;
-        std::string m_rootFrame;
-        float m_azimuthOffset {0.0};
-        float m_elevationOffset {0.0};
-        Eigen::Quaternionf m_desiredRotation;
-        Eigen::Quaternionf m_rotationOffset;
-        Eigen::Vector3f m_eyePosition;
-        Eigen::Vector3f m_eyeRelativeImagePosition;
-        PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
-        bool m_initialized{false};
-
-    public:
-
-        bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& inputPortName,
-                  IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
-
-        void setEyePosition(const Eigen::Vector3f& position);
-
-        void setEyeRotationOffset(double azimuth, double elevation);
-
-        void setEyeRotation(double azimuth, double elevation);
-
-        double azimuthOffset() const;
-
-        double elevationOffset() const;
-
-        void setEyeRelativeImagePosition(const Eigen::Vector3f& position);
-
-        void setVisibility(const IOpenXrQuadLayer::Visibility& visibility);
-
-        float layerWidth() const;
-
-        float layerHeight() const;
-
-        bool updateTexture();
-
-        void publishEyeTransform();
     };
 
     FramePorts m_headFramePorts;

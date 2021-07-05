@@ -41,6 +41,18 @@ set(yarp_openxrheadset_HDRS
   impl/OpenXrInterfaceImpl.h
   )
 
+set(yarp_openxrheadset_driver_SRCS
+    OpenXrHeadset.cpp
+    OpenXrYarpUtilities.cpp
+    EyePort.cpp
+)
+
+set(yarp_openxrheadset_driver_HDRS
+    OpenXrHeadset.h
+    OpenXrYarpUtilities.h
+    EyePort.h
+)
+
 set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)
 
 yarp_add_idl(yarp_openxrheadset_GEN_FILES ${THRIFTS})
@@ -49,8 +61,8 @@ yarp_add_plugin(yarp_openxrheadset)
 
 target_sources(yarp_openxrheadset
   PRIVATE
-    OpenXrHeadset.cpp
-    OpenXrHeadset.h
+    ${yarp_openxrheadset_driver_SRCS}
+    ${yarp_openxrheadset_driver_HDRS}
     ${yarp_openxrheadset_SRCS}
     ${yarp_openxrheadset_HDRS}
     ${yarp_openxrheadset_GEN_FILES}
