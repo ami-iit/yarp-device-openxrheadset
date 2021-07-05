@@ -12,6 +12,7 @@
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
+#include <yarp/sig/Vector.h>
 #include <yarp/os/Stamp.h>
 #include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
@@ -33,12 +34,15 @@ class EyePort
     Eigen::Vector3f m_eyePosition;
     Eigen::Vector3f m_eyeRelativeImagePosition;
     PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
+    yarp::os::BufferedPort<yarp::sig::Vector> m_eyeAnglesPort;
     bool m_initialized{false};
 
 public:
 
-    bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& inputPortName,
+    bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& imagePortName, const std::string& anglesPortName,
               yarp::dev::IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+
+    void close();
 
     void setEyePosition(const Eigen::Vector3f& position);
 
@@ -58,7 +62,7 @@ public:
 
     float layerHeight() const;
 
-    bool updateTexture();
+    bool update();
 
     void publishEyeTransform();
 };

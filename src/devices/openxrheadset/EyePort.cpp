@@ -9,14 +9,23 @@
 #include <EyePort.h>
 #include <OpenXrYarpUtilities.h>
 
-bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &inputPortName,
-                                               yarp::dev::IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
+bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &imagePortName, const std::string &anglesPortName,
+                   yarp::dev::IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
 {
     yCTrace(OPENXRHEADSET);
     m_initialized = false;
-    if (!m_layer.initialize(quadLayer, inputPortName)) {
+    if (!m_layer.initialize(quadLayer, imagePortName)) {
         return false;
     }
+
+
+    if (!m_eyeAnglesPort.open(anglesPortName))
+    {
+        yCError(OPENXRHEADSET) << " Failed to open port" << anglesPortName;
+        return false;
+    }
+
+    m_eyeAnglesPort.setReadOnly();
 
     if (!tfPublisher)
     {
@@ -37,6 +46,13 @@ bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::strin
     m_initialized = true;
 
     return true;
+}
+
+void EyePort::close()
+{
+    m_initialized = false;
+    m_eyeAnglesPort.close();
+    m_tfPublisher = nullptr;
 }
 
 void EyePort::setEyePosition(const Eigen::Vector3f &position)
@@ -162,9 +178,22 @@ float EyePort::layerHeight() const
     return m_layer.layerHeight();
 }
 
-bool EyePort::updateTexture()
+bool EyePort::update()
 {
     yCTrace(OPENXRHEADSET);
+
+    yarp::sig::Vector* inputAngles = m_eyeAnglesPort.read(false);
+
+    if (inputAngles)
+    {
+        if (inputAngles->size() != 2)
+        {
+            yCError(OPENXRHEADSET) << "The input to " + m_eyeAnglesPort.getName() + " is supposed to be 2-dimensional."
+                                      " The vector is supposed to contain the azimuth (positive anticlockwise) and elevation (positive upwards) angles in radians, in this order.";
+            return false;
+        }
+        setEyeRotation(inputAngles->operator()(0), inputAngles->operator()(1));
+    }
 
     return m_layer.updateTexture();
 }

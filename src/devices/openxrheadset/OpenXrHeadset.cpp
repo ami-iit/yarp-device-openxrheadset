@@ -345,6 +345,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
     if (!m_leftEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
                                   m_prefix + "/display/left:i",
+                                  m_prefix + "/eyeAngles/left:i",
                                   m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
         yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
         return false;
@@ -355,6 +356,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
     if (!m_rightEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
                                   m_prefix + "/display/right:i",
+                                  m_prefix + "/eyeAngles/right:i",
                                   m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
         yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
         return false;
@@ -407,6 +409,8 @@ void yarp::dev::OpenXrHeadset::threadRelease()
     m_headFramePorts.close();
     m_leftHandFramePorts.close();
     m_rightHandFramePorts.close();
+    m_leftEye.close();
+    m_rightEye.close();
 
     m_rpcPort.close();
 
@@ -419,12 +423,12 @@ void yarp::dev::OpenXrHeadset::run()
 
     if (m_openXrInterface.isRunning())
     {
-        if (!m_leftEye.updateTexture()) {
+        if (!m_leftEye.update()) {
             yCError(OPENXRHEADSET) << "Failed to update left eye.";
             return;
         }
 
-        if (!m_rightEye.updateTexture()) {
+        if (!m_rightEye.update()) {
             yCError(OPENXRHEADSET) << "Failed to update right eye.";
             return;
         }
