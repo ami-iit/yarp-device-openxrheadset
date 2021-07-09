@@ -10,6 +10,7 @@
 #define YARP_DEV_OPENXRHEADSET_H
 
 #include <vector>
+#include <array>
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
@@ -104,6 +105,7 @@ private:
         std::unordered_map<const char*, double> m_lastWarning;
 
         yarp::sig::Matrix m_localPose;
+        bool m_localPoseValid{false};
 
 
     public:

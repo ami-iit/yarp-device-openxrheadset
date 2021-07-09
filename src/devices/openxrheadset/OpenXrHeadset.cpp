@@ -98,6 +98,7 @@ bool yarp::dev::OpenXrHeadset::FramePorts::open(const std::string &name, const s
     m_lastWarning["position"] = timeNow - 10.0;
     m_lastWarning["angularVelocity"] = timeNow - 10.0;
     m_lastWarning["linearVelocity"] = timeNow - 10.0;
+    m_lastWarning["republish"] = timeNow - 10.0;
 
     m_name = name;
     m_tfPublisher = tfPublisher;
@@ -112,6 +113,8 @@ bool yarp::dev::OpenXrHeadset::FramePorts::open(const std::string &name, const s
 
 void yarp::dev::OpenXrHeadset::FramePorts::close()
 {
+    m_localPoseValid = false;
+
     //Closing and deleting ports
     std::initializer_list<yarp::os::BufferedPort<yarp::os::Bottle>**> ports =
     {
@@ -139,9 +142,26 @@ void yarp::dev::OpenXrHeadset::FramePorts::publishFrame(const OpenXrInterface::P
     if (pose.positionValid && pose.rotationValid)
     {
         poseToYarpMatrix(pose, m_localPose);
+        m_localPoseValid = true;
         if (!m_tfPublisher->setTransform(m_tfFrame, m_rootFrame, m_localPose))
         {
             yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
+        }
+    }
+    else
+    {
+        if (m_localPoseValid)
+        {
+            if (!m_tfPublisher->setTransform(m_tfFrame, m_rootFrame, m_localPose))
+            {
+                yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
+            }
+
+            if (yarp::os::Time::now() - m_lastWarning["republish"] > 1.0)
+            {
+                yCWarning(OPENXRHEADSET) << "Publishing last" << m_name << "known pose.";
+                m_lastWarning["republish"] = yarp::os::Time::now();
+            }
         }
     }
 
@@ -376,6 +396,12 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
         gui.layer.setDimensions(gui.width, gui.height);
         gui.layer.setPosition({gui.x, gui.y, gui.z});
+    }
+
+    for (size_t i = 0; i < 10 && openXrInterface.isRunning(); ++i)
+    {
+        run(); //dry run. This is to make sure that the number of buttons is correctly retrieved by the JoypadControlServer
+        yarp::os::Time::delay(this->getPeriod());
     }
 
     return true;

@@ -4,7 +4,7 @@
 # This software may be modified and distributed under the terms of the
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
-set(DEPENDS_STRING "OpenXR_FOUND;glfw3_FOUND;OpenGL_FOUND; Eigen3_FOUND")
+set(DEPENDS_STRING "OpenXR_FOUND;GLFW3_FOUND;GLEW_FOUND;OpenGL_FOUND; Eigen3_FOUND")
 
 if (NOT WIN32)
     string(APPEND DEPENDS_STRING ";X11_FOUND")
@@ -59,6 +59,7 @@ target_link_libraries(yarp_openxrheadset
     YARP::YARP_math
     OpenXR::openxr_loader
     glfw
+    GLEW::GLEW
     OpenGL::GL
     Eigen3::Eigen
 )
@@ -68,6 +69,35 @@ if (NOT WIN32)
 endif()
 
 target_include_directories(yarp_openxrheadset PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for the designated initialization of structs
+
+if(BUILD_TESTING)
+
+    add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS}  ${yarp_openxrheadset_HDRS})
+
+    target_link_libraries(openxrheadset_test
+        PRIVATE
+        ${YARP_LIBRARIES}
+        OpenXR::openxr_loader
+        glfw
+        GLEW::GLEW
+        OpenGL::GL
+        Eigen3::Eigen
+        )
+
+    if (NOT WIN32)
+        target_link_libraries(openxrheadset_test PRIVATE ${X11_LIBRARIES})
+    endif()
+
+    target_include_directories(openxrheadset_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+    target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for the designated initialization of structs
+
+    add_test(NAME openxrheadset_test COMMAND openxrheadset_test)
+
+endif()
+
 
 yarp_install(
   TARGETS yarp_openxrheadset

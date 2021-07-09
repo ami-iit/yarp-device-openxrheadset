@@ -4,7 +4,7 @@
 # This software may be modified and distributed under the terms of the
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(yarp-device-openxrheadset
         LANGUAGES C CXX
@@ -70,7 +70,8 @@ find_package(YCM REQUIRED)
 find_package(YARP 3.4 COMPONENTS os sig dev math REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenXR 1.0 REQUIRED)
-find_package(glfw3 REQUIRED)
+find_package(GLFW3 REQUIRED)
+find_package(GLEW REQUIRED) #Helps with the OpenGL configuration on Windows
 find_package(Eigen3 REQUIRED)
 
 ## This is to select the newest version of OpenGL
@@ -92,6 +93,10 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
     endif()
 endif()
 
+option(BUILD_TESTING "Create tests using CMake" OFF)
+if(BUILD_TESTING)
+    enable_testing()
+endif()
 
 if (NOT "${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
     message( FATAL_ERROR "Only 64 bit builds supported." )
