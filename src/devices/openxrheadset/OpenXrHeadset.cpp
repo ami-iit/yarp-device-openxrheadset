@@ -159,7 +159,7 @@ void yarp::dev::OpenXrHeadset::FramePorts::publishFrame(const OpenXrInterface::P
 
             if (yarp::os::Time::now() - m_lastWarning["republish"] > 1.0)
             {
-                yCWarning(OPENXRHEADSET) << "Publishin last" << m_name << "known pose.";
+                yCWarning(OPENXRHEADSET) << "Publishing last" << m_name << "known pose.";
                 m_lastWarning["republish"] = yarp::os::Time::now();
             }
         }
