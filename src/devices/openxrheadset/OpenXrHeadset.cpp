@@ -642,7 +642,7 @@ bool yarp::dev::OpenXrHeadset::getAxis(unsigned int axis_id, double &value)
             {
                 unsigned int thumbstickId = inputId / 2;
 
-                value = thumbsticks[thumbstickId][inputId - thumbstickId]; //Each thumbstick counts as two axes
+                value = thumbsticks[thumbstickId][inputId % 2]; //Each thumbstick counts as two axes
             }
             else
             {
