@@ -199,6 +199,9 @@ public:
     // array of views, filled by the runtime with current HMD display pose (basically the position of each eye)
     std::vector<XrView> views;
 
+    // flag to check if the HTC Vive trackers are supported by the runtime.
+    bool htc_trackers_supported = false;
+
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;
 
