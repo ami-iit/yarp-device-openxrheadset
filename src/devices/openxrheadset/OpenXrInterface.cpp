@@ -53,6 +53,10 @@ bool OpenXrInterface::checkExtensions()
         if (strcmp(XR_EXT_DEBUG_UTILS_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             debug_supported = true;
         }
+
+        if (strcmp(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            m_pimpl->htc_trackers_supported = true;
+        }
     }
 
     // A graphics extension like OpenGL is required to draw anything in VR
@@ -69,6 +73,10 @@ bool OpenXrInterface::checkExtensions()
     if (!debug_supported) {
         yCError(OPENXRHEADSET) << "Runtime does not support debug calls!";
         return false;
+    }
+
+    if (!m_pimpl->htc_trackers_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Trackers!";
     }
 
     return true;
@@ -110,6 +118,10 @@ bool OpenXrInterface::prepareXrInstance()
     requestedExtensions.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
     requestedExtensions.push_back(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
     requestedExtensions.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    if (m_pimpl->htc_trackers_supported)
+    {
+        requestedExtensions.push_back(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME);
+    }
 
     // Populate the info to create the instance
     XrInstanceCreateInfo instanceCreateInfo
