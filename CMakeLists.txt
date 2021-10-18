@@ -86,7 +86,7 @@ endif()
 find_package(YCM REQUIRED)
 find_package(YARP 3.4 COMPONENTS os sig dev math idl_tools REQUIRED)
 find_package(Threads REQUIRED)
-find_package(OpenXR 1.0 REQUIRED)
+find_package(OpenXR 1.0.20 REQUIRED)
 find_package(GLFW3 REQUIRED)
 find_package(GLEW REQUIRED) #Helps with the OpenGL configuration on Windows
 find_package(Eigen3 REQUIRED)
