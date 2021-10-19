@@ -74,6 +74,24 @@ XrResult Action<float>::update(XrSession session);
 template<>
 XrResult Action<Eigen::Vector2f>::update(XrSession session);
 
+struct PoseAction
+{
+    std::string name;
+
+    XrAction xrAction;
+
+    XrSpace xrSpace;
+
+    OpenXrInterface::Pose pose;
+
+    OpenXrInterface::Velocity velocity;
+
+    XrResult create(XrSession session, XrActionSet actionSet, const std::string &inputName);
+
+    XrResult update(XrSession session, XrSpace referenceSpace, XrTime time);
+};
+
+
 struct InputActions
 {
     std::vector<Action<bool>> buttons;
@@ -97,6 +115,10 @@ struct SwapChainData
     //Acquired index for the swapchain
     uint32_t acquired_index;
 };
+
+OpenXrInterface::Pose XrSpaceLocationToPose(const XrSpaceLocation& spaceLocation);
+
+OpenXrInterface::Velocity XrSpaceVelocityToVelocity(const XrSpaceVelocity& spaceVelocity);
 
 
 class OpenXrInterface::Implementation
@@ -150,10 +172,6 @@ public:
                                   const void* /*userParam*/);
 
     void submitLayer(const XrCompositionLayerBaseHeader* layer);
-
-    OpenXrInterface::Pose getPose(const XrSpaceLocation& spaceLocation);
-
-    OpenXrInterface::Velocity getVelocity(const XrSpaceVelocity& spaceVelocity);
 
     bool suggestInteractionProfileBindings(const std::string &interactionProfileName,
                                            const std::vector<XrActionSuggestedBinding> &poseBindings,

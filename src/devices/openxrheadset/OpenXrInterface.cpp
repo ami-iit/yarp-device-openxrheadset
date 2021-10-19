@@ -1330,32 +1330,32 @@ bool OpenXrInterface::isRunning() const
 
 OpenXrInterface::Pose OpenXrInterface::headPose() const
 {
-    return m_pimpl->getPose(m_pimpl->view_space_location);
+    return XrSpaceLocationToPose(m_pimpl->view_space_location);
 }
 
 OpenXrInterface::Velocity OpenXrInterface::headVelocity() const
 {
-    return m_pimpl->getVelocity(m_pimpl->view_space_velocity);
+    return XrSpaceVelocityToVelocity(m_pimpl->view_space_velocity);
 }
 
 OpenXrInterface::Pose OpenXrInterface::leftHandPose() const
 {
-    return m_pimpl->getPose(m_pimpl->hand_locations[0]);
+    return XrSpaceLocationToPose(m_pimpl->hand_locations[0]);
 }
 
 OpenXrInterface::Velocity OpenXrInterface::leftHandVelocity() const
 {
-    return m_pimpl->getVelocity(m_pimpl->hand_velocities[0]);
+    return XrSpaceVelocityToVelocity(m_pimpl->hand_velocities[0]);
 }
 
 OpenXrInterface::Pose OpenXrInterface::rightHandPose() const
 {
-    return m_pimpl->getPose(m_pimpl->hand_locations[1]);
+    return XrSpaceLocationToPose(m_pimpl->hand_locations[1]);
 }
 
 OpenXrInterface::Velocity OpenXrInterface::rightHandVelocity() const
 {
-    return m_pimpl->getVelocity(m_pimpl->hand_velocities[1]);
+    return XrSpaceVelocityToVelocity(m_pimpl->hand_velocities[1]);
 }
 
 std::string OpenXrInterface::currentHandInteractionProfile() const

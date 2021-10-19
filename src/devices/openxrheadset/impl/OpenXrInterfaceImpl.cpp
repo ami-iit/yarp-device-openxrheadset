@@ -70,6 +70,103 @@ XrResult Action<Eigen::Vector2f>::update(XrSession session)
     return output;
 }
 
+XrResult PoseAction::create(XrSession session, XrActionSet actionSet, const std::string &inputName)
+{
+    name = inputName;
+    XrActionCreateInfo action_info = {.type = XR_TYPE_ACTION_CREATE_INFO,
+                                      .next = NULL,
+                                      .actionType = XR_ACTION_TYPE_POSE_INPUT,
+                                      .countSubactionPaths = 0,
+                                      .subactionPaths = NULL};
+    strcpy(action_info.actionName, name.c_str());
+    strcpy(action_info.localizedActionName, name.c_str());
+
+    XrResult result = xrCreateAction(actionSet, &action_info, &xrAction);
+
+    if (!XR_SUCCEEDED(result))
+    {
+        return result;
+    }
+
+    XrPosef identity_pose =
+    {
+        .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
+        .position = {.x = 0.0, .y = 0.0, .z = 0.0}
+    };
+
+    XrActionSpaceCreateInfo action_space_info = {.type = XR_TYPE_ACTION_SPACE_CREATE_INFO,
+                                                 .next = NULL,
+                                                 .action = xrAction,
+                                                 .subactionPath = XR_NULL_PATH,
+                                                 .poseInActionSpace = identity_pose};
+
+    result = xrCreateActionSpace(session, &action_space_info, &xrSpace);
+
+    return result;
+}
+
+XrResult PoseAction::update(XrSession session, XrSpace referenceSpace, XrTime time)
+{
+    XrActionStatePose action_state = {.type = XR_TYPE_ACTION_STATE_POSE, .next = NULL};
+    XrActionStateGetInfo get_info = {.type = XR_TYPE_ACTION_STATE_GET_INFO,
+                                     .next = NULL,
+                                     .action = xrAction,
+                                     .subactionPath = XR_NULL_PATH};
+
+    XrResult result = xrGetActionStatePose(session, &get_info, &action_state);
+
+    if (!XR_SUCCEEDED(result))
+    {
+        return result;
+    }
+
+    XrSpaceLocation xrSpaceLocation;
+    XrSpaceVelocity xrSpaceVelocity;
+
+    xrSpaceVelocity.type = XR_TYPE_SPACE_VELOCITY;
+    xrSpaceVelocity.next = NULL;
+    xrSpaceVelocity.velocityFlags = 0;
+    xrSpaceLocation.type = XR_TYPE_SPACE_LOCATION;
+    xrSpaceLocation.next = &xrSpaceVelocity;
+
+    result = xrLocateSpace(xrSpace, referenceSpace, time,
+                           &xrSpaceLocation);
+
+    if (!XR_SUCCEEDED(result))
+    {
+        return result;
+    }
+
+    pose = XrSpaceLocationToPose(xrSpaceLocation);
+    velocity = XrSpaceVelocityToVelocity(xrSpaceVelocity);
+
+    return result;
+}
+
+OpenXrInterface::Pose XrSpaceLocationToPose(const XrSpaceLocation &spaceLocation)
+{
+    OpenXrInterface::Pose output;
+    output.positionValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+    output.position = toEigen(spaceLocation.pose.position);
+
+    output.rotationValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+    output.rotation = toEigen(spaceLocation.pose.orientation);
+
+    return output;
+}
+
+OpenXrInterface::Velocity XrSpaceVelocityToVelocity(const XrSpaceVelocity &spaceVelocity)
+{
+    OpenXrInterface::Velocity output;
+    output.linearValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+    output.linear = toEigen(spaceVelocity.linearVelocity);
+
+    output.angularValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+    output.angular = toEigen(spaceVelocity.angularVelocity);
+
+    return output;
+}
+
 void InputActions::clear()
 {
     buttons.clear();
@@ -119,30 +216,6 @@ void OpenXrInterface::Implementation::submitLayer(const XrCompositionLayerBaseHe
         submitted_layers.resize(layer_count);
     }
     submitted_layers[layer_count-1] = layer;
-}
-
-OpenXrInterface::Pose OpenXrInterface::Implementation::getPose(const XrSpaceLocation &spaceLocation)
-{
-    Pose output;
-    output.positionValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
-    output.position = toEigen(spaceLocation.pose.position);
-
-    output.rotationValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
-    output.rotation = toEigen(spaceLocation.pose.orientation);
-
-    return output;
-}
-
-OpenXrInterface::Velocity OpenXrInterface::Implementation::getVelocity(const XrSpaceVelocity &spaceVelocity)
-{
-    Velocity output;
-    output.linearValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-    output.linear = toEigen(spaceVelocity.linearVelocity);
-
-    output.angularValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
-    output.angular = toEigen(spaceVelocity.angularVelocity);
-
-    return output;
 }
 
 bool OpenXrInterface::Implementation::suggestInteractionProfileBindings(const std::string &interactionProfileName,
@@ -239,3 +312,6 @@ bool OpenXrInterface::Implementation::suggestInteractionProfileBindings(const st
 
     return true;
 }
+
+
+
