@@ -30,6 +30,7 @@
 #define KHR_SIMPLE_CONTROLLER_INTERACTION_PROFILE "/interaction_profiles/khr/simple_controller"
 #define OCULUS_TOUCH_INTERACTION_PROFILE_TAG "/interaction_profiles/oculus/touch_controller"
 #define HTC_VIVE_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_controller"
+#define HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_tracker_htcx"
 
 // STRUCTS
 template <typename ActionType>

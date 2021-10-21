@@ -403,6 +403,11 @@ std::string OpenXrInterface::Implementation::getInteractionProfileShortTag(const
         return "oculus_touch_controller";
     }
 
+    if (interactionProfile == HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG)
+    {
+        return "htc_vive_tracker";
+    }
+
     return "none";
 }
 

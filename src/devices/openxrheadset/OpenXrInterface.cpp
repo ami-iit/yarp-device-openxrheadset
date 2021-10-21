@@ -653,6 +653,63 @@ bool OpenXrInterface::prepareXrActions()
     std::vector<TopLevelPathDeclaration> topLevelPathsDeclaration = {left_hand,    //The left hand should always come first in this list
                                                                      right_hand};  //The right hand should always come second in this list
 
+    //HTC Trackers
+    if (m_pimpl->htc_trackers_supported)
+    {
+        InputActionsDeclaration viveTrackerInputs;
+
+        viveTrackerInputs.poses =
+        {
+            {"/input/grip/pose", "grip"}
+        };
+
+        viveTrackerInputs.buttons =
+        {
+            {"/input/menu/click",      "menu"},
+            {"/input/trigger/click",   "trigger_click"},
+            {"/input/squeeze/click",   "squeeze_click"},
+            {"/input/trackpad/click",  "trackpad_click"}
+        };
+
+        viveTrackerInputs.axes =
+        {
+            {"/input/trigger/value",  "trigger"},
+        };
+
+        viveTrackerInputs.thumbsticks =
+        {
+            {"/input/trackpad",  "trackpad"},
+        };
+
+        std::string trackersPrefix = "/user/vive_tracker_htcx/role/";
+
+        std::vector<std::string> trackersNameList = {"handheld_object",
+                                                     "left_foot",
+                                                     "right_foot",
+                                                     "left_shoulder",
+                                                     "right_shoulder",
+                                                     "left_elbow",
+                                                     "right_elbow",
+                                                     "left_knee",
+                                                     "right_knee",
+                                                     "waist",
+                                                     "chest",
+                                                     "camera",
+                                                     "keyboard"};
+
+        std::vector<TopLevelPathDeclaration> trackers;
+        trackers.resize(trackersNameList.size());
+        for (size_t name = 0; name < trackersNameList.size(); ++name)
+        {
+            trackers[name].stringPath = trackersPrefix + trackersNameList[name];
+            trackers[name].actionNamePrefix = trackersNameList[name] + "_";
+            trackers[name].inputsDeclarations[HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG] = viveTrackerInputs;
+        }
+
+        interactionProfilesPrefixes.push_back({HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG, "vive_tracker"});
+        topLevelPathsDeclaration.insert(topLevelPathsDeclaration.end(), trackers.begin(), trackers.end());
+    }
+
     if (!m_pimpl->fillActionBindings(interactionProfilesPrefixes, topLevelPathsDeclaration))
         return false;
 
@@ -757,6 +814,41 @@ void OpenXrInterface::pollXrEvents()
 
             yCWarning(OPENXRHEADSET, "Right hand interaction profile changed from %s to %s.",
                       previous_right_interaction_profile.c_str(), m_pimpl->top_level_paths[1].currentInteractionProfile.c_str());
+
+            break;
+        }
+        case XR_TYPE_EVENT_DATA_VIVE_TRACKER_CONNECTED_HTCX: {
+            yCInfo(OPENXRHEADSET, "EVENT: Vive tracker connected!");
+
+            const XrEventDataViveTrackerConnectedHTCX& viveTrackerConnected =
+                    *reinterpret_cast<XrEventDataViveTrackerConnectedHTCX*>(&runtime_event);
+            uint32_t nCount;
+            char sPersistentPath[XR_MAX_PATH_LENGTH];
+            XrResult result = xrPathToString(m_pimpl->instance,
+                                             viveTrackerConnected.paths->persistentPath,
+                                             sizeof(sPersistentPath), &nCount, sPersistentPath);
+            if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker persistent path to string."))
+            {
+                yCInfo(OPENXRHEADSET, "Vive Tracker persistent path: %s \n", sPersistentPath);
+            }
+
+            if (viveTrackerConnected.paths->rolePath != XR_NULL_PATH)
+            {
+                char sRolePath[XR_MAX_PATH_LENGTH];
+                result = xrPathToString(m_pimpl->instance,
+                                        viveTrackerConnected.paths->rolePath, sizeof(sRolePath),
+                                        &nCount, sRolePath);
+
+                if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker role path to string."))
+                {
+                    yCInfo(OPENXRHEADSET, "Vive Tracker role path: %s \n", sRolePath);
+                }
+            }
+            else
+            {
+                yCWarning(OPENXRHEADSET, "No role specified for the tracker. It will not be considered."
+                                         " Refer to https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_HTCX_vive_tracker_interaction for more informations.");
+            }
 
             break;
         }
