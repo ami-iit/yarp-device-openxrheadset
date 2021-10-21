@@ -218,100 +218,196 @@ void OpenXrInterface::Implementation::submitLayer(const XrCompositionLayerBaseHe
     submitted_layers[layer_count-1] = layer;
 }
 
-bool OpenXrInterface::Implementation::suggestInteractionProfileBindings(const std::string &interactionProfileName,
-                                                                        const std::vector<XrActionSuggestedBinding> &poseBindings,
-                                                                        std::initializer_list<std::pair<const char*, const char*>> buttonsList,
-                                                                        std::initializer_list<std::pair<const char*, const char*>> axisList,
-                                                                        std::initializer_list<std::pair<const char*, const char*>> thumbStickList)
+bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<InteractionProfileDeclaration> &interactionProfilesPrefixes, const std::vector<TopLevelPathDeclaration> &topLevelPaths)
 {
-    std::vector<XrActionSuggestedBinding> bindings = poseBindings;
-    InputActions& inputsEntry = inputActions[interactionProfileName];
 
-    inputsEntry.clear();
+    //Create the actionset
+    XrActionSetCreateInfo actionset_info = {
+        .type = XR_TYPE_ACTION_SET_CREATE_INFO, .next = NULL, .priority = 0};
+    strcpy(actionset_info.actionSetName, "yarp_device_actionset");
+    strcpy(actionset_info.localizedActionSetName, "YARP Device Actions");
 
-    for (auto& input : buttonsList)
-    {
-        XrPath path;
-        XrResult result = xrStringToPath(instance, input.first, &path);
-
-        if (!checkXrOutput(result, "Failed to get path of %s for %s.", input.first, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-
-        inputsEntry.buttons.emplace_back();
-        result = inputsEntry.buttons.back().create(actionset, input.second);
-        if (!checkXrOutput(result, "Failed to create action %s for %s.", input.second, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-        bindings.emplace_back();
-        bindings.back().action = inputsEntry.buttons.back().xrAction;
-        bindings.back().binding = path;
-    }
-
-    for (auto& input : axisList)
-    {
-        XrPath path;
-        XrResult result = xrStringToPath(instance, input.first, &path);
-
-        if (!checkXrOutput(result, "Failed to get path of %s for %s.", input.first, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-
-        inputsEntry.axes.emplace_back();
-        result = inputsEntry.axes.back().create(actionset, input.second);
-        if (!checkXrOutput(result, "Failed to create action %s for %s.", input.second, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-        bindings.emplace_back();
-        bindings.back().action = inputsEntry.axes.back().xrAction;
-        bindings.back().binding = path;
-    }
-
-    for (auto& input : thumbStickList)
-    {
-        XrPath path;
-        XrResult result = xrStringToPath(instance, input.first, &path);
-
-        if (!checkXrOutput(result, "Failed to get path of %s for %s.", input.first, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-
-        inputsEntry.thumbsticks.emplace_back();
-        result = inputsEntry.thumbsticks.back().create(actionset, input.second);
-        if (!checkXrOutput(result, "Failed to create action %s for %s.", input.second, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-        bindings.emplace_back();
-        bindings.back().action = inputsEntry.thumbsticks.back().xrAction;
-        bindings.back().binding = path;
-    }
-
-
-    XrPath interaction_profile_path;
-    XrResult result = xrStringToPath(instance, interactionProfileName.c_str(),
-                                     &interaction_profile_path);
-    if (!checkXrOutput(result, "Failed to get the path of the interaction profile %s.", interactionProfileName.c_str()))
+    XrResult result = xrCreateActionSet(instance, &actionset_info, &actionset);
+    if (checkXrOutput(result, "Failed to create actionset"))
         return false;
 
-    const XrInteractionProfileSuggestedBinding suggested_bindings = {
-        .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
-        .next = NULL,
-        .interactionProfile = interaction_profile_path,
-        .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
-        .suggestedBindings = bindings.data()};
+    //Allocate all the top level paths
+    top_level_paths.clear();
+    for (auto& level : topLevelPaths)
+    {
+        top_level_paths.emplace_back();
+        TopLevelPath& added = top_level_paths.back();
+        added.stringPath = level.stringPath;
+        XrResult result = xrStringToPath(instance, added.stringPath.c_str(), &added.xrPath);
 
-    result = xrSuggestInteractionProfileBindings(instance, &suggested_bindings);
-    if (!checkXrOutput(result, "Failed to suggest bindings for %s.", interactionProfileName.c_str()))
-        return false;
+        if (!checkXrOutput(result, "Failed to get path of %s.", added.stringPath.c_str()))
+        {
+            return false;
+        }
+        added.interactionProfileActions.clear();
+    }
+
+    // Parse all the poses, buttons, axes and thumbsticks for each interaction profile
+    for (auto& interactionProfile : interactionProfilesPrefixes)
+    {
+        std::vector<XrActionSuggestedBinding> bindings;
+        const std::string& profileName = interactionProfile.path;
+        const std::string& profilePrefix = interactionProfile.actionNamePrefix;
+
+
+        for (size_t i = 0; i < top_level_paths.size(); ++i)
+        {
+            const TopLevelPathDeclaration& currentTopLevelPathDeclaration = topLevelPaths[i];
+            const std::string& pathPrefix = currentTopLevelPathDeclaration.stringPath;
+            const std::string& pathActionNamePrefix = currentTopLevelPathDeclaration.actionNamePrefix;
+            auto actionDeclarationIterator = currentTopLevelPathDeclaration.inputsDeclarations.find(profileName);
+            if (actionDeclarationIterator != currentTopLevelPathDeclaration.inputsDeclarations.end())
+            {
+                const InputActionsDeclaration& actionDeclaration = actionDeclarationIterator->second;
+                InputActions& inputsEntry = top_level_paths[i].interactionProfileActions[profileName];
+                inputsEntry.clear();
+
+
+                for (auto& input : actionDeclaration.poses)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.poses.emplace_back();
+                    PoseAction& newAction = inputsEntry.poses.back();
+                    result = newAction.create(session, actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = newAction.xrAction;
+                    bindings.back().binding = xrPath;
+                }
+
+                for (auto& input : actionDeclaration.buttons)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.buttons.emplace_back();
+                    result = inputsEntry.buttons.back().create(actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = inputsEntry.buttons.back().xrAction;
+                    bindings.back().binding = xrPath;
+                }
+
+                for (auto& input : actionDeclaration.axes)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.axes.emplace_back();
+                    result = inputsEntry.axes.back().create(actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = inputsEntry.axes.back().xrAction;
+                    bindings.back().binding = xrPath;
+                }
+
+                for (auto& input : actionDeclaration.thumbsticks)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.thumbsticks.emplace_back();
+                    result = inputsEntry.thumbsticks.back().create(actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = inputsEntry.thumbsticks.back().xrAction;
+                    bindings.back().binding = xrPath;
+                }
+            }
+        }
+
+        // Suggest the bindings to OpenXR
+        XrPath interaction_profile_path;
+        XrResult result = xrStringToPath(instance, profileName.c_str(),
+                                         &interaction_profile_path);
+        if (!checkXrOutput(result, "Failed to get the path of the interaction profile %s.", profileName.c_str()))
+            return false;
+
+        const XrInteractionProfileSuggestedBinding suggested_bindings = {
+            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
+            .next = NULL,
+            .interactionProfile = interaction_profile_path,
+            .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
+            .suggestedBindings = bindings.data()};
+
+        result = xrSuggestInteractionProfileBindings(instance, &suggested_bindings);
+        if (!checkXrOutput(result, "Failed to suggest bindings for %s.", profileName.c_str()))
+            return false;
+
+    }
 
     return true;
 }
 
+std::string OpenXrInterface::Implementation::getInteractionProfileShortTag(const std::string &interactionProfile)
+{
+    if (interactionProfile == KHR_SIMPLE_CONTROLLER_INTERACTION_PROFILE)
+    {
+        return "khr_simple_controller";
+    }
+
+    if (interactionProfile == HTC_VIVE_INTERACTION_PROFILE_TAG)
+    {
+        return "htc_vive_controller";
+    }
+
+    if (interactionProfile == OCULUS_TOUCH_INTERACTION_PROFILE_TAG)
+    {
+        return "oculus_touch_controller";
+    }
+
+    return "none";
+}
 
 
+InputActions &TopLevelPath::currentActions()
+{
+    return interactionProfileActions[currentInteractionProfile];
+}

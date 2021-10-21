@@ -27,6 +27,9 @@
 #include <yarp/os/LogStream.h>
 
 #define NO_INTERACTION_PROFILE_TAG "no_interaction_profile"
+#define KHR_SIMPLE_CONTROLLER_INTERACTION_PROFILE "/interaction_profiles/khr/simple_controller"
+#define OCULUS_TOUCH_INTERACTION_PROFILE_TAG "/interaction_profiles/oculus/touch_controller"
+#define HTC_VIVE_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_controller"
 
 // STRUCTS
 template <typename ActionType>
@@ -94,6 +97,8 @@ struct PoseAction
 
 struct InputActions
 {
+    std::vector<PoseAction> poses;
+
     std::vector<Action<bool>> buttons;
 
     std::vector<Action<float>> axes;
@@ -101,6 +106,51 @@ struct InputActions
     std::vector<Action<Eigen::Vector2f>> thumbsticks;
 
     void clear();
+};
+
+struct ActionDeclaration
+{
+    std::string path;
+    std::string nameSuffix;
+};
+
+struct InputActionsDeclaration
+{
+    std::vector<ActionDeclaration> poses;
+
+    std::vector<ActionDeclaration>  buttons;
+
+    std::vector<ActionDeclaration>  axes;
+
+    std::vector<ActionDeclaration>  thumbsticks;
+};
+
+struct InteractionProfileDeclaration
+{
+    std::string path;
+    std::string actionNamePrefix;
+};
+
+struct TopLevelPath
+{
+    std::string stringPath;
+
+    XrPath xrPath;
+
+    std::string currentInteractionProfile{NO_INTERACTION_PROFILE_TAG};
+
+    std::unordered_map<std::string, InputActions> interactionProfileActions;
+
+    InputActions& currentActions();
+};
+
+struct TopLevelPathDeclaration
+{
+    std::string stringPath;
+
+    std::string actionNamePrefix;
+
+    std::unordered_map<std::string, InputActionsDeclaration> inputsDeclarations;
 };
 
 struct SwapChainData
@@ -173,11 +223,9 @@ public:
 
     void submitLayer(const XrCompositionLayerBaseHeader* layer);
 
-    bool suggestInteractionProfileBindings(const std::string &interactionProfileName,
-                                           const std::vector<XrActionSuggestedBinding> &poseBindings,
-                                           std::initializer_list<std::pair<const char*, const char*>> buttonsList = {},
-                                           std::initializer_list<std::pair<const char*, const char*>> axisList = {},
-                                           std::initializer_list<std::pair<const char*, const char*>> thumbStickList = {});
+    bool fillActionBindings(const std::vector<InteractionProfileDeclaration>& interactionProfilesPrefixes, const std::vector<TopLevelPathDeclaration>& topLevelPaths);
+
+    std::string getInteractionProfileShortTag(const std::string& interactionProfile);
 
     // DATA
 
@@ -217,6 +265,9 @@ public:
     // array of views, filled by the runtime with current HMD display pose (basically the position of each eye)
     std::vector<XrView> views;
 
+    // List of top level paths to retrieve the state of each action
+    std::vector<TopLevelPath> top_level_paths;
+
     // flag to check if the HTC Vive trackers are supported by the runtime.
     bool htc_trackers_supported = false;
 
@@ -241,29 +292,8 @@ public:
     //Head velocity
     XrSpaceVelocity view_space_velocity;
 
-    // Top level path for the two hands. The first is the left
-    XrPath hand_paths[2];
-
     // Set of actions used in the application
     XrActionSet actionset;
-
-    // Action related to the hand poses
-    XrAction hand_pose_action;
-
-    // Poses can't be queried directly, we need to create a space for each
-    XrSpace hand_pose_spaces[2];
-
-    // Velocity of the hands
-    XrSpaceVelocity hand_velocities[2];
-
-    // Location of the hands
-    XrSpaceLocation hand_locations[2];
-
-    // Current interaction profile
-    std::string currentHandInteractionProfile{NO_INTERACTION_PROFILE_TAG};
-
-    // Map from the interaction profile to the actions
-    std::unordered_map<std::string, InputActions> inputActions;
 
     // Buffer containing the submitted layers
     std::vector<const XrCompositionLayerBaseHeader*> submitted_layers;

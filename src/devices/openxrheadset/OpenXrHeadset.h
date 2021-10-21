@@ -82,11 +82,18 @@ public:
 
     //OpenXrHeadsetCommands
     /**
-     * Get the current interaction profile
+     * Get the current interaction profile for the left hand
      * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
      * @return a string indicating the interaction profile in use.
      */
-    virtual std::string getInteractionProfile() override;
+    virtual std::string getLeftHandInteractionProfile();
+
+    /**
+     * Get the current interaction profile for the right hand
+     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+     * @return a string indicating the interaction profile in use.
+     */
+    virtual std::string getRightHandInteractionProfile();
 
     /**
      * Get the left image width and height.

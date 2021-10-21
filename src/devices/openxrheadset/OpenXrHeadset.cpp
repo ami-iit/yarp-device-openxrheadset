@@ -778,13 +778,22 @@ bool yarp::dev::OpenXrHeadset::getTouch(unsigned int /*touch_id*/, yarp::sig::Ve
     return false;
 }
 
-std::string yarp::dev::OpenXrHeadset::getInteractionProfile()
+std::string yarp::dev::OpenXrHeadset::getLeftHandInteractionProfile()
 {
     yCTrace(OPENXRHEADSET);
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    return m_openXrInterface.currentHandInteractionProfile();
+    return m_openXrInterface.currentLeftHandInteractionProfile();
+}
+
+std::string yarp::dev::OpenXrHeadset::getRightHandInteractionProfile()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_openXrInterface.currentRightHandInteractionProfile();
 }
 
 std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageDimensions()
