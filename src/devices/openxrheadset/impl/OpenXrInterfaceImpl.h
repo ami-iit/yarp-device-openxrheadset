@@ -78,17 +78,11 @@ XrResult Action<float>::update(XrSession session);
 template<>
 XrResult Action<Eigen::Vector2f>::update(XrSession session);
 
-struct PoseAction
+struct PoseAction : public OpenXrInterface::NamedPoseVelocity
 {
-    std::string name;
-
     XrAction xrAction;
 
     XrSpace xrSpace;
-
-    OpenXrInterface::Pose pose;
-
-    OpenXrInterface::Velocity velocity;
 
     XrResult create(XrSession session, XrActionSet actionSet, const std::string &inputName);
 
