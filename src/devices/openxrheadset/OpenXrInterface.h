@@ -123,6 +123,13 @@ public:
         Eigen::Vector3f angular;
     };
 
+    struct NamedPoseVelocity
+    {
+        std::string name;
+        Pose pose;
+        Velocity velocity;
+    };
+
     OpenXrInterface();
 
     ~OpenXrInterface();
@@ -166,6 +173,8 @@ public:
     void getAxes(std::vector<float>& axes) const;
 
     void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
+
+    void getAdditionalPoses(std::vector<NamedPoseVelocity> &additionalPoses) const;
 
     int64_t currentNanosecondsSinceEpoch() const;
 

@@ -660,7 +660,7 @@ bool OpenXrInterface::prepareXrActions()
 
         viveTrackerInputs.poses =
         {
-            {"/input/grip/pose", "grip"}
+            {"/input/grip/pose", "pose"}
         };
 
         viveTrackerInputs.buttons =
@@ -1502,6 +1502,36 @@ void OpenXrInterface::getThumbsticks(std::vector<Eigen::Vector2f> &thumbsticks) 
         {
             thumbsticks[thumbstickIndex] = thumbstick.value;
             thumbstickIndex++;
+        }
+    }
+}
+
+void OpenXrInterface::getAdditionalPoses(std::vector<NamedPoseVelocity> &additionalPoses) const
+{
+    size_t numberOfPoses = 0;
+    for (size_t topLevelIndex = 0; topLevelIndex <  m_pimpl->top_level_paths.size(); ++topLevelIndex)
+    {
+        if (topLevelIndex < 2) //Left and right hand are already considered with leftHandPose() and rightHandPose()
+        {
+            if (m_pimpl->top_level_paths[topLevelIndex].currentActions().poses.size() > 1) //The first element is the one considerd by leftHandPose() and rightHandPose()
+            {
+                numberOfPoses += m_pimpl->top_level_paths[topLevelIndex].currentActions().poses.size() - 1;
+            }
+        }
+        numberOfPoses += m_pimpl->top_level_paths[topLevelIndex].currentActions().poses.size();
+    }
+
+    additionalPoses.resize(numberOfPoses);
+
+    size_t poseIndex = 0;
+
+    for (size_t topLevelIndex = 0; topLevelIndex <  m_pimpl->top_level_paths.size(); ++topLevelIndex)
+    {
+        std::vector<PoseAction>& posesList = m_pimpl->top_level_paths[topLevelIndex].currentActions().poses;
+        for (size_t i = (topLevelIndex < 2) ? 1 : 0; i < posesList.size(); ++i) // if we are in the first or the second top level path (hence left or right hand), we start from the index 1 (the first one is the default)
+        {
+            additionalPoses[poseIndex] = posesList[i];
+            poseIndex++;
         }
     }
 }
