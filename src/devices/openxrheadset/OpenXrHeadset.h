@@ -86,14 +86,14 @@ public:
      * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
      * @return a string indicating the interaction profile in use.
      */
-    virtual std::string getLeftHandInteractionProfile();
+    virtual std::string getLeftHandInteractionProfile() override;
 
     /**
      * Get the current interaction profile for the right hand
      * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
      * @return a string indicating the interaction profile in use.
      */
-    virtual std::string getRightHandInteractionProfile();
+    virtual std::string getRightHandInteractionProfile() override;
 
     /**
      * Get the left image width and height.
@@ -229,7 +229,7 @@ private:
         std::string m_rootFrame;
         std::string m_name;
 
-        std::unordered_map<const char*, double> m_lastWarning;
+        std::unordered_map<std::string, double> m_lastWarning;
 
         yarp::sig::Matrix m_localPose;
         bool m_localPoseValid{false};
@@ -247,9 +247,48 @@ private:
                           yarp::os::Stamp& stamp);
     };
 
+    class AdditionalPosesPublisher
+    {
+        IFrameTransform* m_tfPublisher;
+        std::string m_rootFrame;
+
+        std::vector<OpenXrInterface::NamedPoseVelocity> m_additionalPosesInputList;
+
+        struct AdditionalPoseInfo
+        {
+            std::string label;
+            double lastWarningTime{0.0};
+            size_t warningCount{0};
+            bool publishedOnce{false};
+            yarp::sig::Matrix localPose;
+            bool active{false};
+            OpenXrInterface::NamedPoseVelocity data;
+        };
+        std::unordered_map<std::string, AdditionalPoseInfo> m_additionalPoses;
+
+    public:
+
+        struct Label
+        {
+            std::string original;
+            std::string modified;
+        };
+
+        void initialize(IFrameTransform* tfPublisher,
+                        const std::vector<Label> &labels,
+                        const std::string& rootFrame);
+
+        std::vector<OpenXrInterface::NamedPoseVelocity>& inputs();
+
+        void publishFrames();
+
+    };
+
     FramePorts m_headFramePorts;
     FramePorts m_leftHandFramePorts;
     FramePorts m_rightHandFramePorts;
+
+    AdditionalPosesPublisher m_additionalPosesPublisher;
 
     yarp::os::Stamp m_stamp;
 

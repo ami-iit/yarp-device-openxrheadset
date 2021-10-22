@@ -706,7 +706,7 @@ bool OpenXrInterface::prepareXrActions()
             trackers[name].inputsDeclarations[HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG] = viveTrackerInputs;
         }
 
-        interactionProfilesPrefixes.push_back({HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG, "vive_tracker"});
+        interactionProfilesPrefixes.push_back({HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG, "vive_tracker_"});
         topLevelPathsDeclaration.insert(topLevelPathsDeclaration.end(), trackers.begin(), trackers.end());
     }
 
