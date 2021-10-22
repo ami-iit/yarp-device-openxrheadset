@@ -228,7 +228,7 @@ bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<Inter
     strcpy(actionset_info.localizedActionSetName, "YARP Device Actions");
 
     XrResult result = xrCreateActionSet(instance, &actionset_info, &actionset);
-    if (checkXrOutput(result, "Failed to create actionset"))
+    if (!checkXrOutput(result, "Failed to create actionset"))
         return false;
 
     //Allocate all the top level paths
