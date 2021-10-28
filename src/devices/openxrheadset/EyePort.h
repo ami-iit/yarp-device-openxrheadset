@@ -67,6 +67,8 @@ public:
     void publishEyeTransform();
 
     bool active() const;
+
+    std::string controlPortName() const;
 };
 
 #endif // YARP_DEV_EYEPORT_H

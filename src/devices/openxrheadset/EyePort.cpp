@@ -97,6 +97,17 @@ bool EyePort::active() const
     return m_initialized && m_layer.active();
 }
 
+std::string EyePort::controlPortName() const
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!m_initialized)
+    {
+        return "";
+    }
+    return m_eyeAnglesPort.getName();
+}
+
 void EyePort::setEyeRotationOffset(double azimuth, double elevation)
 {
     yCTrace(OPENXRHEADSET);

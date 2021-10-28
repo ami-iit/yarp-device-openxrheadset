@@ -857,3 +857,19 @@ bool yarp::dev::OpenXrHeadset::setIPD(const double ipd)
 
     return true;
 }
+
+std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_leftEye.controlPortName();
+}
+
+std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_rightEye.controlPortName();
+}

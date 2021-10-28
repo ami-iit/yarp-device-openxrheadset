@@ -90,4 +90,16 @@ service OpenXrHeadsetCommands
     * @return True if successfull.
     */
     bool setIPD(1:double ipd);
+
+   /**
+    * Get the name of the port trough which it is possible to control the left image.
+    * @return the name of the port to control the left image.
+    */
+    string getLeftImageControlPortName();
+
+   /**
+    * Get the name of the port trough which it is possible to control the right image.
+    * @return the name of the port to control the right image.
+    */
+    string getRightImageControlPortName();
 }

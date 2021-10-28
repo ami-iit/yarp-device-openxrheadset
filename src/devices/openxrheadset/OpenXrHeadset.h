@@ -163,6 +163,18 @@ public:
      */
     virtual bool setIPD(const double ipd) override;
 
+    /**
+     * Get the name of the port trough which it is possible to control the left image.
+     * @return the name of the port to control the left image.
+     */
+    virtual std::string getLeftImageControlPortName() override;
+
+    /**
+     * Get the name of the port trough which it is possible to control the right image.
+     * @return the name of the port to control the right image.
+     */
+    virtual std::string getRightImageControlPortName() override;
+
 private:
 
     struct GuiParam
