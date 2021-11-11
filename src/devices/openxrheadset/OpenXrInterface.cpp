@@ -185,6 +185,14 @@ bool OpenXrInterface::prepareXrInstance()
     if (!m_pimpl->checkXrOutput(result, "Failed to get OpenGL graphics requirements function!"))
         return false;
 
+    if (m_pimpl->htc_trackers_supported)
+    {
+        result = xrGetInstanceProcAddr(m_pimpl->instance, "xrEnumerateViveTrackerPathsHTCX",
+            (PFN_xrVoidFunction*)&(m_pimpl->pfn_xrEnumerateViveTrackerPathsHTCX));
+        if (!m_pimpl->checkXrOutput(result, "Failed to get the function to enumerate the HTC trackers!"))
+            return false;
+    }
+
     return true;
 
 }
@@ -785,10 +793,6 @@ void OpenXrInterface::pollXrEvents()
                 {
                     m_pimpl->closing = true;
                 }
-
-                yCInfo(OPENXRHEADSET) << "Current left hand interaction profile:" << m_pimpl->top_level_paths[0].currentInteractionProfile;
-                yCInfo(OPENXRHEADSET) << "Current right hand interaction profile:" << m_pimpl->top_level_paths[1].currentInteractionProfile;
-
             }
             else if (m_pimpl->state >= XR_SESSION_STATE_STOPPING) {
                 yCInfo(OPENXRHEADSET, "Session is stopping...");
@@ -800,20 +804,10 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
 
-            std::string previous_left_interaction_profile = m_pimpl->top_level_paths[0].currentInteractionProfile;
-            std::string previous_right_interaction_profile = m_pimpl->top_level_paths[1].currentInteractionProfile;
-
-
             if (!updateInteractionProfile())
             {
                 m_pimpl->closing = true;
             }
-
-            yCWarning(OPENXRHEADSET, "Left hand interaction profile changed from %s to %s.",
-                      previous_left_interaction_profile.c_str(), m_pimpl->top_level_paths[0].currentInteractionProfile.c_str());
-
-            yCWarning(OPENXRHEADSET, "Right hand interaction profile changed from %s to %s.",
-                      previous_right_interaction_profile.c_str(), m_pimpl->top_level_paths[1].currentInteractionProfile.c_str());
 
             break;
         }
@@ -822,32 +816,10 @@ void OpenXrInterface::pollXrEvents()
 
             const XrEventDataViveTrackerConnectedHTCX& viveTrackerConnected =
                     *reinterpret_cast<XrEventDataViveTrackerConnectedHTCX*>(&runtime_event);
-            uint32_t nCount;
-            char sPersistentPath[XR_MAX_PATH_LENGTH];
-            XrResult result = xrPathToString(m_pimpl->instance,
-                                             viveTrackerConnected.paths->persistentPath,
-                                             sizeof(sPersistentPath), &nCount, sPersistentPath);
-            if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker persistent path to string."))
+            
+            if (!listConnectedTrackers())
             {
-                yCInfo(OPENXRHEADSET, "Vive Tracker persistent path: %s \n", sPersistentPath);
-            }
-
-            if (viveTrackerConnected.paths->rolePath != XR_NULL_PATH)
-            {
-                char sRolePath[XR_MAX_PATH_LENGTH];
-                result = xrPathToString(m_pimpl->instance,
-                                        viveTrackerConnected.paths->rolePath, sizeof(sRolePath),
-                                        &nCount, sRolePath);
-
-                if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker role path to string."))
-                {
-                    yCInfo(OPENXRHEADSET, "Vive Tracker role path: %s \n", sRolePath);
-                }
-            }
-            else
-            {
-                yCWarning(OPENXRHEADSET, "No role specified for the tracker. It will not be considered."
-                                         " Refer to https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_HTCX_vive_tracker_interaction for more informations.");
+                m_pimpl->closing = true;
             }
 
             break;
@@ -997,28 +969,91 @@ bool OpenXrInterface::updateInteractionProfile()
         topLevel.currentInteractionProfile = NO_INTERACTION_PROFILE_TAG;
 
         XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, topLevel.xrPath, &state);
-        if (!m_pimpl->checkXrOutput(result, "Failed to get interaction profile for %s", topLevel.stringPath.c_str()))
-            return false;
-
-        XrPath xrProfile = state.interactionProfile;
-
-        if (xrProfile != XR_NULL_PATH)
+        if (!XR_SUCCEEDED(result))
         {
-            char interactionProfile[XR_MAX_PATH_LENGTH];
-            uint32_t strl;
-            result = xrPathToString(m_pimpl->instance, xrProfile, XR_MAX_PATH_LENGTH, &strl, interactionProfile);
-            if (!m_pimpl->checkXrOutput(result, "Failed to convert interaction profile path for ", topLevel.stringPath.c_str()))
-            {
-                return false;
-            }
-
-            topLevel.currentInteractionProfile = interactionProfile;
+            m_pimpl->checkXrOutput(result, "Failed to get the interaction profile of %s", topLevel.stringPath.c_str());
+            topLevel.currentInteractionProfile = TOP_LEVEL_NOT_SUPPORTED_TAG;
         }
+        else
+        {
+            XrPath xrProfile = state.interactionProfile;
+
+            if (xrProfile != XR_NULL_PATH)
+            {
+                char interactionProfile[XR_MAX_PATH_LENGTH];
+                uint32_t strl;
+                result = xrPathToString(m_pimpl->instance, xrProfile, XR_MAX_PATH_LENGTH, &strl, interactionProfile);
+                if (!m_pimpl->checkXrOutput(result, "Failed to convert interaction profile path for ", topLevel.stringPath.c_str()))
+                {
+                    return false;
+                }
+
+                topLevel.currentInteractionProfile = interactionProfile;
+            }
+            else
+            {
+                topLevel.currentInteractionProfile = NO_INTERACTION_PROFILE_TAG;
+            }
+        }
+        yCInfo(OPENXRHEADSET) << "Interaction profile of" << topLevel.stringPath << ":" << topLevel.currentInteractionProfile;
     }
 
     if (m_pimpl->top_level_paths[0].currentInteractionProfile != m_pimpl->top_level_paths[1].currentInteractionProfile)
     {
         yCWarning(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
+    }
+
+    return true;
+}
+
+bool OpenXrInterface::listConnectedTrackers()
+{
+    yCTrace(OPENXRHEADSET);
+
+    uint32_t numberOfTrackers;
+    XrResult result = m_pimpl->pfn_xrEnumerateViveTrackerPathsHTCX(m_pimpl->instance, 0, &numberOfTrackers, nullptr);
+    if (!m_pimpl->checkXrOutput(result, "Failed to retrieve the number of HTC trackers connected."))
+        return false;
+
+    m_pimpl->htc_trackers_connected.resize(numberOfTrackers);
+
+    result = m_pimpl->pfn_xrEnumerateViveTrackerPathsHTCX(m_pimpl->instance, (uint32_t)(m_pimpl->htc_trackers_connected.size()),
+        &numberOfTrackers, m_pimpl->htc_trackers_connected.data());
+    if (!m_pimpl->checkXrOutput(result, "Failed to get the list of HTC trackers connected."))
+        return false;
+
+    m_pimpl->htc_trackers_connected.resize(numberOfTrackers);
+
+    for (size_t i = 0; i < m_pimpl->htc_trackers_connected.size(); ++i)
+    {
+        auto& tracker = m_pimpl->htc_trackers_connected[i];
+        uint32_t nCount;
+        char sPersistentPath[XR_MAX_PATH_LENGTH];
+        XrResult result = xrPathToString(m_pimpl->instance,
+            tracker.persistentPath,
+            sizeof(sPersistentPath), &nCount, sPersistentPath);
+        if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker %d persistent path to string.", i))
+        {
+            yCInfo(OPENXRHEADSET, "Vive Tracker %d persistent path: %s \n", i, sPersistentPath);
+        }
+
+        if (tracker.rolePath != XR_NULL_PATH)
+        {
+            char sRolePath[XR_MAX_PATH_LENGTH];
+            result = xrPathToString(m_pimpl->instance,
+                tracker.rolePath, sizeof(sRolePath),
+                &nCount, sRolePath);
+
+            if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker %d role path to string.", i))
+            {
+                yCInfo(OPENXRHEADSET, "Vive Tracker %d role path: %s \n", i, sRolePath);
+            }
+        }
+        else
+        {
+            yCWarning(OPENXRHEADSET, "No role specified for the tracker. It will not be considered."
+                " Refer to https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_HTCX_vive_tracker_interaction for more informations.");
+        }
     }
 
     return true;
