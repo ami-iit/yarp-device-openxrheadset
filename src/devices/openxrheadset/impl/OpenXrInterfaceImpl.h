@@ -27,6 +27,7 @@
 #include <yarp/os/LogStream.h>
 
 #define NO_INTERACTION_PROFILE_TAG "no_interaction_profile"
+#define TOP_LEVEL_NOT_SUPPORTED_TAG "top_level_path_not_supported"
 #define KHR_SIMPLE_CONTROLLER_INTERACTION_PROFILE "/interaction_profiles/khr/simple_controller"
 #define OCULUS_TOUCH_INTERACTION_PROFILE_TAG "/interaction_profiles/oculus/touch_controller"
 #define HTC_VIVE_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_controller"
@@ -265,6 +266,10 @@ public:
 
     // flag to check if the HTC Vive trackers are supported by the runtime.
     bool htc_trackers_supported = false;
+
+    PFN_xrEnumerateViveTrackerPathsHTCX pfn_xrEnumerateViveTrackerPathsHTCX = NULL;
+
+    std::vector<XrViveTrackerPathsHTCX> htc_trackers_connected;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;

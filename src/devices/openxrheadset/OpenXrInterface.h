@@ -99,6 +99,8 @@ class OpenXrInterface
 
     bool updateInteractionProfile();
 
+    bool listConnectedTrackers();
+
     void render();
 
     void endXrFrame();
