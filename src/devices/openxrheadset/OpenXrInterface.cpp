@@ -1280,10 +1280,9 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
             .imageArrayIndex = 0
         },
         .pose = initialPose,
-        .size = {.width = 1.75, .height = 1.75} //These numbers have been heuristically found
-                                                //to fit almost the entirety of the screen when
-                                                //at 1 meter distance. This, of course, will
-                                                //depend on the FOV. They can be edited at any time
+        .size = {.width = 1.5, .height = 1.5} //These numbers have been heuristically found
+                                                //considering more or less the focal length of iCub cameras
+                                                //fixing the layer at 1 meter distance.
     };
 
     XrResult result = xrCreateSwapchain(m_pimpl->session, &(swapchain_create_info), &(newLayer->layer.subImage.swapchain));
