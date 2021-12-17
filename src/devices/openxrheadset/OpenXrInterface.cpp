@@ -955,8 +955,7 @@ bool OpenXrInterface::updateInteractionProfile()
 
     if (handInteractionProfiles[0] != handInteractionProfiles[1])
     {
-        yCError(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
-        return false;
+        yCWarning(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
     }
 
     m_pimpl->currentHandInteractionProfile = handInteractionProfiles[0];
