@@ -19,6 +19,10 @@
 #include <memory>
 #include <csignal>
 #include <unordered_map>
+#include <chrono>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 std::atomic<bool> isClosing{false};
 
@@ -176,6 +180,7 @@ int main(int argc, char** argv)
         }
 
         visualizer.draw();
+        std::this_thread::sleep_for(1ms);
     }
 
     return EXIT_SUCCESS;
