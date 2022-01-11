@@ -23,7 +23,7 @@
 #include <OpenXrHeadsetLogComponent.h>
 
 template <typename ImageType>
-class PortToQuadLayer
+class ImagePortToQuadLayer
 {
     std::shared_ptr<IOpenXrQuadLayer> m_quadLayer{nullptr};
     std::shared_ptr<yarp::os::BufferedPort<ImageType>> m_portPtr;

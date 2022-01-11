@@ -16,7 +16,7 @@
 #include <yarp/os/Stamp.h>
 #include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
-#include <PortToQuadLayer.h>
+#include <ImagePortToQuadLayer.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -33,7 +33,7 @@ class EyePort
     Eigen::Quaternionf m_rotationOffset;
     Eigen::Vector3f m_eyePosition;
     Eigen::Vector3f m_eyeRelativeImagePosition;
-    PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
+    ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
     yarp::os::BufferedPort<yarp::sig::Vector> m_eyeAnglesPort;
     bool m_initialized{false};
 

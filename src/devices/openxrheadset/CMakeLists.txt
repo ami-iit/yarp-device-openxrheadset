@@ -34,7 +34,7 @@ set(yarp_openxrheadset_HDRS
   OpenXrConfig.h
   OpenGLConfig.h
   OpenXrHeadsetLogComponent.h
-  PortToQuadLayer.h
+  ImagePortToQuadLayer.h
   OpenXrInterface.h
   OpenXrEigenConversions.h
   impl/OpenXrQuadLayer.h

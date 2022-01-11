@@ -11,13 +11,13 @@
 #include <yarp/sig/Image.h>
 #include <yarp/os/Network.h>
 #include <array>
-#include <PortToQuadLayer.h>
+#include <ImagePortToQuadLayer.h>
 
 int main()
 {
     yarp::os::Network yarp;
     OpenXrInterface openXrInterface;
-    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
+    std::array<ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
 
 
     if (!openXrInterface.initialize())

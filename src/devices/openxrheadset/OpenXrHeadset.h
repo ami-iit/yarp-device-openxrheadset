@@ -25,7 +25,7 @@
 #include <yarp/os/Stamp.h>
 #include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
-#include <PortToQuadLayer.h>
+#include <ImagePortToQuadLayer.h>
 #include <EyePort.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
@@ -186,7 +186,7 @@ private:
         float         y;
         float         z;
         std::string    portName;
-        PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
+        ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
     };
 
     class FramePorts
