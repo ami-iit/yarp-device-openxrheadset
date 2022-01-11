@@ -408,6 +408,11 @@ void yarp::dev::OpenXrHeadset::threadRelease()
     if (m_closed)
         return;
 
+    for (auto& hud : m_huds)
+    {
+        hud.layer.close();
+    }
+
     m_openXrInterface.close();
 
     if (m_tfPublisher)

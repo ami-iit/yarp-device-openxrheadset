@@ -56,6 +56,7 @@ void EyePort::close()
     m_initialized = false;
     m_eyeAnglesPort.close();
     m_tfPublisher = nullptr;
+    m_layer.close();
 }
 
 void EyePort::setEyePosition(const Eigen::Vector3f &position)
