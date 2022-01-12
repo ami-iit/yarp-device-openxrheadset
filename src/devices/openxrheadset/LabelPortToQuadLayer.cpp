@@ -37,7 +37,10 @@ bool LabelPortToQuadLayer::initialize(const Options &options)
         fontPath = GLFont::DefaultFontsPathPrefix() + fontPath;
         if (!std::filesystem::exists(fontPath))
         {
-            yCError(OPENXRHEADSET) << "Failed to find font:" << fontPath;
+            yCError(OPENXRHEADSET) << "Failed to find font:" << fontPath + "."
+                                   << "The font can be either a global or a relative path to a font file."
+                                   << "You can also specify a font in the folder " << GLFont::DefaultFontsPathPrefix()
+                                   << "as a relative path (for example \"Roboto/Roboto-Light.ttf\").";
             return false;
         }
     }
@@ -82,9 +85,11 @@ bool LabelPortToQuadLayer::updateTexture()
 
     yarp::os::Bottle* bottle = m_portPtr->read(false);
 
-    if (!bottle || bottle->size() == 0)
+    std::string inputString;
+
+    if (bottle && bottle->size() > 0)
     {
-        return true;
+        inputString = bottle->get(0).asString();
     }
 
     if (!m_options.quadLayer)
@@ -93,7 +98,13 @@ bool LabelPortToQuadLayer::updateTexture()
         return false;
     }
 
-    std::string textToDisplay = m_options.labelPrefix + bottle->get(0).asString() + m_options.labelSuffix;
+    std::string textToDisplay = m_options.labelPrefix + inputString + m_options.labelSuffix;
+
+    if (textToDisplay.empty())
+    {
+        return true;
+    }
+
     m_glLabel->setText(textToDisplay);
     int horizontalPosition = 0;
     switch (m_options.horizontalAlignement)

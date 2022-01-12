@@ -48,7 +48,7 @@ public:
         std::string portName;
         std::string labelPrefix;
         std::string labelSuffix;
-        std::string fontPath{"Roboto/Roboto-Light.tff"};
+        std::string fontPath{"Roboto/Roboto-Light.ttf"};
         int pixelSize{64};
         Eigen::Vector4f backgroundColor;
         Eigen::Vector4f labelColor;
