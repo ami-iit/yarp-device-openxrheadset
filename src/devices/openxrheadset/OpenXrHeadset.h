@@ -26,6 +26,7 @@
 #include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
 #include <ImagePortToQuadLayer.h>
+#include <LabelPortToQuadLayer.h>
 #include <EyePort.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
@@ -189,6 +190,17 @@ private:
         ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
     };
 
+    struct LabelLayer
+    {
+        float         width;
+        float         height;
+        float         x;
+        float         y;
+        float         z;
+        LabelPortToQuadLayer::Options options;
+        LabelPortToQuadLayer layer;
+    };
+
     class FramePorts
     {
         yarp::os::BufferedPort<yarp::os::Bottle>* m_orientationPort{nullptr};
@@ -238,6 +250,7 @@ private:
     double m_rightElevationOffset;
 
     std::vector<GuiParam> m_huds;
+    std::vector<LabelLayer> m_labels;
 
     bool m_getStickAsAxis;
 

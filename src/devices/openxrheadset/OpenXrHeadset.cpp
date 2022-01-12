@@ -212,10 +212,16 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         constexpr unsigned int BOOL   = 1;
         constexpr unsigned int INT    = 2;
         constexpr unsigned int DOUBLE = 3;
+        struct paramDescription
+        {
+            std::string name;
+            int type;
+            bool required;
+        };
 
         std::map<int, std::string>                err_msgs;
         std::map<int, valueIsType>                isFunctionMap;
-        std::vector<std::pair<std::string, int> > paramParser;
+        std::vector<paramDescription> paramParser;
 
         err_msgs[STRING]      = "a string";
         err_msgs[BOOL]        = "a boolean type";
@@ -230,11 +236,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         paramParser.clear();
         if (guiCount)
         {
-            paramParser.push_back(std::make_pair("width",  DOUBLE));
-            paramParser.push_back(std::make_pair("height", DOUBLE));
-            paramParser.push_back(std::make_pair("x",      DOUBLE));
-            paramParser.push_back(std::make_pair("y",      DOUBLE));
-            paramParser.push_back(std::make_pair("z",      DOUBLE));
+            paramParser.push_back({"width",  DOUBLE, true});
+            paramParser.push_back({"height", DOUBLE, true});
+            paramParser.push_back({"x",      DOUBLE, true});
+            paramParser.push_back({"y",      DOUBLE, true});
+            paramParser.push_back({"z",      DOUBLE, true});
 
             for (int i = 0; i < guiCount; ++i)
             {
@@ -249,10 +255,10 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
                 for (auto& p : paramParser)
                 {
-                    if (!guip.check(p.first) || !(guip.find(p.first).*isFunctionMap[p.second])())
+                    if (!guip.check(p.name) || !(guip.find(p.name).*isFunctionMap[p.type])())
                     {
-                        std::string err_type = err_msgs.find(p.second) == err_msgs.end() ? "[unknow type]" : err_msgs[p.second];
-                        yCError(OPENXRHEADSET) << "parameter" << p.first << "not found or not" << err_type << "in" << groupName << "group in configuration file";
+                        std::string err_type = err_msgs.find(p.type) == err_msgs.end() ? "[unknow type]" : err_msgs[p.type];
+                        yCError(OPENXRHEADSET) << "parameter" << p.name << "not found or not" << err_type << "in" << groupName << "group in configuration file";
                         return false;
                     }
                 }
@@ -266,6 +272,108 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 m_huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
                 m_huds.back().portName = m_prefix + "/" + groupName;
+            }
+        }
+
+        paramParser.clear();
+        int labelCount = cfg.find("labels").asInt32();
+        if (labelCount)
+        {
+            paramParser.push_back({"width",  DOUBLE, true});
+            paramParser.push_back({"height", DOUBLE, true});
+            paramParser.push_back({"x",      DOUBLE, true});
+            paramParser.push_back({"y",      DOUBLE, true});
+            paramParser.push_back({"z",      DOUBLE, true});
+
+            for (int i = 0; i < labelCount; ++i)
+            {
+                std::string       groupName  = "LABEL_" + std::to_string(i);
+                yarp::os::Bottle& labelGroup = cfg.findGroup(groupName);
+
+                if (labelGroup.isNull())
+                {
+                    yCError(OPENXRHEADSET) << "group:" << groupName << "not found in configuration file..";
+                    return false;
+                }
+
+                for (auto& p : paramParser)
+                {
+                    if (!labelGroup.check(p.name) || !(labelGroup.find(p.name).*isFunctionMap[p.type])())
+                    {
+                        std::string err_type = err_msgs.find(p.type) == err_msgs.end() ? "[unknow type]" : err_msgs[p.type];
+                        yCError(OPENXRHEADSET) << "parameter" << p.name << "not found or not" << err_type << "in" << groupName << "group in configuration file";
+                        return false;
+                    }
+                }
+
+                m_labels.emplace_back();
+                LabelLayer& label = m_labels.back();
+
+                label.width = labelGroup.find("width").asFloat64();
+                label.height = labelGroup.find("height").asFloat64();
+                label.x       = labelGroup.find("x").asFloat64();
+                label.y       = labelGroup.find("y").asFloat64();
+                label.z       = -std::max(0.01, std::abs(labelGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+                std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
+                label.options.portName = m_prefix + "/" + groupName;
+                label.options.labelPrefix = labelGroup.check("prefix", yarp::os::Value("")).asString();
+                label.options.labelSuffix = labelGroup.check("suffix", yarp::os::Value("")).asString();
+                label.options.fontPath = labelGroup.check("font", yarp::os::Value("Roboto/Roboto-Light.ttf")).asString();
+                label.options.pixelSize = labelGroup.check("pixel_size", yarp::os::Value(64)).asInt32();
+
+                auto fetchColor = [](const std::string& groupName, const yarp::os::Bottle& group,
+                        const std::string& paramName, const Eigen::Vector4f& defaultColor, Eigen::Vector4f& outputColor) -> bool
+                {
+                    if (!group.check(paramName))
+                    {
+                        outputColor = defaultColor;
+                        return true;
+                    }
+
+                    yarp::os::Value list = group.find(paramName);
+                    if (!list.isList())
+                    {
+                        yCError(OPENXRHEADSET) << "The parameter" << paramName << "is specified in" << groupName << "but it is not a list.";
+                        return false;
+                    }
+
+                    yarp::os::Bottle* yarpVector = list.asList();
+
+                    if (yarpVector->size() != 4)
+                    {
+                        yCError(OPENXRHEADSET) << "The parameter" << paramName << "is specified in" << groupName << "but it is not a list of size 4.";
+                        return false;
+                    }
+
+                    for (size_t i = 0; i < 4; ++i)
+                    {
+                        if (!yarpVector->get(i).isFloat64())
+                        {
+                            yCError(OPENXRHEADSET) << "The entry" << i << " of parameter" << paramName << "in" << groupName << "is not a double.";
+                            return false;
+                        }
+                        double value = yarpVector->get(i).asFloat64();
+
+                        if (value < 0.0 || value > 1.0)
+                        {
+                            yCError(OPENXRHEADSET) << "The entry" << i << " of parameter" << paramName << "in" << groupName << "is not in the range [0, 1].";
+                            return false;
+                        }
+                        outputColor[i] = value;
+                    }
+
+                    return true;
+                };
+
+                if (!fetchColor(groupName, labelGroup, "color", {1.0, 1.0, 1.0, 1.0}, label.options.labelColor))
+                {
+                    return false;
+                }
+
+                if (!fetchColor(groupName, labelGroup, "background_color",  {0.0, 0.0, 0.0, 0.0}, label.options.backgroundColor))
+                {
+                    return false;
+                }
             }
         }
     }
@@ -382,6 +490,19 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             gui.layer.setDimensions(gui.width, gui.height);
             gui.layer.setPosition({gui.x, gui.y, gui.z});
         }
+
+        for (LabelLayer& label : m_labels)
+        {
+            label.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+
+            if (!label.layer.initialize(label.options)) {
+                yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
+                return false;
+            }
+            label.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            label.layer.setDimensions(label.width, label.height);
+            label.layer.setPosition({label.x, label.y, label.z});
+        }
     }
 
     for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
@@ -411,6 +532,11 @@ void yarp::dev::OpenXrHeadset::threadRelease()
     for (auto& hud : m_huds)
     {
         hud.layer.close();
+    }
+
+    for (auto& label : m_labels)
+    {
+        label.layer.close();
     }
 
     m_openXrInterface.close();
