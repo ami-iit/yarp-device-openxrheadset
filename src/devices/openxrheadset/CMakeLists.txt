@@ -28,6 +28,7 @@ set(yarp_openxrheadset_SRCS
   OpenXrInterface.cpp
   impl/OpenXrQuadLayer.cpp
   impl/OpenXrInterfaceImpl.cpp
+  LabelPortToQuadLayer.cpp
 )
 
 set(yarp_openxrheadset_HDRS
@@ -35,6 +36,7 @@ set(yarp_openxrheadset_HDRS
   OpenGLConfig.h
   OpenXrHeadsetLogComponent.h
   ImagePortToQuadLayer.h
+  LabelPortToQuadLayer.h
   OpenXrInterface.h
   OpenXrEigenConversions.h
   impl/OpenXrQuadLayer.h
@@ -79,6 +81,7 @@ target_link_libraries(yarp_openxrheadset
     GLEW::GLEW
     OpenGL::GL
     Eigen3::Eigen
+    GLFont::GLFont
 )
 
 if (NOT WIN32)
@@ -105,6 +108,7 @@ if(BUILD_TESTING)
         GLEW::GLEW
         OpenGL::GL
         Eigen3::Eigen
+        GLFont::GLFont
         )
 
     if (NOT WIN32)
