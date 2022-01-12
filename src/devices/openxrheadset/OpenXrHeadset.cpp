@@ -583,6 +583,13 @@ void yarp::dev::OpenXrHeadset::run()
                 return;
             }
         }
+        for (LabelLayer& label : m_labels)
+        {
+            if (!label.layer.updateTexture()) {
+                yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "display texture.";
+                return;
+            }
+        }
         m_openXrInterface.draw();
 
         m_openXrInterface.getButtons(m_buttons);

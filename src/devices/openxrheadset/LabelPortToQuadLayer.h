@@ -91,6 +91,7 @@ private:
     std::shared_ptr<FTLabel> m_glLabel;
     GLuint m_glWriteBufferId = 0;
     std::thread::id m_initThreadID;
+    std::string m_inputString;
     bool m_active{false};
 
 };

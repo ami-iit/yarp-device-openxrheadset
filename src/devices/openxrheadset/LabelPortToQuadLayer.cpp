@@ -85,11 +85,9 @@ bool LabelPortToQuadLayer::updateTexture()
 
     yarp::os::Bottle* bottle = m_portPtr->read(false);
 
-    std::string inputString;
-
     if (bottle && bottle->size() > 0)
     {
-        inputString = bottle->get(0).asString();
+        m_inputString = bottle->get(0).toString();
     }
 
     if (!m_options.quadLayer)
@@ -98,7 +96,7 @@ bool LabelPortToQuadLayer::updateTexture()
         return false;
     }
 
-    std::string textToDisplay = m_options.labelPrefix + inputString + m_options.labelSuffix;
+    std::string textToDisplay = m_options.labelPrefix + m_inputString + m_options.labelSuffix;
 
     if (textToDisplay.empty())
     {
