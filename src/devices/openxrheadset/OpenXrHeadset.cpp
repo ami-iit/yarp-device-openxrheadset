@@ -318,8 +318,50 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 label.options.portName = m_prefix + "/" + groupName;
                 label.options.labelPrefix = labelGroup.check("prefix", yarp::os::Value("")).asString();
                 label.options.labelSuffix = labelGroup.check("suffix", yarp::os::Value("")).asString();
-                label.options.fontPath = labelGroup.check("font", yarp::os::Value("Roboto/Roboto-Light.ttf")).asString();
+                label.options.fontPath = labelGroup.check("font", yarp::os::Value("Roboto/Roboto-Black.ttf")).asString();
                 label.options.pixelSize = labelGroup.check("pixel_size", yarp::os::Value(64)).asInt32();
+
+                std::string horizontalAlignement = labelGroup.check("horizontal_alignement", yarp::os::Value("center")).asString();
+                std::transform(horizontalAlignement.begin(), horizontalAlignement.end(), horizontalAlignement.begin(), ::tolower);
+                if (horizontalAlignement == "left")
+                {
+                    label.options.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Left;
+                }
+                else if (horizontalAlignement == "right")
+                {
+                    label.options.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Right;
+                }
+                else if (horizontalAlignement == "center")
+                {
+                    label.options.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Center;
+                }
+                else
+                {
+                    yCError(OPENXRHEADSET) << "Unrecognized horizontal_alignement in" << groupName + "."
+                                           << "Allowed entries: \"left\", \"right\", \"center\".";
+                    return false;
+                }
+
+                std::string verticalAlignement = labelGroup.check("vertical_alignement", yarp::os::Value("center")).asString();
+                std::transform(verticalAlignement.begin(), verticalAlignement.end(), verticalAlignement.begin(), ::tolower);
+                if (verticalAlignement == "top")
+                {
+                    label.options.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Top;
+                }
+                else if (verticalAlignement == "bottom")
+                {
+                    label.options.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Bottom;
+                }
+                else if (verticalAlignement == "center")
+                {
+                    label.options.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Center;
+                }
+                else
+                {
+                    yCError(OPENXRHEADSET) << "Unrecognized vertical_alignement in" << groupName + "."
+                                           << "Allowed entries: \"top\", \"bottom\", \"center\".";
+                    return false;
+                }
 
                 auto fetchColor = [](const std::string& groupName, const yarp::os::Bottle& group,
                         const std::string& paramName, const Eigen::Vector4f& defaultColor, Eigen::Vector4f& outputColor) -> bool
