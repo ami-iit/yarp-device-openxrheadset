@@ -188,9 +188,14 @@ Eigen::Quaternionf OpenXrQuadLayer::layerQuaternion() const
     return toEigen(layer.pose.orientation);
 }
 
+void OpenXrQuadLayer::setEnabled(bool enabled)
+{
+    this->isEnabled = enabled;
+}
+
 bool OpenXrQuadLayer::shouldSubmit() const
 {
-    return hasVisibility && released;
+    return hasVisibility && released && isEnabled;
 }
 
 OpenXrQuadLayer::~OpenXrQuadLayer()

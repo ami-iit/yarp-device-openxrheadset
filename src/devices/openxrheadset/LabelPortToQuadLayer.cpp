@@ -8,6 +8,7 @@
 
 #include <LabelPortToQuadLayer.h>
 #include <filesystem>
+#include <yarp/os/Time.h>
 
 //#define DRAW_DEBUG_RECTANGLES
 
@@ -80,6 +81,8 @@ bool LabelPortToQuadLayer::initialize(const Options &options)
     m_options = options;
     m_options.quadLayer->useAlphaChannel(true);
 
+    m_lastReceived = yarp::os::Time::now();
+
     return true;
 }
 
@@ -106,25 +109,55 @@ bool LabelPortToQuadLayer::updateTexture()
     assert(m_initThreadID == std::this_thread::get_id() &&
            "The updateTexture has to be called from the same thread in which it has been initialized.");
 
-    yarp::os::Bottle* bottle = m_portPtr->read(false);
-
-    if (bottle && bottle->size() > 0)
-    {
-        m_inputString = bottle->get(0).toString();
-    }
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
         return false;
     }
 
+    yarp::os::Bottle* bottle = m_portPtr->read(false);
+
+    bool received = bottle && bottle->size() > 0;
+    bool shouldResume = false;
+    if (received)
+    {
+        m_inputString = bottle->get(0).toString();
+        m_lastReceived = yarp::os::Time::now();
+        if (m_timeoutExpired)
+        {
+            shouldResume = true;
+            m_timeoutExpired = false;
+        }
+    }
+
     std::string textToDisplay = m_options.labelPrefix + m_inputString + m_options.labelSuffix;
 
-    if (m_active && textToDisplay == m_glLabel->getText()) //Print on screen the first time and only when the string changes
+    bool inactive = m_options.disableTimeoutInS >= 0 &&
+            ((yarp::os::Time::now() - m_lastReceived) > m_options.disableTimeoutInS); //->disable
+    bool sameText = textToDisplay == m_glLabel->getText(); //->skip
+    bool printAnyway = (m_firstTime && m_options.automaticallyEnabled) || shouldResume;
+
+    if (!m_enabled)
     {
         return true;
     }
+
+    if (!printAnyway)
+    {
+        if (inactive)
+        {
+            m_options.quadLayer->setEnabled(false);
+            m_timeoutExpired = true;
+            return true;
+        }
+
+        if (sameText)
+        {
+            return true;
+        }
+    }
+
+    m_options.quadLayer->setEnabled(true);
 
     float textureAspectRatio = m_options.quadLayer->imageMaxWidth() / (float) m_options.quadLayer->imageMaxHeight();
     float layerAspectRatio = m_options.quadLayer->layerWidth() / (float) m_options.quadLayer->layerHeight();
@@ -230,7 +263,7 @@ bool LabelPortToQuadLayer::updateTexture()
         return false;
     }
 
-    m_active = true;
+    m_firstTime = false;
 
     return true;
 }
@@ -352,9 +385,10 @@ float LabelPortToQuadLayer::layerHeight() const
     return m_options.quadLayer->layerHeight();
 }
 
-bool LabelPortToQuadLayer::active() const
+void LabelPortToQuadLayer::setEnabled(bool enabled)
 {
-    yCTrace(OPENXRHEADSET);
-
-    return m_active;
+    m_firstTime = !m_enabled && enabled; //In this way, it will print if it is automatically enabled.
+    m_lastReceived = yarp::os::Time::now();
+    m_timeoutExpired = false;
+    m_enabled = enabled;
 }

@@ -43,6 +43,8 @@ public:
             Right
         };
 
+        bool automaticallyEnabled{true};
+        double disableTimeoutInS{-1.0};
         std::shared_ptr<IOpenXrQuadLayer> quadLayer{nullptr};
         std::string portName;
         std::string labelPrefix;
@@ -80,7 +82,7 @@ public:
 
     float layerHeight() const;
 
-    bool active() const;
+    void setEnabled(bool enabled);
 
 private:
 
@@ -93,7 +95,10 @@ private:
     GLuint m_imageTexture;
     std::thread::id m_initThreadID;
     std::string m_inputString;
-    bool m_active{false};
+    bool m_enabled{true};
+    bool m_firstTime{true};
+    bool m_timeoutExpired{false};
+    double m_lastReceived{0.0};
 };
 
 #endif // YARP_OPENXRHEADSET_LABELPORTTOQUADLAYER_H

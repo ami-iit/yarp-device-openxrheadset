@@ -57,6 +57,8 @@ public:
     virtual Eigen::Vector3f layerPosition() const = 0;
 
     virtual Eigen::Quaternionf layerQuaternion() const = 0;
+
+    virtual void setEnabled(bool enabled) = 0;
 };
 
 class OpenXrInterface
