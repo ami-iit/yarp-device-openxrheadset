@@ -62,7 +62,8 @@ bool LabelPortToQuadLayer::initialize(const Options &options)
     }
 
     m_glFont = std::make_shared<GLFont>(fontPath);
-    m_glLabel = std::make_shared<FTLabel>(m_glFont, options.labelPrefix + options.labelSuffix, 0, 0, options.quadLayer->imageMaxWidth(), options.quadLayer->imageMaxHeight());
+    m_glLabel = std::make_shared<FTLabel>(m_glFont, options.labelPrefix + options.labelSuffix, 0, 0, options.quadLayer->imageMaxWidth(), options.quadLayer->imageMaxHeight(),
+                                          options.quadLayer->imageMaxWidth(), options.quadLayer->imageMaxHeight());
     m_glLabel->setPixelSize(options.pixelSize);
     m_glLabel->setColor(options.labelColor[0], options.labelColor[1], options.labelColor[2], options.labelColor[3]);
 
@@ -124,6 +125,12 @@ bool LabelPortToQuadLayer::updateTexture()
     {
         return true;
     }
+
+    float textureAspectRatio = m_options.quadLayer->imageMaxWidth() / (float) m_options.quadLayer->imageMaxHeight();
+    float layerAspectRatio = m_options.quadLayer->layerWidth() / (float) m_options.quadLayer->layerHeight();
+
+    float aspectRatioRatio = textureAspectRatio/layerAspectRatio;
+    m_glLabel->setFontAspectRatio(aspectRatioRatio);
 
     m_glLabel->setText(textToDisplay);
     float horizontalPosition = 0;

@@ -40,8 +40,8 @@ int main()
     labelOptions.quadLayer = openXrInterface.addHeadFixedQuadLayer();
     labelOptions.portName = "/openxrtest/label:i";
     labelOptions.labelPrefix = "testLabel";
-    labelOptions.labelSuffix = " 1";
-    labelOptions.pixelSize = 128;
+    labelOptions.labelSuffix = " 1 with a veeeeeery loooooong test I might eventually go to a new line";
+    labelOptions.pixelSize = 32;
     labelOptions.backgroundColor<< 1.0, 1.0, 1.0, 1.0; //Full white
     labelOptions.labelColor << 1.0, 0.0, 0.0, 1.0; //Opaque red
     labelOptions.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Center;
@@ -49,7 +49,7 @@ int main()
 
     label.initialize(labelOptions);
     label.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-    label.setDimensions(0.1, 0.1);
+    label.setDimensions(0.1, 0.02);
     label.setPosition({-0.05, 0, -0.1});
 
     for (size_t i = 0; i < 10; ++i)
