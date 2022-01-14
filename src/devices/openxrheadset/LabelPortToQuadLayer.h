@@ -98,6 +98,7 @@ private:
     bool m_enabled{true};
     bool m_firstTime{true};
     bool m_timeoutExpired{false};
+    bool m_shouldResume{false};
     double m_lastReceived{0.0};
 };
 

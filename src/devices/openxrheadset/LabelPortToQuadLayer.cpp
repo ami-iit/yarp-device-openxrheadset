@@ -118,14 +118,13 @@ bool LabelPortToQuadLayer::updateTexture()
     yarp::os::Bottle* bottle = m_portPtr->read(false);
 
     bool received = bottle && bottle->size() > 0;
-    bool shouldResume = false;
     if (received)
     {
         m_inputString = bottle->get(0).toString();
         m_lastReceived = yarp::os::Time::now();
         if (m_timeoutExpired)
         {
-            shouldResume = true;
+            m_shouldResume = true;
             m_timeoutExpired = false;
         }
     }
@@ -135,7 +134,7 @@ bool LabelPortToQuadLayer::updateTexture()
     bool inactive = m_options.disableTimeoutInS >= 0 &&
             ((yarp::os::Time::now() - m_lastReceived) > m_options.disableTimeoutInS); //->disable
     bool sameText = textToDisplay == m_glLabel->getText(); //->skip
-    bool printAnyway = (m_firstTime && m_options.automaticallyEnabled) || shouldResume;
+    bool printAnyway = (m_firstTime && m_options.automaticallyEnabled) || m_shouldResume;
 
     if (!m_enabled)
     {
@@ -265,6 +264,7 @@ bool LabelPortToQuadLayer::updateTexture()
     }
 
     m_firstTime = false;
+    m_shouldResume = false;
 
     return true;
 }
@@ -388,7 +388,7 @@ float LabelPortToQuadLayer::layerHeight() const
 
 void LabelPortToQuadLayer::setEnabled(bool enabled)
 {
-    m_firstTime = !m_enabled && enabled; //In this way, it will print if it is automatically enabled.
+    m_shouldResume = enabled;
     m_lastReceived = yarp::os::Time::now();
     m_timeoutExpired = false;
     m_enabled = enabled;
