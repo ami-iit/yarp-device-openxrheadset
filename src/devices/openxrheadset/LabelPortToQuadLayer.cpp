@@ -9,6 +9,8 @@
 #include <LabelPortToQuadLayer.h>
 #include <filesystem>
 
+//#define DRAW_DEBUG_RECTANGLES
+
 bool LabelPortToQuadLayer::initialize(const Options &options)
 {
     yCTrace(OPENXRHEADSET);
@@ -29,6 +31,20 @@ bool LabelPortToQuadLayer::initialize(const Options &options)
 
     //Generate internal framebuffer
     glGenFramebuffers(1, &(m_glWriteBufferId));
+    glGenFramebuffers(1, &(m_glReadBufferId));
+    glBindFramebuffer(GL_FRAMEBUFFER, m_glReadBufferId);
+    glGenTextures(1, &m_imageTexture);
+
+    //Trying to preallocate texture for read frame buffer
+    glBindTexture(GL_TEXTURE_2D, m_imageTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, m_imageTexture, 0);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8,  options.quadLayer->imageMaxWidth(), options.quadLayer->imageMaxHeight());
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     std::string fontPath = options.fontPath;
@@ -74,6 +90,12 @@ void LabelPortToQuadLayer::close()
         m_glWriteBufferId = 0;
     }
 
+    if (m_glReadBufferId != 0)
+    {
+        glDeleteFramebuffers(1, &m_glReadBufferId);
+        m_glReadBufferId = 0;
+    }
+
     m_portPtr->close();
 }
 
@@ -104,12 +126,12 @@ bool LabelPortToQuadLayer::updateTexture()
     }
 
     m_glLabel->setText(textToDisplay);
-    int horizontalPosition = 0;
+    float horizontalPosition = 0;
     switch (m_options.horizontalAlignement)
     {
     case Options::HorizontalAlignement::Center:
         m_glLabel->setAlignment(FTLabel::FontFlags::CenterAligned);
-        horizontalPosition = m_options.quadLayer->imageMaxWidth()/2;
+        horizontalPosition = m_options.quadLayer->imageMaxWidth() * 0.5;
         break;
     case Options::HorizontalAlignement::Left:
         m_glLabel->setAlignment(FTLabel::FontFlags::LeftAligned);
@@ -121,12 +143,12 @@ bool LabelPortToQuadLayer::updateTexture()
         break;
     }
 
-    int verticalPosition = 0;
+    float verticalPosition = 0;
     int labelHeight = m_glLabel->getCurrentLabelHeight();
     switch (m_options.verticalAlignement)
     {
     case Options::VerticalAlignement::Center:
-        verticalPosition = m_options.quadLayer->imageMaxHeight()/2 - labelHeight / 2;
+        verticalPosition = std::round((m_options.quadLayer->imageMaxHeight() - labelHeight) * 0.5);
         break;
     case Options::VerticalAlignement::Top:
         verticalPosition = 0;
@@ -146,17 +168,53 @@ bool LabelPortToQuadLayer::updateTexture()
         return false;
     }
 
-    //Bind the write framebuffer, using the OpenXr texture as target texture
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glWriteBufferId);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureImage, 0);
+    //First bind the read framebuffer, using the input image as source
+    //This has to be called from the same thread where the initialize method has been called
+    glBindFramebuffer(GL_FRAMEBUFFER, m_glReadBufferId);
+    glBindTexture(GL_TEXTURE_2D, m_imageTexture);
 
     glClearColor(m_options.backgroundColor[0], m_options.backgroundColor[1],
                  m_options.backgroundColor[2], m_options.backgroundColor[3]);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    GLint initialViewport[4];
+    glGetIntegerv(GL_VIEWPORT, initialViewport);
+
+    glViewport(0, 0, m_options.quadLayer->imageMaxWidth(), m_options.quadLayer->imageMaxHeight());
+
+# ifdef DRAW_DEBUG_RECTANGLES
+    auto colRect = [](float r, float g, float b, float a, float x, float y, float h, float w)
+    {
+        glBegin(GL_QUADS);
+        glColor4f(r, g, b, a);
+        glVertex3f(x,y,0);
+        glVertex3f(x+w,y,0);
+        glVertex3f(x+w,y+h,0);
+        glVertex3f(x,y+h,0);
+        glEnd();
+        glColor4f(1, 1, 1, 1);
+    };
+
+    colRect(1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.5, 0.1); //red
+    colRect(0.0, 1.0, 0.0, 1.0, 0.1, -1.0, 1.0, 0.1); //green
+    colRect(0.0, 0.0, 1.0, 1.0, 0.2, 0.0, 0.9, 0.1); //blue
+#endif
+
+
     m_glLabel->render(); //Renders to the texture
 
-    //Resetting read and draw framebuffers
+//    Then bind the write framebuffer, using the OpenXr texture as target texture
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glWriteBufferId);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureImage, 0);
+
+    //Copy from the read framebuffer to the draw framebuffer
+    glBlitNamedFramebuffer(m_glReadBufferId, m_glWriteBufferId,
+                           0, 0, m_options.quadLayer->imageMaxWidth(), m_options.quadLayer->imageMaxHeight(),
+                           0, 0, m_options.quadLayer->imageMaxWidth(), m_options.quadLayer->imageMaxHeight(),
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    glViewport(initialViewport[0], initialViewport[1],
+               initialViewport[2], initialViewport[3]);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     if (!m_options.quadLayer->submitImage())

@@ -15,7 +15,6 @@
 
 #include <Eigen/Geometry>
 #include <yarp/os/BufferedPort.h>
-#include <yarp/sig/Image.h>
 #include <yarp/os/LogStream.h>
 
 #include <thread>
@@ -90,6 +89,8 @@ private:
     std::shared_ptr<GLFont> m_glFont;
     std::shared_ptr<FTLabel> m_glLabel;
     GLuint m_glWriteBufferId = 0;
+    GLuint m_glReadBufferId = 0;
+    GLuint m_imageTexture;
     std::thread::id m_initThreadID;
     std::string m_inputString;
     bool m_active{false};

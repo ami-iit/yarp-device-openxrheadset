@@ -41,10 +41,16 @@ int main()
     labelOptions.portName = "/openxrtest/label:i";
     labelOptions.labelPrefix = "testLabel";
     labelOptions.labelSuffix = " 1";
-    labelOptions.backgroundColor.setZero();
+    labelOptions.pixelSize = 128;
+    labelOptions.backgroundColor<< 1.0, 1.0, 1.0, 1.0; //Full white
     labelOptions.labelColor << 1.0, 0.0, 0.0, 1.0; //Opaque red
+    labelOptions.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Center;
+    labelOptions.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Left;
 
     label.initialize(labelOptions);
+    label.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
+    label.setDimensions(0.1, 0.1);
+    label.setPosition({-0.05, 0, -0.1});
 
     for (size_t i = 0; i < 10; ++i)
     {
