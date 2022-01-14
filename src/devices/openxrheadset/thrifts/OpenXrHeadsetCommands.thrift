@@ -103,4 +103,12 @@ service OpenXrHeadsetCommands
     * @return the name of the port to control the right image.
     */
     string getRightImageControlPortName();
+
+   /**
+    * Set a label visible or not
+    * @param labelIndex The label index to change state
+    * @param elevation The state to set
+    * @return True if successfull, false if the index is out of bounds
+    */
+    bool setLabelEnabled(1:i32 labelIndex, 2:bool enabled);
 }

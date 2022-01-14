@@ -320,7 +320,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 label.options.labelSuffix = labelGroup.check("suffix", yarp::os::Value("")).asString();
                 label.options.fontPath = labelGroup.check("font", yarp::os::Value("Roboto/Roboto-Black.ttf")).asString();
                 label.options.pixelSize = labelGroup.check("pixel_size", yarp::os::Value(64)).asInt32();
-                label.options.automaticallyEnabled = labelGroup.check("automatically_enabled", yarp::os::Value(true)).asBlob();
+                label.options.automaticallyEnabled = labelGroup.check("automatically_enabled", yarp::os::Value(true)).asBool();
                 label.options.disableTimeoutInS = labelGroup.check("disable_timeout_in_S", yarp::os::Value(-1.0)).asFloat64();
 
                 std::string horizontalAlignement = labelGroup.check("horizontal_alignement", yarp::os::Value("center")).asString();
@@ -1054,4 +1054,19 @@ std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
 
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_rightEye.controlPortName();
+}
+
+bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const bool enabled)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (labelIndex >= m_labels.size())
+    {
+        return false;
+    }
+
+    m_labels[labelIndex].layer.setEnabled(enabled);
+
+    return true;
 }

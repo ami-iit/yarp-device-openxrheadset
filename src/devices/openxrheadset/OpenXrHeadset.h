@@ -177,6 +177,14 @@ public:
      */
     virtual std::string getRightImageControlPortName() override;
 
+    /**
+     * Set a label visible or not
+     * @param labelIndex The label index to change state
+     * @param elevation The state to set
+     * @return True if successfull, false if the index is out of bounds
+     */
+    virtual bool setLabelEnabled(const std::int32_t labelIndex, const bool enabled) override;
+
 private:
 
     struct GuiParam
