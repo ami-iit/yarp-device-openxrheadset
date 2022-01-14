@@ -139,6 +139,7 @@ bool LabelPortToQuadLayer::updateTexture()
 
     if (!m_enabled)
     {
+        m_options.quadLayer->setEnabled(false);
         return true;
     }
 
