@@ -121,7 +121,7 @@ bool LabelPortToQuadLayer::updateTexture()
 
     std::string textToDisplay = m_options.labelPrefix + m_inputString + m_options.labelSuffix;
 
-    if (textToDisplay.empty())
+    if (m_active && textToDisplay == m_glLabel->getText()) //Print on screen the first time and only when the string changes
     {
         return true;
     }

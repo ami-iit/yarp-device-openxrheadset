@@ -94,7 +94,6 @@ private:
     std::thread::id m_initThreadID;
     std::string m_inputString;
     bool m_active{false};
-
 };
 
 #endif // YARP_OPENXRHEADSET_LABELPORTTOQUADLAYER_H
