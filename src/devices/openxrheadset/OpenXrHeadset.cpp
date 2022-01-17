@@ -216,7 +216,6 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         {
             std::string name;
             int type;
-            bool required;
         };
 
         std::map<int, std::string>                err_msgs;
@@ -236,11 +235,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         paramParser.clear();
         if (guiCount)
         {
-            paramParser.push_back({"width",  DOUBLE, true});
-            paramParser.push_back({"height", DOUBLE, true});
-            paramParser.push_back({"x",      DOUBLE, true});
-            paramParser.push_back({"y",      DOUBLE, true});
-            paramParser.push_back({"z",      DOUBLE, true});
+            paramParser.push_back({"width",  DOUBLE});
+            paramParser.push_back({"height", DOUBLE});
+            paramParser.push_back({"x",      DOUBLE});
+            paramParser.push_back({"y",      DOUBLE});
+            paramParser.push_back({"z",      DOUBLE});
 
             for (int i = 0; i < guiCount; ++i)
             {
@@ -279,11 +278,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         int labelCount = cfg.find("labels").asInt32();
         if (labelCount)
         {
-            paramParser.push_back({"width",  DOUBLE, true});
-            paramParser.push_back({"height", DOUBLE, true});
-            paramParser.push_back({"x",      DOUBLE, true});
-            paramParser.push_back({"y",      DOUBLE, true});
-            paramParser.push_back({"z",      DOUBLE, true});
+            paramParser.push_back({"width",  DOUBLE});
+            paramParser.push_back({"height", DOUBLE});
+            paramParser.push_back({"x",      DOUBLE});
+            paramParser.push_back({"y",      DOUBLE});
+            paramParser.push_back({"z",      DOUBLE});
 
             for (int i = 0; i < labelCount; ++i)
             {
