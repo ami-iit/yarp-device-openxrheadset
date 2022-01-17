@@ -393,3 +393,111 @@ void LabelPortToQuadLayer::setEnabled(bool enabled)
     m_timeoutExpired = false;
     m_enabled = enabled;
 }
+
+bool LabelPortToQuadLayer::Options::parseFromConfigurationFile(const std::string& inputPortName, yarp::os::Searchable &labelGroup)
+{
+    portName = inputPortName;
+    labelPrefix = labelGroup.check("prefix", yarp::os::Value("")).asString();
+    labelSuffix = labelGroup.check("suffix", yarp::os::Value("")).asString();
+    fontPath = labelGroup.check("font", yarp::os::Value("Roboto/Roboto-Black.ttf")).asString();
+    pixelSize = labelGroup.check("pixel_size", yarp::os::Value(64)).asInt32();
+    automaticallyEnabled = labelGroup.check("automatically_enabled", yarp::os::Value(true)).asBool();
+    disableTimeoutInS = labelGroup.check("disable_timeout_in_S", yarp::os::Value(-1.0)).asFloat64();
+
+    std::string inputHorAlignement = labelGroup.check("horizontal_alignement", yarp::os::Value("center")).asString();
+    std::transform(inputHorAlignement.begin(), inputHorAlignement.end(), inputHorAlignement.begin(), ::tolower);
+    if (inputHorAlignement == "left")
+    {
+        horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Left;
+    }
+    else if (inputHorAlignement == "right")
+    {
+        horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Right;
+    }
+    else if (inputHorAlignement == "center")
+    {
+        horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Center;
+    }
+    else
+    {
+        yCError(OPENXRHEADSET) << "Unrecognized horizontal_alignement."
+                               << "Allowed entries: \"left\", \"right\", \"center\".";
+        return false;
+    }
+
+    std::string inputVertAlignement = labelGroup.check("vertical_alignement", yarp::os::Value("center")).asString();
+    std::transform(inputVertAlignement.begin(), inputVertAlignement.end(), inputVertAlignement.begin(), ::tolower);
+    if (inputVertAlignement == "top")
+    {
+        verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Top;
+    }
+    else if (inputVertAlignement == "bottom")
+    {
+        verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Bottom;
+    }
+    else if (inputVertAlignement == "center")
+    {
+        verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Center;
+    }
+    else
+    {
+        yCError(OPENXRHEADSET) << "Unrecognized vertical_alignement."
+                               << "Allowed entries: \"top\", \"bottom\", \"center\".";
+        return false;
+    }
+
+    auto fetchColor = [](const yarp::os::Searchable& group, const std::string& paramName,
+            const Eigen::Vector4f& defaultColor, Eigen::Vector4f& outputColor) -> bool
+    {
+        if (!group.check(paramName))
+        {
+            outputColor = defaultColor;
+            return true;
+        }
+
+        yarp::os::Value list = group.find(paramName);
+        if (!list.isList())
+        {
+            yCError(OPENXRHEADSET) << "The parameter" << paramName << "is specified but it is not a list.";
+            return false;
+        }
+
+        yarp::os::Bottle* yarpVector = list.asList();
+
+        if (yarpVector->size() != 4)
+        {
+            yCError(OPENXRHEADSET) << "The parameter" << paramName << "is specified but it is not a list of size 4.";
+            return false;
+        }
+
+        for (size_t i = 0; i < 4; ++i)
+        {
+            if (!yarpVector->get(i).isFloat64())
+            {
+                yCError(OPENXRHEADSET) << "The entry" << i << " of parameter" << paramName << "is not a double.";
+                return false;
+            }
+            double value = yarpVector->get(i).asFloat64();
+
+            if (value < 0.0 || value > 1.0)
+            {
+                yCError(OPENXRHEADSET) << "The entry" << i << " of parameter" << paramName << "is not in the range [0, 1].";
+                return false;
+            }
+            outputColor[i] = value;
+        }
+
+        return true;
+    };
+
+    if (!fetchColor(labelGroup, "color", {1.0, 1.0, 1.0, 1.0}, labelColor))
+    {
+        return false;
+    }
+
+    if (!fetchColor(labelGroup, "background_color",  {0.0, 0.0, 0.0, 0.0}, backgroundColor))
+    {
+        return false;
+    }
+    return true;
+}

@@ -313,108 +313,13 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 label.x       = labelGroup.find("x").asFloat64();
                 label.y       = labelGroup.find("y").asFloat64();
                 label.z       = -std::max(0.01, std::abs(labelGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                label.options.portName = m_prefix + "/" + groupName;
-                label.options.labelPrefix = labelGroup.check("prefix", yarp::os::Value("")).asString();
-                label.options.labelSuffix = labelGroup.check("suffix", yarp::os::Value("")).asString();
-                label.options.fontPath = labelGroup.check("font", yarp::os::Value("Roboto/Roboto-Black.ttf")).asString();
-                label.options.pixelSize = labelGroup.check("pixel_size", yarp::os::Value(64)).asInt32();
-                label.options.automaticallyEnabled = labelGroup.check("automatically_enabled", yarp::os::Value(true)).asBool();
-                label.options.disableTimeoutInS = labelGroup.check("disable_timeout_in_S", yarp::os::Value(-1.0)).asFloat64();
+                std::string portName = m_prefix + "/" + groupName;
 
-                std::string horizontalAlignement = labelGroup.check("horizontal_alignement", yarp::os::Value("center")).asString();
-                std::transform(horizontalAlignement.begin(), horizontalAlignement.end(), horizontalAlignement.begin(), ::tolower);
-                if (horizontalAlignement == "left")
+                if (!label.options.parseFromConfigurationFile(portName, labelGroup))
                 {
-                    label.options.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Left;
-                }
-                else if (horizontalAlignement == "right")
-                {
-                    label.options.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Right;
-                }
-                else if (horizontalAlignement == "center")
-                {
-                    label.options.horizontalAlignement = LabelPortToQuadLayer::Options::HorizontalAlignement::Center;
-                }
-                else
-                {
-                    yCError(OPENXRHEADSET) << "Unrecognized horizontal_alignement in" << groupName + "."
-                                           << "Allowed entries: \"left\", \"right\", \"center\".";
-                    return false;
-                }
-
-                std::string verticalAlignement = labelGroup.check("vertical_alignement", yarp::os::Value("center")).asString();
-                std::transform(verticalAlignement.begin(), verticalAlignement.end(), verticalAlignement.begin(), ::tolower);
-                if (verticalAlignement == "top")
-                {
-                    label.options.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Top;
-                }
-                else if (verticalAlignement == "bottom")
-                {
-                    label.options.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Bottom;
-                }
-                else if (verticalAlignement == "center")
-                {
-                    label.options.verticalAlignement = LabelPortToQuadLayer::Options::VerticalAlignement::Center;
-                }
-                else
-                {
-                    yCError(OPENXRHEADSET) << "Unrecognized vertical_alignement in" << groupName + "."
-                                           << "Allowed entries: \"top\", \"bottom\", \"center\".";
-                    return false;
-                }
-
-                auto fetchColor = [](const std::string& groupName, const yarp::os::Bottle& group,
-                        const std::string& paramName, const Eigen::Vector4f& defaultColor, Eigen::Vector4f& outputColor) -> bool
-                {
-                    if (!group.check(paramName))
-                    {
-                        outputColor = defaultColor;
-                        return true;
-                    }
-
-                    yarp::os::Value list = group.find(paramName);
-                    if (!list.isList())
-                    {
-                        yCError(OPENXRHEADSET) << "The parameter" << paramName << "is specified in" << groupName << "but it is not a list.";
-                        return false;
-                    }
-
-                    yarp::os::Bottle* yarpVector = list.asList();
-
-                    if (yarpVector->size() != 4)
-                    {
-                        yCError(OPENXRHEADSET) << "The parameter" << paramName << "is specified in" << groupName << "but it is not a list of size 4.";
-                        return false;
-                    }
-
-                    for (size_t i = 0; i < 4; ++i)
-                    {
-                        if (!yarpVector->get(i).isFloat64())
-                        {
-                            yCError(OPENXRHEADSET) << "The entry" << i << " of parameter" << paramName << "in" << groupName << "is not a double.";
-                            return false;
-                        }
-                        double value = yarpVector->get(i).asFloat64();
-
-                        if (value < 0.0 || value > 1.0)
-                        {
-                            yCError(OPENXRHEADSET) << "The entry" << i << " of parameter" << paramName << "in" << groupName << "is not in the range [0, 1].";
-                            return false;
-                        }
-                        outputColor[i] = value;
-                    }
-
-                    return true;
-                };
-
-                if (!fetchColor(groupName, labelGroup, "color", {1.0, 1.0, 1.0, 1.0}, label.options.labelColor))
-                {
-                    return false;
-                }
-
-                if (!fetchColor(groupName, labelGroup, "background_color",  {0.0, 0.0, 0.0, 0.0}, label.options.backgroundColor))
-                {
+                    yCError(OPENXRHEADSET) << "Failed to parse" << groupName;
                     return false;
                 }
             }

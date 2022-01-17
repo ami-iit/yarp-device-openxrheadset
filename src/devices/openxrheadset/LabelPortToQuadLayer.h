@@ -16,6 +16,7 @@
 #include <Eigen/Geometry>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/LogStream.h>
+#include <yarp/os/Searchable.h>
 
 #include <thread>
 #include <cassert>
@@ -55,6 +56,8 @@ public:
         Eigen::Vector4f labelColor;
         VerticalAlignement verticalAlignement{VerticalAlignement::Center};
         HorizontalAlignement horizontalAlignement{HorizontalAlignement::Center};
+
+        bool parseFromConfigurationFile(const std::string &portName, yarp::os::Searchable& labelGroup);
     };
 
     bool initialize(const Options& options);
