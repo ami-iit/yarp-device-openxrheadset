@@ -74,7 +74,7 @@ else()
     include(FetchContent)
     FetchContent_Declare(glfont
       GIT_REPOSITORY https://github.com/ami-iit/GLFont
-      GIT_TAG master)
+      GIT_TAG 64a02d6dc382e2bc052e90b15d80cc9792d689c5)
 
     FetchContent_GetProperties(glfont)
     if(NOT glfont_POPULATED)

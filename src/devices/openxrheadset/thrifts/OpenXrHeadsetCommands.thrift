@@ -107,7 +107,7 @@ service OpenXrHeadsetCommands
    /**
     * Set a label visible or not
     * @param labelIndex The label index to change state
-    * @param elevation The state to set
+    * @param enabled The state to set
     * @return True if successfull, false if the index is out of bounds
     */
     bool setLabelEnabled(1:i32 labelIndex, 2:bool enabled);
