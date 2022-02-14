@@ -308,7 +308,7 @@ Eigen::Vector3f LabelPortToQuadLayer::layerPosition() const
     return m_options.quadLayer->layerPosition();
 }
 
-void LabelPortToQuadLayer::setRotation(const Eigen::Quaternionf &rotation)
+void LabelPortToQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -318,7 +318,7 @@ void LabelPortToQuadLayer::setRotation(const Eigen::Quaternionf &rotation)
         return;
     }
 
-    m_options.quadLayer->setRotation(rotation);
+    m_options.quadLayer->setQuaternion(quaternion);
 }
 
 Eigen::Quaternionf LabelPortToQuadLayer::layerQuaternion() const

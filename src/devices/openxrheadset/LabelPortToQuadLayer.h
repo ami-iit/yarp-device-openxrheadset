@@ -73,7 +73,7 @@ public:
 
     Eigen::Vector3f layerPosition() const;
 
-    void setRotation(const Eigen::Quaternionf &rotation);
+    void setQuaternion(const Eigen::Quaternionf &quaternion);
 
     Eigen::Quaternionf layerQuaternion() const;
 
