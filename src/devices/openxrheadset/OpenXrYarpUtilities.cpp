@@ -40,16 +40,16 @@ void writeVec3OnPort(yarp::os::BufferedPort<yarp::os::Bottle> * const &port, con
     }
 }
 
-void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle> * const &port, const Eigen::Quaternionf &vec3, yarp::os::Stamp &stamp)
+void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle> * const &port, const Eigen::Quaternionf &quat, yarp::os::Stamp &stamp)
 {
     if (port)
     {
         yarp::os::Bottle& output = port->prepare();
         output.clear();
-        output.addFloat64(vec3.w());
-        output.addFloat64(vec3.x());
-        output.addFloat64(vec3.y());
-        output.addFloat64(vec3.z());
+        output.addFloat64(quat.w());
+        output.addFloat64(quat.x());
+        output.addFloat64(quat.y());
+        output.addFloat64(quat.z());
         port->setEnvelope(stamp);
         port->write();
     }

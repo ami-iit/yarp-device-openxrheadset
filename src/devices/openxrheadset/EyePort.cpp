@@ -36,7 +36,7 @@ bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::strin
     m_desiredRotation.setIdentity();
     m_rotationOffset.setIdentity();
     m_eyeRelativeImagePosition.setZero();
-    m_eyeRelativeImagePosition[2] = -1.0;
+    m_eyeRelativeImagePosition[2] = -1.0; //Initialize the z position of the camera image visualization at 1m distance
     m_eyePosition.setZero();
 
     m_localPose.resize(4,4);
@@ -124,8 +124,20 @@ void EyePort::setEyeRotationOffset(double azimuth, double elevation)
     m_rotationOffset = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
             Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
 
-    Eigen::Quaternionf desiredRotation = m_rotationOffset * m_desiredRotation;
-    m_layer.setPose(desiredRotation * m_eyeRelativeImagePosition + m_eyePosition, desiredRotation);
+    //The pose of the image is computed as a series of transforms
+    //w_H_i  = w_H_we * we_H_(e*) * (e*)_H_e * e_H_i
+    //where:
+    // - w_H_we is the transformation from the world of the headset, to the world of the eye.
+    //          This is generally only a translation along the x axis equal to half of the IPD with
+    //           the sign depending on whether it is the left or right eye.
+    // - we_H_(e*) is a correction rotation that considers eventual mechanical miscalibrations on the robot eyes (rotation offset).
+    // - (e*)_H_e is a rotation depending on the eye's elevation and azimuth angle.
+    // - e_H_i indicates the pose of the image frame with respect to the eye. This is usually just a simple translation on the z axis
+    //         with a modulus dependent on the camera focal length
+
+
+    Eigen::Quaternionf eyeRotation = m_rotationOffset * m_desiredRotation;
+    m_layer.setPose(eyeRotation * m_eyeRelativeImagePosition + m_eyePosition, eyeRotation);
 }
 
 void EyePort::setEyeRotation(double azimuth, double elevation)
@@ -141,8 +153,20 @@ void EyePort::setEyeRotation(double azimuth, double elevation)
     m_desiredRotation = Eigen::AngleAxisf(elevation, Eigen::Vector3f::UnitX()) * //The X axis is pointing to the right in the VIEW space
             Eigen::AngleAxisf(azimuth, Eigen::Vector3f::UnitY()); //The Y axis is pointing upwards in the VIEW space
 
-    Eigen::Quaternionf desiredRotation = m_rotationOffset * m_desiredRotation;
-    m_layer.setNewImageDesiredPose(desiredRotation * m_eyeRelativeImagePosition + m_eyePosition, desiredRotation);
+    Eigen::Quaternionf eyeRotation = m_rotationOffset * m_desiredRotation;
+
+    //The pose of the image is computed as a series of transforms
+    //w_H_i  = w_H_we * we_H_(e*) * (e*)_H_e * e_H_i
+    //where:
+    // - w_H_we is the transformation from the world of the headset, to the world of the eye.
+    //          This is generally only a translation along the x axis equal to half of the IPD with
+    //           the sign depending on whether it is the left or right eye.
+    // - we_H_(e*) is a correction rotation that considers eventual mechanical miscalibrations on the robot eyes (rotation offset).
+    // - (e*)_H_e is a rotation depending on the eye's elevation and azimuth angle.
+    // - e_H_i indicates the pose of the image frame with respect to the eye. This is usually just a simple translation on the z axis
+    //         with a modulus dependent on the camera focal length
+
+    m_layer.setNewImageDesiredPose(eyeRotation * m_eyeRelativeImagePosition + m_eyePosition, eyeRotation);
 }
 
 double EyePort::azimuthOffset() const
@@ -168,6 +192,17 @@ void EyePort::setEyeRelativeImagePosition(const Eigen::Vector3f &position)
     }
 
     m_eyeRelativeImagePosition = position;
+
+    //The pose of the image is computed as a series of transforms
+    //w_H_i  = w_H_we * we_H_(e*) * (e*)_H_e * e_H_i
+    //where:
+    // - w_H_we is the transformation from the world of the headset, to the world of the eye.
+    //          This is generally only a translation along the x axis equal to half of the IPD with
+    //           the sign depending on whether it is the left or right eye.
+    // - we_H_(e*) is a correction rotation that considers eventual mechanical miscalibrations on the robot eyes (rotation offset).
+    // - (e*)_H_e is a rotation depending on the eye's elevation and azimuth angle.
+    // - e_H_i indicates the pose of the image frame with respect to the eye. This is usually just a simple translation on the z axis
+    //         with a modulus dependent on the camera focal length
 
     m_layer.setPosition(m_rotationOffset * m_desiredRotation * m_eyeRelativeImagePosition + m_eyePosition);
 }

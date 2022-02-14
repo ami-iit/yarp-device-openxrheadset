@@ -16,10 +16,10 @@ OpenXrQuadLayer::OpenXrQuadLayer()
 
 }
 
-void OpenXrQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &rotation)
+void OpenXrQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)
 {
     setPosition(position);
-    setRotation(rotation);
+    setQuaternion(quaternion);
 }
 
 void OpenXrQuadLayer::setPosition(const Eigen::Vector3f &position)
@@ -27,9 +27,9 @@ void OpenXrQuadLayer::setPosition(const Eigen::Vector3f &position)
     layer.pose.position = toXr(position);
 }
 
-void OpenXrQuadLayer::setRotation(const Eigen::Quaternionf &rotation)
+void OpenXrQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
 {
-    layer.pose.orientation = toXr(rotation);
+    layer.pose.orientation = toXr(quaternion);
 }
 
 void OpenXrQuadLayer::setDimensions(float widthInMeters, float heightInMeters)

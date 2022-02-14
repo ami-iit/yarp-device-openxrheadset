@@ -39,11 +39,11 @@ public:
     OpenXrQuadLayer& operator=(OpenXrQuadLayer&&) = delete;
 
     virtual void setPose(const Eigen::Vector3f& position,
-                         const Eigen::Quaternionf &rotation) override;
+                         const Eigen::Quaternionf &quaternion) override;
 
     virtual void setPosition(const Eigen::Vector3f& position) override;
 
-    virtual void setRotation(const Eigen::Quaternionf &rotation) override;
+    virtual void setQuaternion(const Eigen::Quaternionf &quaternion) override;
 
     virtual void setDimensions(float widthInMeters, float heightInMeters) override;
 

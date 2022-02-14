@@ -32,7 +32,7 @@ class PortToQuadLayer
     GLuint m_imageTexture;
     GLint m_pixelFormat;
     Eigen::Vector3f m_newImageDesiredPosition;
-    Eigen::Quaternionf m_newImageDesiredRotation;
+    Eigen::Quaternionf m_newImageDesiredQuaternion;
     std::thread::id m_initThreadID;
     bool m_active{false};
 
@@ -94,7 +94,7 @@ public:
         m_quadLayer->useAlphaChannel(m_pixelFormat == GL_RGBA);
 
         m_newImageDesiredPosition = m_quadLayer->layerPosition();
-        m_newImageDesiredRotation = m_quadLayer->layerQuaternion();
+        m_newImageDesiredQuaternion = m_quadLayer->layerQuaternion();
 
         m_portPtr = std::make_shared<yarp::os::BufferedPort<ImageType>>();
 
@@ -179,7 +179,7 @@ public:
         }
 
         m_quadLayer->setDimensions(newWidth, newHeight);
-        m_quadLayer->setPose(m_newImageDesiredPosition, m_newImageDesiredRotation);
+        m_quadLayer->setPose(m_newImageDesiredPosition, m_newImageDesiredQuaternion);
 
         if (!m_quadLayer->submitImage())
         {
@@ -193,7 +193,7 @@ public:
     }
 
     void setPose(const Eigen::Vector3f& position,
-                         const Eigen::Quaternionf &rotation)
+                 const Eigen::Quaternionf &quaternion)
     {
         yCTrace(OPENXRHEADSET);
 
@@ -203,18 +203,18 @@ public:
             return;
         }
 
-        setNewImageDesiredPose(position, rotation);
+        setNewImageDesiredPose(position, quaternion);
 
-        m_quadLayer->setPose(position, rotation);
+        m_quadLayer->setPose(position, quaternion);
     }
 
     void setNewImageDesiredPose(const Eigen::Vector3f& position,
-                                const Eigen::Quaternionf &rotation)
+                                const Eigen::Quaternionf &quaternion)
     {
         yCTrace(OPENXRHEADSET);
 
         setNewImageDesiredPosition(position);
-        setNewImageDesiredRotation(rotation);
+        setNewImageDesiredQuaternion(quaternion);
     }
 
     void setPosition(const Eigen::Vector3f& position)
@@ -252,7 +252,7 @@ public:
         return m_quadLayer->layerPosition();
     }
 
-    void setRotation(const Eigen::Quaternionf &rotation)
+    void setQuaternion(const Eigen::Quaternionf &quaternion)
     {
         yCTrace(OPENXRHEADSET);
 
@@ -262,16 +262,16 @@ public:
             return;
         }
 
-        setNewImageDesiredRotation(rotation);
+        setNewImageDesiredQuaternion(quaternion);
 
-        m_quadLayer->setRotation(rotation);
+        m_quadLayer->setQuaternion(quaternion);
     }
 
-    void setNewImageDesiredRotation(const Eigen::Quaternionf &rotation)
+    void setNewImageDesiredQuaternion(const Eigen::Quaternionf &quaternion)
     {
         yCTrace(OPENXRHEADSET);
 
-        m_newImageDesiredRotation = rotation;
+        m_newImageDesiredQuaternion = quaternion;
     }
 
     Eigen::Quaternionf layerQuaternion() const
