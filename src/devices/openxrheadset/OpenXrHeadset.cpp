@@ -280,7 +280,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
-    m_IPD                  = std::abs(cfg.check("IPD", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
+    m_interCameraDistance                  = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
     m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
 
@@ -356,7 +356,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             return false;
         }
         m_leftEye.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-        m_leftEye.setEyePosition(Eigen::Vector3f(-m_IPD / 2.0, 0.0, 0.0));
+        m_leftEye.setEyePosition(Eigen::Vector3f(-m_interCameraDistance / 2.0, 0.0, 0.0));
         m_leftEye.setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
         m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
@@ -368,7 +368,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             return false;
         }
         m_rightEye.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
-        m_rightEye.setEyePosition(Eigen::Vector3f(m_IPD / 2.0, 0.0, 0.0));
+        m_rightEye.setEyePosition(Eigen::Vector3f(m_interCameraDistance / 2.0, 0.0, 0.0));
         m_rightEye.setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
         m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
@@ -835,25 +835,25 @@ bool yarp::dev::OpenXrHeadset::setEyesZPosition(const double eyesZPosition)
     return true;
 }
 
-double yarp::dev::OpenXrHeadset::getIPD()
+double yarp::dev::OpenXrHeadset::getInterCameraDistance()
 {
     yCTrace(OPENXRHEADSET);
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    return m_IPD;
+    return m_interCameraDistance;
 }
 
-bool yarp::dev::OpenXrHeadset::setIPD(const double ipd)
+bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
 {
     yCTrace(OPENXRHEADSET);
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_IPD = std::abs(ipd);
+    m_interCameraDistance = std::abs(distance);
 
-    m_leftEye.setEyePosition(Eigen::Vector3f(-m_IPD / 2.0, 0.0, 0.0));
-    m_rightEye.setEyePosition(Eigen::Vector3f(m_IPD / 2.0, 0.0, 0.0));
+    m_leftEye.setEyePosition(Eigen::Vector3f(-m_interCameraDistance / 2.0, 0.0, 0.0));
+    m_rightEye.setEyePosition(Eigen::Vector3f(m_interCameraDistance / 2.0, 0.0, 0.0));
 
     return true;
 }

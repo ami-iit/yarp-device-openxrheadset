@@ -80,16 +80,17 @@ service OpenXrHeadsetCommands
     bool setEyesZPosition(1: double eyesZPosition);
 
    /**
-    * Get the current interpupillary distance, i.e. the lateral distance between the visualization of the robot cameras.
+    * Get the current lateral distance between the visualization of the robot cameras.
     * @return The IPD in meters.
     */
-    double getIPD();
+    double getInterCameraDistance();
 
    /**
-    * Set the interpupillary distance, i.e. the lateral distance between the visualization of the robot cameras, in meters.
+    * Set the lateral distance between the visualization of the robot cameras, in meters.
+    * @param distance the lateral distance in meters.
     * @return True if successfull.
     */
-    bool setIPD(1:double ipd);
+    bool setInterCameraDistance(1:double distance);
 
    /**
     * Get the name of the port trough which it is possible to control the left image.
