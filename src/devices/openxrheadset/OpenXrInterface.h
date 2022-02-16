@@ -28,11 +28,11 @@ public:
     };
 
     virtual void setPose(const Eigen::Vector3f& position,
-                         const Eigen::Quaternionf &rotation) = 0;
+                         const Eigen::Quaternionf &quaternion) = 0;
 
     virtual void setPosition(const Eigen::Vector3f& position) = 0;
 
-    virtual void setRotation(const Eigen::Quaternionf &rotation) = 0;
+    virtual void setQuaternion(const Eigen::Quaternionf &quaternion) = 0;
 
     virtual void setDimensions(float widthInMeters, float heightInMeters) = 0;
 
@@ -154,6 +154,8 @@ public:
     Pose rightHandPose() const;
 
     Velocity rightHandVelocity() const;
+
+    std::string currentHandInteractionProfile() const;
 
     void getButtons(std::vector<bool>& buttons) const;
 

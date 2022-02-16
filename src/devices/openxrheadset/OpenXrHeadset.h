@@ -10,7 +10,6 @@
 #define YARP_DEV_OPENXRHEADSET_H
 
 #include <vector>
-#include <array>
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
@@ -24,8 +23,11 @@
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
 #include <yarp/os/Stamp.h>
+#include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
 #include <PortToQuadLayer.h>
+#include <EyePort.h>
+#include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
 
@@ -40,7 +42,8 @@ class OpenXrHeadset;
 class yarp::dev::OpenXrHeadset : public yarp::dev::DeviceDriver,
                                  public yarp::os::PeriodicThread,
                                  public yarp::dev::IService,
-                                 public yarp::dev::IJoypadController
+                                 public yarp::dev::IJoypadController,
+                                 public OpenXrHeadsetCommands
 {
 public:
     OpenXrHeadset();
@@ -75,6 +78,103 @@ public:
     virtual bool getAxis(unsigned int axis_id, double& value) override;
     virtual bool getStick(unsigned int stick_id, yarp::sig::Vector& value, JoypadCtrl_coordinateMode coordinate_mode) override;
     virtual bool getTouch(unsigned int touch_id, yarp::sig::Vector& value) override;
+
+    //OpenXrHeadsetCommands
+    /**
+     * Get the current interaction profile
+     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+     * @return a string indicating the interaction profile in use.
+     */
+    virtual std::string getInteractionProfile() override;
+
+    /**
+     * Get the left image width and height.
+     * @return A vector of two elements with the left image width and height, in this order
+     */
+    virtual std::vector<double> getLeftImageDimensions() override;
+
+    /**
+     * Get the right image width and height.
+     * @return A vector of two elements with the right image width and height, in this order
+     */
+    virtual std::vector<double> getRightImageDimensions() override;
+
+    /**
+     * Get the left image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @return A vector of two elements with the left image azimuth and elevation offsets in radians, in this order
+     */
+    virtual std::vector<double> getLeftImageAnglesOffsets() override;
+
+    /**
+     * Get the right image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @return A vector of two elements with the left image azimuth and elevation offsets in radians, in this order
+     */
+    virtual std::vector<double> getRightImageAnglesOffsets() override;
+
+    /**
+     * Set the left image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @param azimuth The azimuth angle offset in radians (positive anticlockwise)
+     * @param elevation The elevation angle offset in radians (positive upwards)
+     * @return True if successfull
+     */
+    virtual bool setLeftImageAnglesOffsets(const double azimuth, const double elevation) override;
+
+    /**
+     * Set the right image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
+     * @param azimuth The azimuth angle offset in radians (positive anticlockwise)
+     * @param elevation The elevation angle offset in radians (positive upwards)
+     * @return True if successfull
+     */
+    virtual bool setRightImageAnglesOffsets(const double azimuth, const double elevation) override;
+
+    /**
+     * Check if the left eye is visualizing images.
+     * @return True if the left eye is active. False otherwise
+     */
+    virtual bool isLeftEyeActive() override;
+
+    /**
+     * Check if the right eye is visualizing images.
+     * @return True if the right eye is active. False otherwise
+     */
+    virtual bool isRightEyeActive() override;
+
+    /**
+     * Get the current Z position (i.e. the location on the axis perpendicular to the screens) of the eyes visualization
+     * @return The (signed) value of the eyes Z position. The Z axis is pointing backward, hence this value will be negative.
+     */
+    virtual double getEyesZPosition() override;
+
+    /**
+     * Set the Z position (i.e. the location on the axis perpendicular to the screens) of the eyes visualization
+     * @return True if successfull, false otherwise
+     */
+    virtual bool setEyesZPosition(const double eyesZPosition) override;
+
+    /**
+     * Get the current lateral distance between the visualization of the robot cameras.
+     * @return The IPD in meters.
+     */
+    virtual double getInterCameraDistance() override;
+
+    /**
+     * Set the lateral distance between the visualization of the robot cameras, in meters.
+     * @param distance the lateral distance in meters.
+     * @return True if successfull.
+     */
+    virtual bool setInterCameraDistance(const double distance) override;
+
+    /**
+     * Get the name of the port trough which it is possible to control the left image.
+     * @return the name of the port to control the left image.
+     */
+    virtual std::string getLeftImageControlPortName() override;
+
+    /**
+     * Get the name of the port trough which it is possible to control the right image.
+     * @return the name of the port to control the right image.
+     */
+    virtual std::string getRightImageControlPortName() override;
 
 private:
 
@@ -120,34 +220,45 @@ private:
                           yarp::os::Stamp& stamp);
     };
 
-    FramePorts headFramePorts;
-    FramePorts leftHandFramePorts;
-    FramePorts rightHandFramePorts;
+    FramePorts m_headFramePorts;
+    FramePorts m_leftHandFramePorts;
+    FramePorts m_rightHandFramePorts;
 
-    yarp::os::Stamp stamp;
+    yarp::os::Stamp m_stamp;
 
     std::string m_prefix;
 
-    std::array<PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
+    EyePort m_leftEye, m_rightEye;
 
-    std::vector<GuiParam> huds;
+    double m_leftAzimuthOffset;
+    double m_leftElevationOffset;
+    double m_eyeZPosition;
+    double m_interCameraDistance;
+    double m_rightAzimuthOffset;
+    double m_rightElevationOffset;
 
-    bool getStickAsAxis;
+    std::vector<GuiParam> m_huds;
 
-    IFrameTransform* tfPublisher;
-    std::string      left_frame;
-    std::string      right_frame;
-    std::string      head_frame;
-    std::string      root_frame;
-    PolyDriver       driver;
+    bool m_getStickAsAxis;
 
-    std::atomic_bool closed{ false };
+    IFrameTransform* m_tfPublisher;
+    std::string      m_leftFrame;
+    std::string      m_rightFrame;
+    std::string      m_headFrame;
+    std::string      m_leftEyeFrame;
+    std::string      m_rightEyeFrame;
+    std::string      m_rootFrame;
+    PolyDriver       m_driver;
 
-    OpenXrInterface openXrInterface;
+    yarp::os::Port m_rpcPort;
 
-    std::vector<bool> buttons;
-    std::vector<float> axes;
-    std::vector<Eigen::Vector2f> thumbsticks;
+    std::atomic_bool m_closed{ false };
+
+    OpenXrInterface m_openXrInterface;
+
+    std::vector<bool> m_buttons;
+    std::vector<float> m_axes;
+    std::vector<Eigen::Vector2f> m_thumbsticks;
 
     std::mutex m_mutex;
 

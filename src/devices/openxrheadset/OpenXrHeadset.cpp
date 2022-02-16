@@ -13,50 +13,9 @@
 
 #include <OpenXrHeadset.h>
 #include <OpenXrHeadsetLogComponent.h>
+#include <OpenXrYarpUtilities.h>
 
 typedef bool(yarp::os::Value::*valueIsType)(void) const;
-
-inline void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output)
-{
-    Eigen::Matrix3f rotationMatrix = input.rotation.toRotationMatrix();
-    for (size_t i = 0; i < 3; ++i)
-    {
-        for (size_t j = 0; j < 3; ++j)
-        {
-            output(i,j) = rotationMatrix(i,j);
-        }
-        output(i, 3) = input.position(i);
-    }
-}
-
-inline void writeVec3OnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port, const Eigen::Vector3f& vec3, yarp::os::Stamp& stamp)
-{
-    if (port)
-    {
-        yarp::os::Bottle& output = port->prepare();
-        output.clear();
-        output.addFloat64(vec3[0]);
-        output.addFloat64(vec3[1]);
-        output.addFloat64(vec3[2]);
-        port->setEnvelope(stamp);
-        port->write();
-    }
-}
-
-inline void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port, const Eigen::Quaternionf& vec3, yarp::os::Stamp& stamp)
-{
-    if (port)
-    {
-        yarp::os::Bottle& output = port->prepare();
-        output.clear();
-        output.addFloat64(vec3.w());
-        output.addFloat64(vec3.x());
-        output.addFloat64(vec3.y());
-        output.addFloat64(vec3.z());
-        port->setEnvelope(stamp);
-        port->write();
-    }
-}
 
 bool yarp::dev::OpenXrHeadset::FramePorts::open(const std::string &name, const std::string &portPrefix, IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
 {
@@ -221,7 +180,7 @@ void yarp::dev::OpenXrHeadset::FramePorts::publishFrame(const OpenXrInterface::P
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
       yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes), // ~90 fps
-      stamp(0,0.0)
+      m_stamp(0,0.0)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -298,25 +257,32 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                     }
                 }
 
-                huds.emplace_back();
+                m_huds.emplace_back();
 
-                huds.back().width = guip.find("width").asFloat64();
-                huds.back().height = guip.find("height").asFloat64();
-                huds.back().x       = guip.find("x").asFloat64();
-                huds.back().y       = guip.find("y").asFloat64();
-                huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+                m_huds.back().width = guip.find("width").asFloat64();
+                m_huds.back().height = guip.find("height").asFloat64();
+                m_huds.back().x       = guip.find("x").asFloat64();
+                m_huds.back().y       = guip.find("y").asFloat64();
+                m_huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                huds.back().portName = m_prefix + "/" + groupName;
+                m_huds.back().portName = m_prefix + "/" + groupName;
             }
         }
     }
 
-    getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
-    left_frame     = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
-    right_frame    = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
-    head_frame     = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
-    root_frame     = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
-
+    m_getStickAsAxis       = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
+    m_leftFrame            = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
+    m_rightFrame           = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
+    m_headFrame            = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
+    m_leftEyeFrame         = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
+    m_rightEyeFrame        = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
+    m_rootFrame            = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
+    m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+    m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+    m_interCameraDistance  = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
+    m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+    m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
 
     //opening tf client
     yarp::os::Property tfClientCfg;
@@ -324,30 +290,30 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     tfClientCfg.put("local",  cfg.check("tfLocal", yarp::os::Value(m_prefix + "/tf")).asString());
     tfClientCfg.put("remote", cfg.check("tfRemote", yarp::os::Value("/transformServer")).asString());
 
-    if (!driver.open(tfClientCfg))
+    if (!m_driver.open(tfClientCfg))
     {
         yCError(OPENXRHEADSET) << "Unable to open polydriver with the following options:" << tfClientCfg.toString();
         return false;
     }
 
-    if (!driver.view(tfPublisher) || tfPublisher == nullptr)
+    if (!m_driver.view(m_tfPublisher) || m_tfPublisher == nullptr)
     {
         yCError(OPENXRHEADSET) << "Unable to view IFrameTransform interface.";
         return false;
     }
     yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
 
-    if (!headFramePorts.open("Head", m_prefix + "/headpose", tfPublisher, head_frame, root_frame))
+    if (!m_headFramePorts.open("Head", m_prefix + "/headpose", m_tfPublisher, m_headFrame, m_rootFrame))
     {
         return false;
     }
 
-    if (!leftHandFramePorts.open("Left Hand", m_prefix + "/left_hand", tfPublisher, left_frame, root_frame))
+    if (!m_leftHandFramePorts.open("Left Hand", m_prefix + "/left_hand", m_tfPublisher, m_leftFrame, m_rootFrame))
     {
         return false;
     }
 
-    if (!rightHandFramePorts.open("Right Hand", m_prefix + "/right_hand", tfPublisher, right_frame, root_frame))
+    if (!m_rightHandFramePorts.open("Right Hand", m_prefix + "/right_hand", m_tfPublisher, m_rightFrame, m_rootFrame))
     {
         return false;
     }
@@ -372,36 +338,63 @@ bool yarp::dev::OpenXrHeadset::close()
 bool yarp::dev::OpenXrHeadset::threadInit()
 {
     yCTrace(OPENXRHEADSET);
-    if (!openXrInterface.initialize())
-    {
-        yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
-        return false;
-    }
 
-    for (size_t eye = 0; eye < 2; ++eye) {
-        if (!displayPorts[eye].initialize(openXrInterface.addHeadFixedQuadLayer(),
-                                          (eye == 0 ? m_prefix + "/display/left:i" : m_prefix + "/display/right:i"))) {
-            yCError(OPENXRHEADSET) << "Cannot initialize" << (eye == 0 ? "left" : "right") << "display texture.";
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        if (!m_openXrInterface.initialize())
+        {
+            yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
             return false;
         }
-        displayPorts[eye].setVisibility(eye == 0 ? IOpenXrQuadLayer::Visibility::LEFT_EYE : IOpenXrQuadLayer::Visibility::RIGHT_EYE);
-    }
 
-    for (GuiParam& gui : huds)
-    {
-        if (!gui.layer.initialize(openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
-            yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
+        if (!m_leftEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
+                            m_prefix + "/display/left:i",
+                            m_prefix + "/eyeAngles/left:i",
+                            m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
             return false;
         }
-        gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
-        gui.layer.setDimensions(gui.width, gui.height);
-        gui.layer.setPosition({gui.x, gui.y, gui.z});
+        m_leftEye.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
+        m_leftEye.setEyePosition(Eigen::Vector3f(-m_interCameraDistance / 2.0, 0.0, 0.0));
+        m_leftEye.setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
+        m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+        if (!m_rightEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
+                             m_prefix + "/display/right:i",
+                             m_prefix + "/eyeAngles/right:i",
+                             m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
+            return false;
+        }
+        m_rightEye.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
+        m_rightEye.setEyePosition(Eigen::Vector3f(m_interCameraDistance / 2.0, 0.0, 0.0));
+        m_rightEye.setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
+        m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+        for (GuiParam& gui : m_huds)
+        {
+            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
+                yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
+                return false;
+            }
+            gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            gui.layer.setDimensions(gui.width, gui.height);
+            gui.layer.setPosition({gui.x, gui.y, gui.z});
+        }
     }
 
-    for (size_t i = 0; i < 10 && openXrInterface.isRunning(); ++i)
+    for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
     {
         run(); //dry run. This is to make sure that the number of buttons is correctly retrieved by the JoypadControlServer
         yarp::os::Time::delay(this->getPeriod());
+    }
+
+    this->yarp().attachAsServer(this->m_rpcPort);
+    if(!m_rpcPort.open(m_prefix + "/rpc"))
+    {
+        yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
+        return false;
     }
 
     return true;
@@ -410,59 +403,69 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 void yarp::dev::OpenXrHeadset::threadRelease()
 {
     yCTrace(OPENXRHEADSET);
-    if (closed)
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_closed)
         return;
 
-    openXrInterface.close();
+    m_openXrInterface.close();
 
-    if (tfPublisher)
+    if (m_tfPublisher)
     {
-        driver.close();
-        tfPublisher = nullptr;
+        m_driver.close();
+        m_tfPublisher = nullptr;
     }
 
-    headFramePorts.close();
-    leftHandFramePorts.close();
-    rightHandFramePorts.close();
+    m_headFramePorts.close();
+    m_leftHandFramePorts.close();
+    m_rightHandFramePorts.close();
+    m_leftEye.close();
+    m_rightEye.close();
 
-    closed = true;
+    m_rpcPort.close();
+
+    m_closed = true;
 }
 
 void yarp::dev::OpenXrHeadset::run()
 {
     yCTrace(OPENXRHEADSET);
 
-    if (openXrInterface.isRunning())
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_openXrInterface.isRunning())
     {
-        for (int eye = 0; eye < 2; ++eye) {
-            if (!displayPorts[eye].updateTexture()) {
-                yCError(OPENXRHEADSET) << "Failed to update" << (eye == 0 ? "left" : "right") << "display texture.";
-                return;
-            }
+        if (!m_leftEye.update()) {
+            yCError(OPENXRHEADSET) << "Failed to update left eye.";
+            return;
         }
 
-        for (GuiParam& gui : huds)
+        if (!m_rightEye.update()) {
+            yCError(OPENXRHEADSET) << "Failed to update right eye.";
+            return;
+        }
+
+        for (GuiParam& gui : m_huds)
         {
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
                 return;
             }
         }
-        openXrInterface.draw();
+        m_openXrInterface.draw();
 
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
+        m_openXrInterface.getButtons(m_buttons);
+        m_openXrInterface.getAxes(m_axes);
+        m_openXrInterface.getThumbsticks(m_thumbsticks);
 
-            openXrInterface.getButtons(buttons);
-            openXrInterface.getAxes(axes);
-            openXrInterface.getThumbsticks(thumbsticks);
-        }
+        m_stamp.update(m_openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
 
-        stamp.update(openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
+        m_headFramePorts.publishFrame(m_openXrInterface.headPose(), m_openXrInterface.headVelocity(), m_stamp);
+        m_leftHandFramePorts.publishFrame(m_openXrInterface.leftHandPose(), m_openXrInterface.leftHandVelocity(), m_stamp);
+        m_rightHandFramePorts.publishFrame(m_openXrInterface.rightHandPose(), m_openXrInterface.rightHandVelocity(), m_stamp);
 
-        headFramePorts.publishFrame(openXrInterface.headPose(), openXrInterface.headVelocity(), stamp);
-        leftHandFramePorts.publishFrame(openXrInterface.leftHandPose(), openXrInterface.leftHandVelocity(), stamp);
-        rightHandFramePorts.publishFrame(openXrInterface.rightHandPose(), openXrInterface.rightHandVelocity(), stamp);
+        m_leftEye.publishEyeTransform();
+        m_rightEye.publishEyeTransform();
 
     }
     else
@@ -483,7 +486,7 @@ bool yarp::dev::OpenXrHeadset::updateService()
 {
     yCTrace(OPENXRHEADSET);
     //To let the device driver that we are still alive
-    return !closed;
+    return !m_closed;
 }
 
 bool yarp::dev::OpenXrHeadset::stopService()
@@ -498,11 +501,11 @@ bool yarp::dev::OpenXrHeadset::getAxisCount(unsigned int &axis_count)
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    axis_count = axes.size();
+    axis_count = m_axes.size();
 
-    if (getStickAsAxis)
+    if (m_getStickAsAxis)
     {
-        axis_count += 2 * thumbsticks.size();
+        axis_count += 2 * m_thumbsticks.size();
     }
 
     return true;
@@ -514,7 +517,7 @@ bool yarp::dev::OpenXrHeadset::getButtonCount(unsigned int &button_count)
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    button_count = buttons.size();
+    button_count = m_buttons.size();
 
     return true;
 }
@@ -552,13 +555,13 @@ bool yarp::dev::OpenXrHeadset::getStickCount(unsigned int &stick_count)
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (getStickAsAxis)
+    if (m_getStickAsAxis)
     {
         stick_count = 0;
     }
     else
     {
-        stick_count = thumbsticks.size();
+        stick_count = m_thumbsticks.size();
     }
 
     return true;
@@ -572,14 +575,14 @@ bool yarp::dev::OpenXrHeadset::getStickDoF(unsigned int stick_id, unsigned int &
 
     dof = 2; //Al thumbsticks have two degrees of freedom in OpenXR
 
-    if (getStickAsAxis)
+    if (m_getStickAsAxis)
     {
         yCError(OPENXRHEADSET) << "The sticks are considered as axis, so there are none.";
         return false;
     }
-    else if (stick_id >= thumbsticks.size())
+    else if (stick_id >= m_thumbsticks.size())
     {
-        yCError(OPENXRHEADSET) << "The stick_id" << stick_id << "is out of bound. Only" << thumbsticks.size() << "sticks are available." ;
+        yCError(OPENXRHEADSET) << "The stick_id" << stick_id << "is out of bound. Only" << m_thumbsticks.size() << "sticks are available." ;
         return false;
     }
 
@@ -592,13 +595,13 @@ bool yarp::dev::OpenXrHeadset::getButton(unsigned int button_id, float &value)
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (button_id < buttons.size())
+    if (button_id < m_buttons.size())
     {
-        value = buttons[button_id];
+        value = m_buttons[button_id];
     }
     else
     {
-        yCError(OPENXRHEADSET) << "Requested button with index" << button_id << ", but there are" << buttons.size() << "buttons.";
+        yCError(OPENXRHEADSET) << "Requested button with index" << button_id << ", but there are" << m_buttons.size() << "buttons.";
         return false;
     }
 
@@ -629,25 +632,25 @@ bool yarp::dev::OpenXrHeadset::getAxis(unsigned int axis_id, double &value)
 
     unsigned int inputId = axis_id;
 
-    if (inputId < axes.size())
+    if (inputId < m_axes.size())
     {
-        value = axes[inputId];
+        value = m_axes[inputId];
     }
     else
     {
-        if (getStickAsAxis)
+        if (m_getStickAsAxis)
         {
-            inputId -= axes.size();
-            if (inputId < 2 * thumbsticks.size())
+            inputId -= m_axes.size();
+            if (inputId < 2 * m_thumbsticks.size())
             {
                 unsigned int thumbstickId = inputId / 2;
 
-                value = thumbsticks[thumbstickId][inputId % 2]; //Each thumbstick counts as two axes
+                value = m_thumbsticks[thumbstickId][inputId % 2]; //Each thumbstick counts as two axes
             }
             else
             {
                 yCError(OPENXRHEADSET) << "The axis_id" << axis_id << "is out of bounds. There are"
-                                       << axes.size() << "axes and" << thumbsticks.size()
+                                       << m_axes.size() << "axes and" << m_thumbsticks.size()
                                        << "thumbsticks (counting as two axes each).";
                 return false;
             }
@@ -655,7 +658,7 @@ bool yarp::dev::OpenXrHeadset::getAxis(unsigned int axis_id, double &value)
         else
         {
             yCError(OPENXRHEADSET) << "The axis_id" << axis_id << "is out of bounds. There are"
-                                   << axes.size() << "axes.";
+                                   << m_axes.size() << "axes.";
             return false;
         }
     }
@@ -670,29 +673,29 @@ bool yarp::dev::OpenXrHeadset::getStick(unsigned int stick_id, yarp::sig::Vector
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (getStickAsAxis)
+    if (m_getStickAsAxis)
     {
         yCError(OPENXRHEADSET) << "The sticks are considered axis, so there are none";
         return false;
     }
 
-    if (stick_id < thumbsticks.size())
+    if (stick_id < m_thumbsticks.size())
     {
         value.resize(2);
         if (coordinate_mode == JoypadCtrl_coordinateMode::JypCtrlcoord_POLAR)
         {
-            value[0] = thumbsticks[stick_id].norm();
-            value[1] = atan2(thumbsticks[stick_id][1], thumbsticks[stick_id][0]);
+            value[0] = m_thumbsticks[stick_id].norm();
+            value[1] = atan2(m_thumbsticks[stick_id][1], m_thumbsticks[stick_id][0]);
         }
         else
         {
-            value[0] = thumbsticks[stick_id][0];
-            value[1] = thumbsticks[stick_id][1];
+            value[0] = m_thumbsticks[stick_id][0];
+            value[1] = m_thumbsticks[stick_id][1];
         }
     }
     else
     {
-        yCError(OPENXRHEADSET) << "The stick_id" << stick_id << "is out of bound. Only" << thumbsticks.size() << "sticks are available." ;
+        yCError(OPENXRHEADSET) << "The stick_id" << stick_id << "is out of bound. Only" << m_thumbsticks.size() << "sticks are available." ;
         return false;
     }
 
@@ -707,4 +710,166 @@ bool yarp::dev::OpenXrHeadset::getTouch(unsigned int /*touch_id*/, yarp::sig::Ve
     return false;
 }
 
+std::string yarp::dev::OpenXrHeadset::getInteractionProfile()
+{
+    yCTrace(OPENXRHEADSET);
 
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_openXrInterface.currentHandInteractionProfile();
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageDimensions()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = m_leftEye.layerWidth();
+    output[1] = m_leftEye.layerHeight();
+
+    return output;
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getRightImageDimensions()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = m_rightEye.layerWidth();
+    output[1] = m_rightEye.layerHeight();
+
+    return output;
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageAnglesOffsets()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = m_leftEye.azimuthOffset();
+    output[1] = m_leftEye.elevationOffset();
+
+    return output;
+}
+
+std::vector<double> yarp::dev::OpenXrHeadset::getRightImageAnglesOffsets()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    std::vector<double> output(2);
+    output[0] = m_rightEye.azimuthOffset();
+    output[1] = m_rightEye.elevationOffset();
+
+    return output;
+}
+
+bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, const double elevation)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    m_leftEye.setEyeRotationOffset(azimuth, elevation);
+
+    return true;
+}
+
+bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, const double elevation)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    m_rightEye.setEyeRotationOffset(azimuth, elevation);
+
+    return true;
+}
+
+bool yarp::dev::OpenXrHeadset::isLeftEyeActive()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_leftEye.active();
+}
+
+bool yarp::dev::OpenXrHeadset::isRightEyeActive()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_rightEye.active();
+}
+
+double yarp::dev::OpenXrHeadset::getEyesZPosition()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_eyeZPosition;
+}
+
+bool yarp::dev::OpenXrHeadset::setEyesZPosition(const double eyesZPosition)
+{
+
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    m_eyeZPosition = -std::max(0.01, std::abs(eyesZPosition));
+
+    m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+    m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+
+    return true;
+}
+
+double yarp::dev::OpenXrHeadset::getInterCameraDistance()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_interCameraDistance;
+}
+
+bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    m_interCameraDistance = std::abs(distance);
+
+    m_leftEye.setEyePosition(Eigen::Vector3f(-m_interCameraDistance / 2.0, 0.0, 0.0));
+    m_rightEye.setEyePosition(Eigen::Vector3f(m_interCameraDistance / 2.0, 0.0, 0.0));
+
+    return true;
+}
+
+std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_leftEye.controlPortName();
+}
+
+std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_rightEye.controlPortName();
+}

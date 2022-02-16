@@ -23,10 +23,7 @@ if(NOT ENABLE_openxrheadset)
   return()
 endif()
 
-yarp_add_plugin(yarp_openxrheadset)
-
 set(yarp_openxrheadset_SRCS
-  OpenXrHeadset.cpp
   OpenXrHeadsetLogComponent.cpp
   OpenXrInterface.cpp
   impl/OpenXrQuadLayer.cpp
@@ -36,7 +33,6 @@ set(yarp_openxrheadset_SRCS
 set(yarp_openxrheadset_HDRS
   OpenXrConfig.h
   OpenGLConfig.h
-  OpenXrHeadset.h
   OpenXrHeadsetLogComponent.h
   PortToQuadLayer.h
   OpenXrInterface.h
@@ -45,10 +41,31 @@ set(yarp_openxrheadset_HDRS
   impl/OpenXrInterfaceImpl.h
   )
 
+set(yarp_openxrheadset_driver_SRCS
+    OpenXrHeadset.cpp
+    OpenXrYarpUtilities.cpp
+    EyePort.cpp
+)
+
+set(yarp_openxrheadset_driver_HDRS
+    OpenXrHeadset.h
+    OpenXrYarpUtilities.h
+    EyePort.h
+)
+
+set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)
+
+yarp_add_idl(yarp_openxrheadset_GEN_FILES ${THRIFTS})
+
+yarp_add_plugin(yarp_openxrheadset)
+
 target_sources(yarp_openxrheadset
   PRIVATE
+    ${yarp_openxrheadset_driver_SRCS}
+    ${yarp_openxrheadset_driver_HDRS}
     ${yarp_openxrheadset_SRCS}
     ${yarp_openxrheadset_HDRS}
+    ${yarp_openxrheadset_GEN_FILES}
 )
 
 target_link_libraries(yarp_openxrheadset
@@ -78,7 +95,11 @@ if(BUILD_TESTING)
 
     target_link_libraries(openxrheadset_test
         PRIVATE
-        ${YARP_LIBRARIES}
+        YARP::YARP_os
+        YARP::YARP_sig
+        YARP::YARP_dev
+        YARP::YARP_math
+        YARP::YARP_init
         OpenXR::openxr_loader
         glfw
         GLEW::GLEW

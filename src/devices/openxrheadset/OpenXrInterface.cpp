@@ -955,8 +955,7 @@ bool OpenXrInterface::updateInteractionProfile()
 
     if (handInteractionProfiles[0] != handInteractionProfiles[1])
     {
-        yCError(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
-        return false;
+        yCWarning(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
     }
 
     m_pimpl->currentHandInteractionProfile = handInteractionProfiles[0];
@@ -1280,10 +1279,9 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
             .imageArrayIndex = 0
         },
         .pose = initialPose,
-        .size = {.width = 1.75, .height = 1.75} //These numbers have been heuristically found
-                                                //to fit almost the entirety of the screen when
-                                                //at 1 meter distance. This, of course, will
-                                                //depend on the FOV. They can be edited at any time
+        .size = {.width = 1.5, .height = 1.5} //These numbers have been heuristically found
+                                                //considering more or less the focal length of iCub cameras
+                                                //fixing the layer at 1 meter distance.
     };
 
     XrResult result = xrCreateSwapchain(m_pimpl->session, &(swapchain_create_info), &(newLayer->layer.subImage.swapchain));
@@ -1345,6 +1343,26 @@ OpenXrInterface::Pose OpenXrInterface::rightHandPose() const
 OpenXrInterface::Velocity OpenXrInterface::rightHandVelocity() const
 {
     return m_pimpl->getVelocity(m_pimpl->hand_velocities[1]);
+}
+
+std::string OpenXrInterface::currentHandInteractionProfile() const
+{
+    if (m_pimpl->currentHandInteractionProfile == "/interaction_profiles/khr/simple_controller")
+    {
+        return "khr_simple_controller";
+    }
+
+    if (m_pimpl->currentHandInteractionProfile == "/interaction_profiles/htc/vive_controller")
+    {
+        return "htc_vive_controller";
+    }
+
+    if (m_pimpl->currentHandInteractionProfile == "/interaction_profiles/oculus/touch_controller")
+    {
+        return "oculus_touch_controller";
+    }
+
+    return "none";
 }
 
 void OpenXrInterface::getButtons(std::vector<bool> &buttons) const

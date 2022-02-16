@@ -11,6 +11,7 @@
 
 #include <OpenGLConfig.h>
 
+#include <Eigen/Geometry>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/sig/Image.h>
 #include <yarp/os/LogStream.h>
@@ -30,7 +31,10 @@ class PortToQuadLayer
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
     GLint m_pixelFormat;
+    Eigen::Vector3f m_newImageDesiredPosition;
+    Eigen::Quaternionf m_newImageDesiredQuaternion;
     std::thread::id m_initThreadID;
+    bool m_active{false};
 
 public:
 
@@ -88,6 +92,9 @@ public:
 
         m_quadLayer = quadLayer;
         m_quadLayer->useAlphaChannel(m_pixelFormat == GL_RGBA);
+
+        m_newImageDesiredPosition = m_quadLayer->layerPosition();
+        m_newImageDesiredQuaternion = m_quadLayer->layerQuaternion();
 
         m_portPtr = std::make_shared<yarp::os::BufferedPort<ImageType>>();
 
@@ -172,6 +179,7 @@ public:
         }
 
         m_quadLayer->setDimensions(newWidth, newHeight);
+        m_quadLayer->setPose(m_newImageDesiredPosition, m_newImageDesiredQuaternion);
 
         if (!m_quadLayer->submitImage())
         {
@@ -179,11 +187,13 @@ public:
             return false;
         }
 
+        m_active = true;
+
         return true;
     }
 
     void setPose(const Eigen::Vector3f& position,
-                         const Eigen::Quaternionf &rotation)
+                 const Eigen::Quaternionf &quaternion)
     {
         yCTrace(OPENXRHEADSET);
 
@@ -193,7 +203,18 @@ public:
             return;
         }
 
-        m_quadLayer->setPose(position, rotation);
+        setNewImageDesiredPose(position, quaternion);
+
+        m_quadLayer->setPose(position, quaternion);
+    }
+
+    void setNewImageDesiredPose(const Eigen::Vector3f& position,
+                                const Eigen::Quaternionf &quaternion)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        setNewImageDesiredPosition(position);
+        setNewImageDesiredQuaternion(quaternion);
     }
 
     void setPosition(const Eigen::Vector3f& position)
@@ -206,10 +227,32 @@ public:
             return;
         }
 
+        setNewImageDesiredPosition(position);
+
         m_quadLayer->setPosition(position);
     }
 
-    void setRotation(const Eigen::Quaternionf &rotation)
+    void setNewImageDesiredPosition(const Eigen::Vector3f& position)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        m_newImageDesiredPosition = position;
+    }
+
+    Eigen::Vector3f layerPosition() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return Eigen::Vector3f::Zero();
+        }
+
+        return m_quadLayer->layerPosition();
+    }
+
+    void setQuaternion(const Eigen::Quaternionf &quaternion)
     {
         yCTrace(OPENXRHEADSET);
 
@@ -219,7 +262,29 @@ public:
             return;
         }
 
-        m_quadLayer->setRotation(rotation);
+        setNewImageDesiredQuaternion(quaternion);
+
+        m_quadLayer->setQuaternion(quaternion);
+    }
+
+    void setNewImageDesiredQuaternion(const Eigen::Quaternionf &quaternion)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        m_newImageDesiredQuaternion = quaternion;
+    }
+
+    Eigen::Quaternionf layerQuaternion() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return Eigen::Quaternionf::Identity();
+        }
+
+        return m_quadLayer->layerQuaternion();
     }
 
     void setDimensions(float widthInMeters, float heightInMeters)
@@ -246,6 +311,39 @@ public:
         }
 
         m_quadLayer->setVisibility(visibility);
+    }
+
+    float layerWidth() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return 0.0;
+        }
+
+        return m_quadLayer->layerWidth();
+    }
+
+    float layerHeight() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return 0.0;
+        }
+
+        return m_quadLayer->layerHeight();
+    }
+
+    bool active() const
+    {
+        yCTrace(OPENXRHEADSET);
+
+        return m_active;
     }
 
 };

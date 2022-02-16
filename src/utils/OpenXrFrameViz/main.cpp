@@ -12,16 +12,23 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/os/LogStream.h>
+#include <yarp/os/ResourceFinder.h>
 
 #include <iostream>
 #include <cstdlib>
 #include <memory>
 #include <csignal>
+#include <unordered_map>
+#include <chrono>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 std::atomic<bool> isClosing{false};
 
 void my_handler(int)
 {
+    yInfo() << "Closing";
     isClosing = true;
 }
 
@@ -69,10 +76,12 @@ struct FrameViewer
     iDynTree::Transform transform;
 };
 
-int main(int /*argc*/, char** /*argv*/)
+int main(int argc, char** argv)
 {
-    std::string namePrefix = "/OpenXrFrameViewer";
-    // Visualize the model
+    handleSigInt();
+    yarp::os::ResourceFinder& rf = yarp::os::ResourceFinder::getResourceFinderSingleton();
+    rf.configure(argc, argv);
+
     iDynTree::Visualizer visualizer;
 
     bool ok = visualizer.init();
@@ -88,8 +97,8 @@ int main(int /*argc*/, char** /*argv*/)
 
     yarp::os::Property tfClientCfg;
     tfClientCfg.put("device", "transformClient");
-    tfClientCfg.put("local",  namePrefix +"/tf");
-    tfClientCfg.put("remote", "/transformServer");
+    tfClientCfg.put("local",  rf.check("tfLocal", yarp::os::Value("/OpenXrFrameViewer/tf")).asString());
+    tfClientCfg.put("remote", rf.check("tfRemote", yarp::os::Value("/transformServer")).asString());
 
     yarp::dev::PolyDriver driver;
     yarp::dev::IFrameTransform* tfReader;
@@ -115,45 +124,50 @@ int main(int /*argc*/, char** /*argv*/)
     openXrInertial.setPosition(iDynTree::Position::Zero());
     openXrInertial.setRotation(openXrInertialRotation);
 
-    std::vector<std::shared_ptr<FrameViewer>> frames;
+    std::unordered_map<std::string, std::shared_ptr<FrameViewer>> frames;
 
     std::shared_ptr<FrameViewer> rootFrame = std::make_shared<FrameViewer>();
-    rootFrame->name = "openxr_origin";
+    rootFrame->name = rf.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     rootFrame->transform = openXrInertial;
     rootFrame->vizIndex = visualizer.frames().addFrame(openXrInertial, 0.5);
     visualizer.frames().getFrameLabel(rootFrame->vizIndex)->setText(rootFrame->name);
-    frames.push_back(rootFrame);
-
-    std::shared_ptr<FrameViewer> headFrame = std::make_shared<FrameViewer>();
-    headFrame->name = "openxr_head";
-    headFrame->parent = rootFrame;
-    headFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
-    visualizer.frames().getFrameLabel(headFrame->vizIndex)->setText(headFrame->name);
-    frames.push_back(headFrame);
-
-    std::shared_ptr<FrameViewer> leftHandFrame = std::make_shared<FrameViewer>();
-    leftHandFrame->name = "openxr_left_hand";
-    leftHandFrame->parent = rootFrame;
-    leftHandFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
-    visualizer.frames().getFrameLabel(leftHandFrame->vizIndex)->setText(leftHandFrame->name);
-    frames.push_back(leftHandFrame);
-
-    std::shared_ptr<FrameViewer> rightHandFrame = std::make_shared<FrameViewer>();
-    rightHandFrame->name = "openxr_right_hand";
-    rightHandFrame->parent = rootFrame;
-    rightHandFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity());
-    visualizer.frames().getFrameLabel(rightHandFrame->vizIndex)->setText(rightHandFrame->name);
-    frames.push_back(rightHandFrame);
+    frames[rootFrame->name] = rootFrame;
 
     iDynTree::Transform transformBuffer;
     yarp::sig::Matrix matrixBuffer;
     matrixBuffer.resize(4, 4);
+    double lastIDsUpdate = yarp::os::Time::now() - 2.0;
 
     // Visualization loop
     while( visualizer.run() && !isClosing )
     {
-        for (auto& frame: frames)
+        if (yarp::os::Time::now() - lastIDsUpdate > 1.0)
         {
+            std::vector<std::string> ids; //When getting the ids, it seems that the input vector is not cleared. Passing a clean one every time.
+            if(tfReader->getAllFrameIds(ids))
+            {
+                for(std::string& id : ids)
+                {
+                    if (frames.find(id) == frames.end())
+                    {
+                        if (tfReader->canTransform(id, rootFrame->name)) //The frame has never been added and it is linked to the openxr_origin
+                        {
+                            std::shared_ptr<FrameViewer> newFrame = std::make_shared<FrameViewer>();
+                            newFrame->name = id;
+                            newFrame->parent = rootFrame;
+                            newFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity(), 0.5);
+                            visualizer.frames().getFrameLabel(newFrame->vizIndex)->setText(newFrame->name);
+                            frames[id] = newFrame;
+                        }
+                    }
+                }
+            }
+            lastIDsUpdate = yarp::os::Time::now();
+        }
+
+        for (auto& frameIt: frames)
+        {
+            auto& frame = frameIt.second;
             if (frame->parent)
             {
                 if (tfReader->getTransform(frame->name, frame->parent->name, matrixBuffer))
@@ -166,6 +180,7 @@ int main(int /*argc*/, char** /*argv*/)
         }
 
         visualizer.draw();
+        std::this_thread::sleep_for(1ms);
     }
 
     return EXIT_SUCCESS;
