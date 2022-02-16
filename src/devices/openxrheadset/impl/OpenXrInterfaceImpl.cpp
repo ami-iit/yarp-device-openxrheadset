@@ -105,10 +105,10 @@ void OpenXrInterface::Implementation::glfwErrorCallback(int error, const char *d
     yCError(OPENXRHEADSET) << "GLFW Error:" << error << description;
 }
 
-void OpenXrInterface::Implementation::GLMessageCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei, const GLchar *message, const void *) {
-    yCError(OPENXRHEADSET, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s",
+void OpenXrInterface::Implementation::GLMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei, const GLchar *message, const void *) {
+    yCError(OPENXRHEADSET, "GL CALLBACK: %s source = 0x%x, type = 0x%x, id = 0x%x, severity = 0x%x, message = %s",
             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
+            source, type, id, severity, message );
 }
 
 void OpenXrInterface::Implementation::submitLayer(const XrCompositionLayerBaseHeader *layer)

@@ -336,11 +336,12 @@ bool OpenXrInterface::prepareGL()
     }
     yCInfo(OPENXRHEADSET) << "Using GLEW" << (const char*)glewGetString(GLEW_VERSION);
 
+    glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE); //This is to ignore message 0x20071 about the use of the VIDEO memory
+
     glDebugMessageCallback(&OpenXrInterface::Implementation::GLMessageCallback, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_TEXTURE_2D);
-
 
     return true;
 }

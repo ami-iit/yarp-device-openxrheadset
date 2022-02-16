@@ -25,7 +25,8 @@
 #include <yarp/os/Stamp.h>
 #include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
-#include <PortToQuadLayer.h>
+#include <ImagePortToQuadLayer.h>
+#include <LabelPortToQuadLayer.h>
 #include <EyePort.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
@@ -176,6 +177,14 @@ public:
      */
     virtual std::string getRightImageControlPortName() override;
 
+    /**
+     * Set a label visible or not
+     * @param labelIndex The label index to change state
+     * @param elevation The state to set
+     * @return True if successfull, false if the index is out of bounds
+     */
+    virtual bool setLabelEnabled(const std::int32_t labelIndex, const bool enabled) override;
+
 private:
 
     struct GuiParam
@@ -186,7 +195,18 @@ private:
         float         y;
         float         z;
         std::string    portName;
-        PortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
+        ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
+    };
+
+    struct LabelLayer
+    {
+        float         width;
+        float         height;
+        float         x;
+        float         y;
+        float         z;
+        LabelPortToQuadLayer::Options options;
+        LabelPortToQuadLayer layer;
     };
 
     class FramePorts
@@ -238,6 +258,7 @@ private:
     double m_rightElevationOffset;
 
     std::vector<GuiParam> m_huds;
+    std::vector<LabelLayer> m_labels;
 
     bool m_getStickAsAxis;
 

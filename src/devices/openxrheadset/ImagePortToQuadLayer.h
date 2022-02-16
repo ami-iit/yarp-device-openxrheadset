@@ -6,8 +6,8 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#ifndef YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
-#define YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
+#ifndef YARP_OPENXRHEADSET_IMAGEPORTTOQUADLAYER_H
+#define YARP_OPENXRHEADSET_IMAGEPORTTOQUADLAYER_H
 
 #include <OpenGLConfig.h>
 
@@ -23,10 +23,10 @@
 #include <OpenXrHeadsetLogComponent.h>
 
 template <typename ImageType>
-class PortToQuadLayer
+class ImagePortToQuadLayer
 {
     std::shared_ptr<IOpenXrQuadLayer> m_quadLayer{nullptr};
-    std::shared_ptr<yarp::os::BufferedPort<ImageType>> m_portPtr;
+    std::unique_ptr<yarp::os::BufferedPort<ImageType>> m_portPtr;
     GLuint m_glWriteBufferId = 0;
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
@@ -37,6 +37,23 @@ class PortToQuadLayer
     bool m_active{false};
 
 public:
+
+    void close()
+    {
+        if (m_glWriteBufferId != 0)
+        {
+            glDeleteFramebuffers(1, &m_glWriteBufferId);
+            m_glWriteBufferId = 0;
+        }
+
+        if (m_glReadBufferId != 0)
+        {
+            glDeleteFramebuffers(1, &m_glReadBufferId);
+            m_glReadBufferId = 0;
+        }
+
+        m_portPtr->close();
+    }
 
     bool initialize(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& portName)
     {
@@ -96,7 +113,7 @@ public:
         m_newImageDesiredPosition = m_quadLayer->layerPosition();
         m_newImageDesiredQuaternion = m_quadLayer->layerQuaternion();
 
-        m_portPtr = std::make_shared<yarp::os::BufferedPort<ImageType>>();
+        m_portPtr = std::make_unique<yarp::os::BufferedPort<ImageType>>();
 
         if (!m_portPtr->open(portName))
         {
@@ -348,4 +365,4 @@ public:
 
 };
 
-#endif // YARP_OPENXRHEADSET_PORTTOQUADLAYER_H
+#endif // YARP_OPENXRHEADSET_IMAGEPORTTOQUADLAYER_H

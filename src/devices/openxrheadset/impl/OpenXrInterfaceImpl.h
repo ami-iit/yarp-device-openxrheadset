@@ -141,9 +141,9 @@ public:
 
     static void glfwErrorCallback(int error, const char* description);
 
-    static void GLMessageCallback(GLenum /*source*/,
+    static void GLMessageCallback(GLenum source,
                                   GLenum type,
-                                  GLuint /*id*/,
+                                  GLuint id,
                                   GLenum severity,
                                   GLsizei /*length*/,
                                   const GLchar* message,

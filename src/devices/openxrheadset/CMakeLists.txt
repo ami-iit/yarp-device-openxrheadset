@@ -28,13 +28,15 @@ set(yarp_openxrheadset_SRCS
   OpenXrInterface.cpp
   impl/OpenXrQuadLayer.cpp
   impl/OpenXrInterfaceImpl.cpp
+  LabelPortToQuadLayer.cpp
 )
 
 set(yarp_openxrheadset_HDRS
   OpenXrConfig.h
   OpenGLConfig.h
   OpenXrHeadsetLogComponent.h
-  PortToQuadLayer.h
+  ImagePortToQuadLayer.h
+  LabelPortToQuadLayer.h
   OpenXrInterface.h
   OpenXrEigenConversions.h
   impl/OpenXrQuadLayer.h
@@ -79,6 +81,7 @@ target_link_libraries(yarp_openxrheadset
     GLEW::GLEW
     OpenGL::GL
     Eigen3::Eigen
+    GLFont::GLFont
 )
 
 if (NOT WIN32)
@@ -105,6 +108,7 @@ if(BUILD_TESTING)
         GLEW::GLEW
         OpenGL::GL
         Eigen3::Eigen
+        GLFont::GLFont
         )
 
     if (NOT WIN32)
@@ -113,7 +117,7 @@ if(BUILD_TESTING)
 
     target_include_directories(openxrheadset_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-    target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for the designated initialization of structs
+    target_compile_features(openxrheadset_test PUBLIC cxx_std_20) #C++20 is used for the designated initialization of structs
 
     add_test(NAME openxrheadset_test COMMAND openxrheadset_test)
 

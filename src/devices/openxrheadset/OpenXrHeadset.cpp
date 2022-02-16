@@ -212,10 +212,15 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         constexpr unsigned int BOOL   = 1;
         constexpr unsigned int INT    = 2;
         constexpr unsigned int DOUBLE = 3;
+        struct paramDescription
+        {
+            std::string name;
+            int type;
+        };
 
         std::map<int, std::string>                err_msgs;
         std::map<int, valueIsType>                isFunctionMap;
-        std::vector<std::pair<std::string, int> > paramParser;
+        std::vector<paramDescription> paramParser;
 
         err_msgs[STRING]      = "a string";
         err_msgs[BOOL]        = "a boolean type";
@@ -230,11 +235,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         paramParser.clear();
         if (guiCount)
         {
-            paramParser.push_back(std::make_pair("width",  DOUBLE));
-            paramParser.push_back(std::make_pair("height", DOUBLE));
-            paramParser.push_back(std::make_pair("x",      DOUBLE));
-            paramParser.push_back(std::make_pair("y",      DOUBLE));
-            paramParser.push_back(std::make_pair("z",      DOUBLE));
+            paramParser.push_back({"width",  DOUBLE});
+            paramParser.push_back({"height", DOUBLE});
+            paramParser.push_back({"x",      DOUBLE});
+            paramParser.push_back({"y",      DOUBLE});
+            paramParser.push_back({"z",      DOUBLE});
 
             for (int i = 0; i < guiCount; ++i)
             {
@@ -249,10 +254,10 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
                 for (auto& p : paramParser)
                 {
-                    if (!guip.check(p.first) || !(guip.find(p.first).*isFunctionMap[p.second])())
+                    if (!guip.check(p.name) || !(guip.find(p.name).*isFunctionMap[p.type])())
                     {
-                        std::string err_type = err_msgs.find(p.second) == err_msgs.end() ? "[unknow type]" : err_msgs[p.second];
-                        yCError(OPENXRHEADSET) << "parameter" << p.first << "not found or not" << err_type << "in" << groupName << "group in configuration file";
+                        std::string err_type = err_msgs.find(p.type) == err_msgs.end() ? "[unknow type]" : err_msgs[p.type];
+                        yCError(OPENXRHEADSET) << "parameter" << p.name << "not found or not" << err_type << "in" << groupName << "group in configuration file";
                         return false;
                     }
                 }
@@ -266,6 +271,57 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 m_huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
                 m_huds.back().portName = m_prefix + "/" + groupName;
+            }
+        }
+
+        paramParser.clear();
+        int labelCount = cfg.find("labels").asInt32();
+        if (labelCount)
+        {
+            paramParser.push_back({"width",  DOUBLE});
+            paramParser.push_back({"height", DOUBLE});
+            paramParser.push_back({"x",      DOUBLE});
+            paramParser.push_back({"y",      DOUBLE});
+            paramParser.push_back({"z",      DOUBLE});
+
+            for (int i = 0; i < labelCount; ++i)
+            {
+                std::string       groupName  = "LABEL_" + std::to_string(i);
+                yarp::os::Bottle& labelGroup = cfg.findGroup(groupName);
+
+                if (labelGroup.isNull())
+                {
+                    yCError(OPENXRHEADSET) << "group:" << groupName << "not found in configuration file..";
+                    return false;
+                }
+
+                for (auto& p : paramParser)
+                {
+                    if (!labelGroup.check(p.name) || !(labelGroup.find(p.name).*isFunctionMap[p.type])())
+                    {
+                        std::string err_type = err_msgs.find(p.type) == err_msgs.end() ? "[unknow type]" : err_msgs[p.type];
+                        yCError(OPENXRHEADSET) << "parameter" << p.name << "not found or not" << err_type << "in" << groupName << "group in configuration file";
+                        return false;
+                    }
+                }
+
+                m_labels.emplace_back();
+                LabelLayer& label = m_labels.back();
+
+                label.width = labelGroup.find("width").asFloat64();
+                label.height = labelGroup.find("height").asFloat64();
+                label.x       = labelGroup.find("x").asFloat64();
+                label.y       = labelGroup.find("y").asFloat64();
+                label.z       = -std::max(0.01, std::abs(labelGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+
+                std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
+                std::string portName = m_prefix + "/" + groupName;
+
+                if (!label.options.parseFromConfigurationFile(portName, labelGroup))
+                {
+                    yCError(OPENXRHEADSET) << "Failed to parse" << groupName;
+                    return false;
+                }
             }
         }
     }
@@ -382,6 +438,19 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             gui.layer.setDimensions(gui.width, gui.height);
             gui.layer.setPosition({gui.x, gui.y, gui.z});
         }
+
+        for (LabelLayer& label : m_labels)
+        {
+            label.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+
+            if (!label.layer.initialize(label.options)) {
+                yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
+                return false;
+            }
+            label.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            label.layer.setDimensions(label.width, label.height);
+            label.layer.setPosition({label.x, label.y, label.z});
+        }
     }
 
     for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
@@ -407,6 +476,16 @@ void yarp::dev::OpenXrHeadset::threadRelease()
 
     if (m_closed)
         return;
+
+    for (auto& hud : m_huds)
+    {
+        hud.layer.close();
+    }
+
+    for (auto& label : m_labels)
+    {
+        label.layer.close();
+    }
 
     m_openXrInterface.close();
 
@@ -449,6 +528,13 @@ void yarp::dev::OpenXrHeadset::run()
         {
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
+                return;
+            }
+        }
+        for (LabelLayer& label : m_labels)
+        {
+            if (!label.layer.updateTexture()) {
+                yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "display texture.";
                 return;
             }
         }
@@ -872,4 +958,19 @@ std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
 
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_rightEye.controlPortName();
+}
+
+bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const bool enabled)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (labelIndex >= m_labels.size())
+    {
+        return false;
+    }
+
+    m_labels[labelIndex].layer.setEnabled(enabled);
+
+    return true;
 }

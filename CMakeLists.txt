@@ -66,6 +66,23 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 ### Dependencies
+# Fetching GLFont for displaying labels
+option(YARP_OPENXR_USES_SYSTEM_GLFont OFF)
+if(YARP_OPENXR_USES_SYSTEM_GLFont)
+     find_package(GLFont REQUIRED)
+else()
+    include(FetchContent)
+    FetchContent_Declare(glfont
+      GIT_REPOSITORY https://github.com/ami-iit/GLFont
+      GIT_TAG 64a02d6dc382e2bc052e90b15d80cc9792d689c5)
+
+    FetchContent_GetProperties(glfont)
+    if(NOT glfont_POPULATED)
+      message(STATUS "Fetching GLFont...")
+      FetchContent_MakeAvailable(glfont)
+    endif()
+endif()
+
 find_package(YCM REQUIRED)
 find_package(YARP 3.4 COMPONENTS os sig dev math idl_tools REQUIRED)
 find_package(Threads REQUIRED)

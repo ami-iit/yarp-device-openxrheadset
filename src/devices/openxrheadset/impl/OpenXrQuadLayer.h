@@ -25,6 +25,7 @@ public:
     bool hasVisibility{true};
     unsigned int acquired{0};
     bool released{false};
+    bool isEnabled{true};
 
     OpenXrQuadLayer();
 
@@ -68,6 +69,8 @@ public:
     virtual Eigen::Vector3f layerPosition() const override;
 
     virtual Eigen::Quaternionf layerQuaternion() const override;
+
+    virtual void setEnabled(bool enabled) override;
 
     bool shouldSubmit() const;
 };
