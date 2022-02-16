@@ -280,7 +280,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
-    m_interCameraDistance                  = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
+    m_interCameraDistance  = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
     m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
 
