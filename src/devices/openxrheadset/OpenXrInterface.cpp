@@ -816,7 +816,7 @@ void OpenXrInterface::pollXrEvents()
 
             const XrEventDataViveTrackerConnectedHTCX& viveTrackerConnected =
                     *reinterpret_cast<XrEventDataViveTrackerConnectedHTCX*>(&runtime_event);
-            
+
             if (!listConnectedTrackers())
             {
                 m_pimpl->closing = true;
@@ -1034,7 +1034,7 @@ bool OpenXrInterface::listConnectedTrackers()
             sizeof(sPersistentPath), &nCount, sPersistentPath);
         if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker %d persistent path to string.", i))
         {
-            yCInfo(OPENXRHEADSET, "Vive Tracker %d persistent path: %s \n", i, sPersistentPath);
+            yCInfo(OPENXRHEADSET, "Vive Tracker %zu persistent path: %s \n", i, sPersistentPath);
         }
 
         if (tracker.rolePath != XR_NULL_PATH)
@@ -1046,7 +1046,7 @@ bool OpenXrInterface::listConnectedTrackers()
 
             if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker %d role path to string.", i))
             {
-                yCInfo(OPENXRHEADSET, "Vive Tracker %d role path: %s \n", i, sRolePath);
+                yCInfo(OPENXRHEADSET, "Vive Tracker %zu role path: %s \n", i, sRolePath);
             }
         }
         else

@@ -87,7 +87,7 @@ int main(int argc, char** argv)
     bool ok = visualizer.init();
 
     visualizer.camera().animator()->enableMouseControl();
-    visualizer.enviroment().setElementVisibility("world_frame", false);
+    visualizer.environment().setElementVisibility("world_frame", false);
 
     if( !ok )
     {
