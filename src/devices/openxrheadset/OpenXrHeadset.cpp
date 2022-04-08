@@ -326,19 +326,19 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         }
     }
 
-    m_getStickAsAxis       = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
-    m_leftFrame            = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
-    m_rightFrame           = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
-    m_headFrame            = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
-    m_leftEyeFrame         = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
-    m_rightEyeFrame        = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
-    m_rootFrame            = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
-    m_leftAzimuthOffset    = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
-    m_leftElevationOffset  = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
-    m_eyeZPosition         = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
-    m_interCameraDistance  = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
-    m_rightAzimuthOffset   = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
-    m_rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
+    m_leftFrame = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
+    m_rightFrame = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
+    m_headFrame = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
+    m_eyesManager.options().leftEyeFrame = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
+    m_eyesManager.options().rightEyeFrame = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
+    m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
+    m_eyesManager.options().leftAzimuthOffset = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyesManager.options().leftElevationOffset = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyesManager.options().eyeZPosition = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+    m_eyesManager.options().interCameraDistance = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
+    m_eyesManager.options().rightAzimuthOffset = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyesManager.options().rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
 
     //opening tf client
     yarp::os::Property tfClientCfg;
@@ -404,29 +404,13 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             return false;
         }
 
-        if (!m_leftEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
-                            m_prefix + "/display/left:i",
-                            m_prefix + "/eyeAngles/left:i",
-                            m_tfPublisher, m_leftEyeFrame, m_headFrame)) {
-            yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
-            return false;
-        }
-        m_leftEye.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-        m_leftEye.setEyePosition(Eigen::Vector3f(-m_interCameraDistance / 2.0, 0.0, 0.0));
-        m_leftEye.setEyeRotationOffset(m_leftAzimuthOffset, m_leftElevationOffset);
-        m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
+        m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+        m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
 
-        if (!m_rightEye.open(m_openXrInterface.addHeadFixedQuadLayer(),
-                             m_prefix + "/display/right:i",
-                             m_prefix + "/eyeAngles/right:i",
-                             m_tfPublisher, m_rightEyeFrame, m_headFrame)) {
-            yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
-            return false;
+        if (!m_eyesManager.initialize(m_tfPublisher, m_headFrame))
+        {
+            yCError(OPENXRHEADSET) << "Failed to initialize eyes.";
         }
-        m_rightEye.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
-        m_rightEye.setEyePosition(Eigen::Vector3f(m_interCameraDistance / 2.0, 0.0, 0.0));
-        m_rightEye.setEyeRotationOffset(m_rightAzimuthOffset, m_rightElevationOffset);
-        m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
 
         for (GuiParam& gui : m_huds)
         {
@@ -498,8 +482,7 @@ void yarp::dev::OpenXrHeadset::threadRelease()
     m_headFramePorts.close();
     m_leftHandFramePorts.close();
     m_rightHandFramePorts.close();
-    m_leftEye.close();
-    m_rightEye.close();
+    m_eyesManager.close();
 
     m_rpcPort.close();
 
@@ -514,13 +497,8 @@ void yarp::dev::OpenXrHeadset::run()
 
     if (m_openXrInterface.isRunning())
     {
-        if (!m_leftEye.update()) {
-            yCError(OPENXRHEADSET) << "Failed to update left eye.";
-            return;
-        }
-
-        if (!m_rightEye.update()) {
-            yCError(OPENXRHEADSET) << "Failed to update right eye.";
+        if (!m_eyesManager.update()) {
+            yCError(OPENXRHEADSET) << "Failed to update eyes.";
             return;
         }
 
@@ -550,9 +528,7 @@ void yarp::dev::OpenXrHeadset::run()
         m_leftHandFramePorts.publishFrame(m_openXrInterface.leftHandPose(), m_openXrInterface.leftHandVelocity(), m_stamp);
         m_rightHandFramePorts.publishFrame(m_openXrInterface.rightHandPose(), m_openXrInterface.rightHandVelocity(), m_stamp);
 
-        m_leftEye.publishEyeTransform();
-        m_rightEye.publishEyeTransform();
-
+        m_eyesManager.publishEyesTransforms();
     }
     else
     {
@@ -811,11 +787,7 @@ std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageDimensions()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::vector<double> output(2);
-    output[0] = m_leftEye.layerWidth();
-    output[1] = m_leftEye.layerHeight();
-
-    return output;
+    return m_eyesManager.getLeftImageDimensions();
 }
 
 std::vector<double> yarp::dev::OpenXrHeadset::getRightImageDimensions()
@@ -824,11 +796,7 @@ std::vector<double> yarp::dev::OpenXrHeadset::getRightImageDimensions()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::vector<double> output(2);
-    output[0] = m_rightEye.layerWidth();
-    output[1] = m_rightEye.layerHeight();
-
-    return output;
+    return m_eyesManager.getRightImageDimensions();
 }
 
 std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageAnglesOffsets()
@@ -837,11 +805,7 @@ std::vector<double> yarp::dev::OpenXrHeadset::getLeftImageAnglesOffsets()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::vector<double> output(2);
-    output[0] = m_leftEye.azimuthOffset();
-    output[1] = m_leftEye.elevationOffset();
-
-    return output;
+    return m_eyesManager.getLeftImageAnglesOffsets();
 }
 
 std::vector<double> yarp::dev::OpenXrHeadset::getRightImageAnglesOffsets()
@@ -850,11 +814,7 @@ std::vector<double> yarp::dev::OpenXrHeadset::getRightImageAnglesOffsets()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::vector<double> output(2);
-    output[0] = m_rightEye.azimuthOffset();
-    output[1] = m_rightEye.elevationOffset();
-
-    return output;
+    return m_eyesManager.getRightImageAnglesOffsets();
 }
 
 bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, const double elevation)
@@ -863,9 +823,7 @@ bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, c
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_leftEye.setEyeRotationOffset(azimuth, elevation);
-
-    return true;
+    return m_eyesManager.setLeftImageAnglesOffsets(azimuth, elevation);
 }
 
 bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, const double elevation)
@@ -874,9 +832,7 @@ bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, 
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_rightEye.setEyeRotationOffset(azimuth, elevation);
-
-    return true;
+    return m_eyesManager.setRightImageAnglesOffsets(azimuth, elevation);
 }
 
 bool yarp::dev::OpenXrHeadset::isLeftEyeActive()
@@ -885,7 +841,7 @@ bool yarp::dev::OpenXrHeadset::isLeftEyeActive()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    return m_leftEye.active();
+    return m_eyesManager.isLeftEyeActive();
 }
 
 bool yarp::dev::OpenXrHeadset::isRightEyeActive()
@@ -894,7 +850,7 @@ bool yarp::dev::OpenXrHeadset::isRightEyeActive()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    return m_rightEye.active();
+    return m_eyesManager.isRightEyeActive();
 }
 
 double yarp::dev::OpenXrHeadset::getEyesZPosition()
@@ -903,7 +859,7 @@ double yarp::dev::OpenXrHeadset::getEyesZPosition()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    return m_eyeZPosition;
+    return m_eyesManager.getEyesZPosition();
 }
 
 bool yarp::dev::OpenXrHeadset::setEyesZPosition(const double eyesZPosition)
@@ -913,12 +869,7 @@ bool yarp::dev::OpenXrHeadset::setEyesZPosition(const double eyesZPosition)
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_eyeZPosition = -std::max(0.01, std::abs(eyesZPosition));
-
-    m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
-    m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_eyeZPosition));
-
-    return true;
+    return m_eyesManager.setEyesZPosition(eyesZPosition);
 }
 
 double yarp::dev::OpenXrHeadset::getInterCameraDistance()
@@ -927,7 +878,7 @@ double yarp::dev::OpenXrHeadset::getInterCameraDistance()
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    return m_interCameraDistance;
+    return m_eyesManager.getInterCameraDistance();
 }
 
 bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
@@ -936,12 +887,7 @@ bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_interCameraDistance = std::abs(distance);
-
-    m_leftEye.setEyePosition(Eigen::Vector3f(-m_interCameraDistance / 2.0, 0.0, 0.0));
-    m_rightEye.setEyePosition(Eigen::Vector3f(m_interCameraDistance / 2.0, 0.0, 0.0));
-
-    return true;
+    return m_eyesManager.setInterCameraDistance(distance);
 }
 
 std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
@@ -949,7 +895,7 @@ std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
     yCTrace(OPENXRHEADSET);
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    return m_leftEye.controlPortName();
+    return m_eyesManager.getLeftImageControlPortName();
 }
 
 std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
@@ -957,7 +903,7 @@ std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
     yCTrace(OPENXRHEADSET);
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    return m_rightEye.controlPortName();
+    return m_eyesManager.getRightImageControlPortName();
 }
 
 bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const bool enabled)
