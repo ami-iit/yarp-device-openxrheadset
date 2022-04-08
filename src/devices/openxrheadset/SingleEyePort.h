@@ -21,7 +21,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-class EyePort
+class SingleEyePort
 {
     yarp::sig::Matrix m_localPose;
     yarp::dev::IFrameTransform* m_tfPublisher{nullptr};

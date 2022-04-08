@@ -27,7 +27,7 @@
 #include <OpenXrInterface.h>
 #include <ImagePortToQuadLayer.h>
 #include <LabelPortToQuadLayer.h>
-#include <EyePort.h>
+#include <SingleEyePort.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -248,7 +248,7 @@ private:
 
     std::string m_prefix;
 
-    EyePort m_leftEye, m_rightEye;
+    SingleEyePort m_leftEye, m_rightEye;
 
     double m_leftAzimuthOffset;
     double m_leftElevationOffset;
