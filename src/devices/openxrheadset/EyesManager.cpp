@@ -23,7 +23,6 @@ EyesManager::Options &EyesManager::options()
 bool EyesManager::initialize(yarp::dev::IFrameTransform *tfPublisher, const std::string &headFrame)
 {
     if (!m_leftEye.open(m_options.leftEyeQuadLayer,
-                        m_options.portPrefix + "/display/left:i",
                         m_options.portPrefix + "/eyeAngles/left:i",
                         tfPublisher, m_options.leftEyeFrame, headFrame)) {
         yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
@@ -35,7 +34,6 @@ bool EyesManager::initialize(yarp::dev::IFrameTransform *tfPublisher, const std:
     m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
 
     if (!m_rightEye.open(m_options.rightEyeQuadLayer,
-                         m_options.portPrefix + "/display/right:i",
                          m_options.portPrefix + "/eyeAngles/right:i",
                          tfPublisher, m_options.rightEyeFrame, headFrame)) {
         yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
@@ -46,7 +44,30 @@ bool EyesManager::initialize(yarp::dev::IFrameTransform *tfPublisher, const std:
     m_rightEye.setEyeRotationOffset(m_options.rightAzimuthOffset, m_options.rightElevationOffset);
     m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
 
-    m_options = m_options;
+    if (m_options.splitEyes)
+    {
+        if (!m_leftEye.openImagePort(m_options.portPrefix + "/display/left:i"))
+        {
+            yCError(OPENXRHEADSET) << "Failed to open left display port.";
+            return false;
+        }
+
+        if (!m_rightEye.openImagePort(m_options.portPrefix + "/display/right:i"))
+        {
+            yCError(OPENXRHEADSET) << "Failed to open right display port.";
+            return false;
+        }
+    }
+    else
+    {
+        if (!m_commonImagePort.open(m_options.portPrefix + "/display:i"))
+        {
+            yCError(OPENXRHEADSET) << "Failed to open " + m_options.portPrefix + "/display:i port.";
+            return false;
+        }
+
+        m_commonImagePort.setReadOnly();
+    }
 
     return true;
 }
@@ -55,18 +76,43 @@ void EyesManager::close()
 {
     m_leftEye.close();
     m_rightEye.close();
+    m_commonImagePort.close();
 }
 
 bool EyesManager::update()
 {
-    if (!m_leftEye.update()) {
-        yCError(OPENXRHEADSET) << "Failed to update left eye.";
-        return false;
-    }
+    if (m_options.splitEyes)
+    {
+        if (!m_leftEye.update()) {
+            yCError(OPENXRHEADSET) << "Failed to update left eye.";
+            return false;
+        }
 
-    if (!m_rightEye.update()) {
-        yCError(OPENXRHEADSET) << "Failed to update right eye.";
-        return false;
+        if (!m_rightEye.update()) {
+            yCError(OPENXRHEADSET) << "Failed to update right eye.";
+            return false;
+        }
+    }
+    else
+    {
+        yarp::sig::ImageOf<yarp::sig::PixelRgb>* image = m_commonImagePort.read(false);
+        if (!image)
+        {
+            return true;
+        }
+
+        GLint splitx = static_cast<GLint>(std::round(image->width()/2.0));
+
+        if (!m_leftEye.update(*image, 0, 0, splitx, image->height()))
+        {
+            yCError(OPENXRHEADSET) << "Failed to update left eye.";
+            return false;
+        }
+        if (!m_rightEye.update(*image, splitx + 1, 0, image->width(), image->height()))
+        {
+            yCError(OPENXRHEADSET) << "Failed to update right eye.";
+            return false;
+        }
     }
 
     return true;

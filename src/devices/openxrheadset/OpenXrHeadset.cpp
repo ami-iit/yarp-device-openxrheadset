@@ -339,6 +339,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_eyesManager.options().interCameraDistance = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
     m_eyesManager.options().rightAzimuthOffset = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyesManager.options().splitEyes = cfg.check("split_eye_ports", yarp::os::Value(true)).asBool();
 
     //opening tf client
     yarp::os::Property tfClientCfg;
@@ -443,11 +444,15 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         yarp::os::Time::delay(this->getPeriod());
     }
 
-    this->yarp().attachAsServer(this->m_rpcPort);
-    if(!m_rpcPort.open(m_prefix + "/rpc"))
     {
-        yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
-        return false;
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        this->yarp().attachAsServer(this->m_rpcPort);
+        if(!m_rpcPort.open(m_prefix + "/rpc"))
+        {
+            yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
+            return false;
+        }
     }
 
     return true;

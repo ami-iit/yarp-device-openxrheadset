@@ -118,14 +118,9 @@ public:
         return true;
     }
 
-    bool initialize(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& portName)
+    bool openImagePort(const std::string& portName)
     {
         yCTrace(OPENXRHEADSET);
-
-        if (!initialize(quadLayer))
-        {
-            return false;
-        }
 
         if (!m_portPtr->open(portName))
         {
@@ -138,18 +133,30 @@ public:
         return true;
     }
 
-    bool updateTexture(ImageType* img, GLint startX, GLint startY, GLint endX, GLint endY)
+    bool initialize(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& portName)
+    {
+        yCTrace(OPENXRHEADSET);
+
+        if (!initialize(quadLayer))
+        {
+            return false;
+        }
+
+        if (!openImagePort(portName))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool updateTexture(const ImageType& img, GLint startX, GLint startY, GLint endX, GLint endY)
     {
         yCTrace(OPENXRHEADSET);
         assert(m_initThreadID == std::this_thread::get_id() &&
                "The updateTexture has to be called from the same thread in which it has been initialized.");
 
-        if (!img)
-        {
-            return true;
-        }
-
-        if ((img->width() == 0) || (img->height() == 0))
+        if ((img.width() == 0) || (img.height() == 0))
         {
             return true;
         }
@@ -172,8 +179,8 @@ public:
         //This has to be called from the same thread where the initialize method has been called
         glBindFramebuffer(GL_FRAMEBUFFER, m_glReadBufferId);
         glBindTexture(GL_TEXTURE_2D, m_imageTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, img->width(), img->height(),
-            0, m_pixelFormat, GL_UNSIGNED_BYTE, img->getRawImage());
+        glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, img.width(), img.height(),
+            0, m_pixelFormat, GL_UNSIGNED_BYTE, img.getRawImage());
 
         //Then bind the write framebuffer, using the OpenXr texture as target texture
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glWriteBufferId);
@@ -192,7 +199,7 @@ public:
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         //Adjust the aspect ratio
-        float aspectRatio = img->width()/ (float) img->height();
+        float aspectRatio = std::abs(endX - startX)/ (float) std::max(1, std::abs(endY - startY));
         float newWidth = m_quadLayer->layerWidth();
         float newHeight = m_quadLayer->layerHeight();
 
@@ -224,7 +231,13 @@ public:
         yCTrace(OPENXRHEADSET);
 
         ImageType* img = m_portPtr->read(false);
-        return updateTexture(img, 0, 0, img->width(), img->height());
+
+        if (!img)
+        {
+            return true;
+        }
+
+        return updateTexture(*img, 0, 0, img->width(), img->height());
     }
 
     void setPose(const Eigen::Vector3f& position,

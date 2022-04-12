@@ -11,6 +11,9 @@
 
 #include <SingleEyePort.h>
 #include <OpenXrInterface.h>
+#include <yarp/os/BufferedPort.h>
+#include <yarp/sig/Image.h>
+
 
 class EyesManager
 {
@@ -23,12 +26,13 @@ public:
         std::string portPrefix;
         std::string leftEyeFrame;
         std::string rightEyeFrame;
-        double leftAzimuthOffset;
-        double leftElevationOffset;
-        double eyeZPosition;
-        double interCameraDistance;
-        double rightAzimuthOffset;
-        double rightElevationOffset;
+        double leftAzimuthOffset{0.0};
+        double leftElevationOffset{0.0};
+        double rightAzimuthOffset{0.0};
+        double rightElevationOffset{0.0};
+        double eyeZPosition{-1.0};
+        double interCameraDistance{0.07};
+        bool splitEyes{true};
     };
 
     const Options& options() const;
@@ -74,6 +78,7 @@ public:
 private:
 
     SingleEyePort m_leftEye, m_rightEye;
+    yarp::os::BufferedPort<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_commonImagePort;
     Options m_options;
 };
 

@@ -37,10 +37,14 @@ class SingleEyePort
     yarp::os::BufferedPort<yarp::sig::Vector> m_eyeAnglesPort;
     bool m_initialized{false};
 
+    bool updateControlAngles();
+
 public:
 
-    bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& imagePortName, const std::string& anglesPortName,
+    bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& anglesPortName,
               yarp::dev::IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+
+    bool openImagePort(const std::string& imagePortName);
 
     void close();
 
@@ -63,6 +67,8 @@ public:
     float layerHeight() const;
 
     bool update();
+
+    bool update(const yarp::sig::ImageOf<yarp::sig::PixelRgb>& img, GLint startX, GLint startY, GLint endX, GLint endY);
 
     void publishEyeTransform();
 

@@ -9,12 +9,32 @@
 #include <SingleEyePort.h>
 #include <OpenXrYarpUtilities.h>
 
-bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &imagePortName, const std::string &anglesPortName,
+bool SingleEyePort::updateControlAngles()
+{
+    yCTrace(OPENXRHEADSET);
+
+    yarp::sig::Vector* inputAngles = m_eyeAnglesPort.read(false);
+
+    if (inputAngles)
+    {
+        if (inputAngles->size() != 2)
+        {
+            yCError(OPENXRHEADSET) << "The input to " + m_eyeAnglesPort.getName() + " is supposed to be 2-dimensional."
+                                      " The vector is supposed to contain the azimuth (positive anticlockwise) and elevation (positive upwards) angles in radians, in this order.";
+            return false;
+        }
+        setEyeRotation(inputAngles->operator()(0), inputAngles->operator()(1));
+    }
+
+    return true;
+}
+
+bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &anglesPortName,
                    yarp::dev::IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
 {
     yCTrace(OPENXRHEADSET);
     m_initialized = false;
-    if (!m_layer.initialize(quadLayer, imagePortName)) {
+    if (!m_layer.initialize(quadLayer)) {
         return false;
     }
 
@@ -49,6 +69,11 @@ bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std:
     m_initialized = true;
 
     return true;
+}
+
+bool SingleEyePort::openImagePort(const std::string &imagePortName)
+{
+    return m_layer.openImagePort(imagePortName);
 }
 
 void SingleEyePort::close()
@@ -239,18 +264,22 @@ bool SingleEyePort::update()
 {
     yCTrace(OPENXRHEADSET);
 
-    yarp::sig::Vector* inputAngles = m_eyeAnglesPort.read(false);
-
-    if (inputAngles)
+    if (!updateControlAngles())
     {
-        if (inputAngles->size() != 2)
-        {
-            yCError(OPENXRHEADSET) << "The input to " + m_eyeAnglesPort.getName() + " is supposed to be 2-dimensional."
-                                      " The vector is supposed to contain the azimuth (positive anticlockwise) and elevation (positive upwards) angles in radians, in this order.";
-            return false;
-        }
-        setEyeRotation(inputAngles->operator()(0), inputAngles->operator()(1));
+        return false;
     }
 
     return m_layer.updateTexture();
+}
+
+bool SingleEyePort::update(const yarp::sig::ImageOf<yarp::sig::PixelRgb> &img, GLint startX, GLint startY, GLint endX, GLint endY)
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!updateControlAngles())
+    {
+        return false;
+    }
+
+    return m_layer.updateTexture(img, startX, startY, endX, endY);
 }
