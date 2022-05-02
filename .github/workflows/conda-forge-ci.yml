@@ -35,6 +35,12 @@ jobs:
         # Actual dependencies
         mamba install glew glfw eigen glm openxr-sdk yarp
         
+    - name: OpenGL [Linux]
+      if: contains(matrix.os, 'ubuntu')
+      shell: bash -l {0}
+      run: |
+        mamba install mesalib
+        
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
       shell: bash -l {0}
