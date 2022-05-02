@@ -39,7 +39,8 @@ jobs:
       if: contains(matrix.os, 'ubuntu')
       shell: bash -l {0}
       run: |
-        mamba install mesalib
+        # OpenGL is not found on Ubuntu when using conda
+        sudo apt install libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev libegl1-mesa-dev
         
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
