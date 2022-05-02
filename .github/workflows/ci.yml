@@ -9,6 +9,7 @@ on:
   - cron:  '0 2 * * *'
   
 env:
+  YCM_TAG: v0.14.0
   YARP_TAG: v3.6.0
   OPENXR_TAG: main
   MONADO_TAG: main
@@ -66,6 +67,14 @@ jobs:
     - name: Source-based YARP installation
       shell: bash -l {0}
       run: |
+      
+        # YCM
+        cd ${GITHUB_WORKSPACE}
+        git clone -b ${YCM_TAG} https://github.com/robotology/ycm
+        cd ycm && mkdir -p build && cd build
+        cmake -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        make install
+        
         cd ${GITHUB_WORKSPACE}
         git clone https://github.com/robotology/yarp.git --depth 1 --branch ${YARP_TAG}
         cd yarp && mkdir -p build && cd build
