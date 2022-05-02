@@ -40,7 +40,7 @@ jobs:
       shell: bash -l {0}
       run: |
         # OpenGL is not found on Ubuntu when using conda
-        sudo apt install libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev libegl1-mesa-dev
+        mamba install mesa-libgl-devel-cos7-x86_64
         
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
