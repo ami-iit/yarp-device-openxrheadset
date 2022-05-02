@@ -33,7 +33,7 @@ jobs:
         # Compilation related dependencies 
         mamba install cmake compilers make ninja pkg-config 
         # Actual dependencies
-        mamba install glew glfw eigen openxr-sdk yarp
+        mamba install glew glfw eigen glm openxr-sdk yarp
         
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
