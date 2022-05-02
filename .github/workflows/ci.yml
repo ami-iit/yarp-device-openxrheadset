@@ -1,0 +1,100 @@
+name: Continuous Integration with tests on Ubuntu using apt dependencies
+
+on:
+  push:
+  pull_request:
+  schedule:
+  # * is a special character in YAML so you have to quote this string
+  # Execute a "nightly" build at 2 AM UTC
+  - cron:  '0 2 * * *'
+  
+env:
+  YARP_TAG: v3.6.0
+  OPENXR_TAG: main
+  MONADO_TAG: main
+
+jobs:
+  build:
+    name: '[${{ matrix.os }}@${{ matrix.build_type }}]'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@master
+
+
+    - name: Display environment variables
+      shell: bash
+      run: env
+
+    # Remove apt repos that are known to break from time to time
+    # See https://github.com/actions/virtual-environments/issues/323
+    - name: Remove broken apt repos
+      run: |
+        for apt_file in `grep -lr microsoft /etc/apt/sources.list.d/`; do sudo rm $apt_file; done
+
+    # ============
+    # DEPENDENCIES
+    # ============
+
+    - name: System dependencies
+      run: |
+        sudo apt update
+        sudo apt install build-essential git wget unzip cmake ninja-build libeigen3-dev curl patch python3 pkg-config libxcb-dri2-0-dev libxcb-glx0-dev libxcb-icccm4-dev libxcb-keysyms1-dev libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev mesa-common-dev libace-dev
+        
+    - name: Source-based OpenXR installation
+      shell: bash -l {0}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        git clone https://github.com/KhronosGroup/OpenXR-SDK.git --depth 1 --branch ${OPENXR_TAG}
+        cd OpenXR-SDK && mkdir -p build && cd build
+        cmake -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        make install
+        
+    - name: Source-based monado installation
+      shell: bash -l {0}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        git clone https://gitlab.freedesktop.org/monado/monado.git --depth 1 --branch ${MONADO_TAG}
+        cd monado && mkdir -p build && cd build
+        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        ninja install
+
+    - name: Source-based YARP installation
+      shell: bash -l {0}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        git clone https://github.com/robotology/yarp.git --depth 1 --branch ${YARP_TAG}
+        cd yarp && mkdir -p build && cd build
+        cmake -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        make install
+
+
+
+    # ===================
+    # CMAKE-BASED PROJECT
+    # ===================
+
+    - name: Configure
+      shell: bash -l {0}
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DBUILD_TESTING:BOOL=ON ..
+
+    - name: Build
+      shell: bash -l {0}
+      run: |
+        cd build
+        make
+
+    - name: Install
+      shell: bash -l {0}
+      run: |
+        cd build
+        make install
+
