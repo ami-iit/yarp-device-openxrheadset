@@ -58,6 +58,9 @@ jobs:
         
         # Monado additional dependencies (just for testing)
         sudo apt install wget unzip ninja-build curl patch python3 pkg-config libx11-dev glslang-tools libglvnd-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev 
+        
+        #Xvfb, just to have a dummy screen
+        sudo apt install xvfb
 
     
     - name: Source-based OpenXR installation
@@ -123,6 +126,8 @@ jobs:
     - name: Test
       shell: bash -l {0}
       run: |
+        export DISPLAY=:99
+        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
         export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
         XRT_COMPOSITOR_FORCE_XCB=1 monado-service & 
         sleep 10
