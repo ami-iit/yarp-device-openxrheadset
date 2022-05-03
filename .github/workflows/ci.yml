@@ -123,6 +123,7 @@ jobs:
     - name: Test
       shell: bash -l {0}
       run: |
+        export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
         XRT_COMPOSITOR_FORCE_XCB=1 monado-service & 
         sleep 10
 
