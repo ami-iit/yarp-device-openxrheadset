@@ -78,8 +78,17 @@ jobs:
         cd ${GITHUB_WORKSPACE}
         git clone https://gitlab.freedesktop.org/monado/monado.git --depth 1 --branch ${MONADO_TAG}
         cd monado && mkdir -p build && cd build
-        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release -DXRT_HAVE_VULKAN:BOOL=OFF ..
         ninja install
+        
+    - name: Test
+      shell: bash -l {0}
+      run: |
+        export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
+        
+        # Run monado-service
+        XRT_COMPOSITOR_FORCE_XCB=1 xvfb-run monado-service & 
+        sleep 10
 
     - name: Source-based YARP installation
       shell: bash -l {0}
@@ -123,21 +132,4 @@ jobs:
         cd build
         make install
     
-    #Following https://github.com/godotengine/godot/pull/47414    
-    - name: Download SwiftShader
-      run: |
-        wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader2.zip
-        unzip swiftshader2.zip
-        rm swiftshader2.zip
-        curr="$(pwd)/libvk_swiftshader.so"
-        sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
-        
-    - name: Test
-      shell: bash -l {0}
-      run: |
-        export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
-        
-        # Run monado-service
-        XRT_COMPOSITOR_FORCE_XCB=1 VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json DRI_PRIME=0 xvfb-run monado-service & 
-        sleep 10
 
