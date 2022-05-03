@@ -123,6 +123,14 @@ jobs:
         cd build
         make install
         
+    #Copied from https://github.com/godotengine/godot/pull/47414
+    - name: Download SwiftShader
+      run: |
+        wget https://github.com/godotengine/regression-test-project/releases/download/_ci-deps/swiftshader-ubuntu20.04-20211002.zip
+        unzip swiftshader-ubuntu20.04-20211002.zip
+        curr="$(pwd)/libvk_swiftshader.so"
+        sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
+        
     - name: Test
       shell: bash -l {0}
       run: |
@@ -131,7 +139,6 @@ jobs:
         yarpserver --write &
         
         # Run monado-service
-        XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
-        sleep 10
+        VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json DRI_PRIME=0  XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
     
 
