@@ -125,13 +125,12 @@ jobs:
     
     #Following https://github.com/godotengine/godot/pull/47414    
     - name: Download SwiftShader
-        if: ${{ matrix.tests }}
-        run: |
-          wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader2.zip
-          unzip swiftshader2.zip
-          rm swiftshader2.zip
-          curr="$(pwd)/libvk_swiftshader.so"
-          sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
+      run: |
+        wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader2.zip
+        unzip swiftshader2.zip
+        rm swiftshader2.zip
+        curr="$(pwd)/libvk_swiftshader.so"
+        sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
         
     - name: Test
       shell: bash -l {0}
