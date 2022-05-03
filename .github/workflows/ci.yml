@@ -44,11 +44,22 @@ jobs:
     - name: System dependencies
       run: |
         sudo apt update
-        # OpenXR Monado and Yarp
-        sudo apt install build-essential git wget unzip cmake ninja-build libeigen3-dev curl patch python3 pkg-config libxcb-dri2-0-dev libxcb-glx0-dev libxcb-icccm4-dev libxcb-keysyms1-dev libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev mesa-common-dev libace-dev
-        # Additional dependencies
-        sudo apt install libglm-dev libglfw3-dev libglew-dev
+        # Common dependencies
+        sudo apt install build-essential git cmake
         
+        # OpenXR dependencies
+        sudo apt install libgl1-mesa-dev libvulkan-dev libx11-xcb-dev libxcb-dri2-0-dev libxcb-glx0-dev libxcb-icccm4-dev libxcb-keysyms1-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev mesa-common-dev
+        
+        # Yarp dependencies
+        sudo apt install libace-dev
+        
+        # yarp-device-openxrheadset dependencies
+        sudo apt install libeigen3-dev libglm-dev libglfw3-dev libglew-dev
+        
+        # Monado additional dependencies (just for testing)
+        sudo apt install wget unzip ninja-build curl patch python3 pkg-config libx11-dev glslang-tools libglvnd-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev 
+
+    
     - name: Source-based OpenXR installation
       shell: bash -l {0}
       run: |
@@ -85,7 +96,6 @@ jobs:
         make install
 
 
-
     # ===================
     # CMAKE-BASED PROJECT
     # ===================
@@ -109,4 +119,10 @@ jobs:
       run: |
         cd build
         make install
+        
+    - name: Test
+      shell: bash -l {0}
+      run: |
+        XRT_COMPOSITOR_FORCE_XCB=1 monado-service & 
+        sleep 10
 
