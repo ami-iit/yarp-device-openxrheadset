@@ -122,13 +122,23 @@ jobs:
       run: |
         cd build
         make install
+    
+    #Following https://github.com/godotengine/godot/pull/47414    
+    - name: Download SwiftShader
+        if: ${{ matrix.tests }}
+        run: |
+          wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader2.zip
+          unzip swiftshader2.zip
+          rm swiftshader2.zip
+          curr="$(pwd)/libvk_swiftshader.so"
+          sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
         
     - name: Test
       shell: bash -l {0}
       run: |
-        export DISPLAY=:99
-        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
         export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
-        XRT_COMPOSITOR_FORCE_XCB=1 monado-service & 
+        
+        # Run monado-service
+        XRT_COMPOSITOR_FORCE_XCB=1 VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json DRI_PRIME=0 xvfb-run monado-service & 
         sleep 10
 
