@@ -78,18 +78,9 @@ jobs:
         cd ${GITHUB_WORKSPACE}
         git clone https://gitlab.freedesktop.org/monado/monado.git --depth 1 --branch ${MONADO_TAG}
         cd monado && mkdir -p build && cd build
-        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release -DXRT_HAVE_VULKAN:BOOL=OFF ..
+        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release -DXRT_HAVE_VULKAN:BOOL=OFF -DXRT_FEATURE_SERVICE:BOOL=OFF..
         ninja install
         
-    - name: Test
-      shell: bash -l {0}
-      run: |
-        export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
-        
-        # Run monado-service
-        XRT_COMPOSITOR_FORCE_XCB=1 xvfb-run monado-service & 
-        sleep 10
-
     - name: Source-based YARP installation
       shell: bash -l {0}
       run: |
@@ -131,5 +122,16 @@ jobs:
       run: |
         cd build
         make install
+        
+    - name: Test
+      shell: bash -l {0}
+      run: |
+        export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
+        
+        yarpserver --write &
+        
+        # Run monado-service
+        XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
+        sleep 10
     
 
