@@ -44,7 +44,10 @@ jobs:
     - name: System dependencies
       run: |
         sudo apt update
+        # OpenXR Monado and Yarp
         sudo apt install build-essential git wget unzip cmake ninja-build libeigen3-dev curl patch python3 pkg-config libxcb-dri2-0-dev libxcb-glx0-dev libxcb-icccm4-dev libxcb-keysyms1-dev libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev mesa-common-dev libace-dev
+        # Additional dependencies
+        sudo apt install libglm-dev libglfw3-dev libglew-dev
         
     - name: Source-based OpenXR installation
       shell: bash -l {0}
