@@ -340,6 +340,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_eyesManager.options().rightAzimuthOffset = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().splitEyes = cfg.check("split_eye_ports", yarp::os::Value(true)).asBool();
+    m_eyesManager.options().portPrefix = m_prefix;
 
     //opening tf client
     yarp::os::Property tfClientCfg;
