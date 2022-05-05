@@ -65,7 +65,7 @@ jobs:
         sudo apt install wget unzip ninja-build curl patch python3 pkg-config libx11-dev glslang-tools libglvnd-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev 
         
         #Xvfb, just to have a dummy screen
-        sudo apt install xvfb vulkan-utils vulkan-swrast
+        sudo apt install xvfb vulkan-utils
    
     - name: Vulkan extensions
       shell: bash -l {0}
