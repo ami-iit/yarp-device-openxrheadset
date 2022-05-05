@@ -70,7 +70,7 @@ jobs:
     - name: Vulkan extensions
       shell: bash -l {0}
       run: |
-        vulkaninfo
+        VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json MESA_LOADER_DRIVER_OVERRIDE=zink vulkaninfo
 
     
     - name: Source-based OpenXR installation
@@ -141,6 +141,6 @@ jobs:
         yarpserver --write &
         
         # Run monado-service
-        LIBGL_ALWAYS_SOFTWARE=true XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
+        VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json MESA_LOADER_DRIVER_OVERRIDE=zink LIBGL_ALWAYS_SOFTWARE=true XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
     
 
