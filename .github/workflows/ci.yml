@@ -44,6 +44,11 @@ jobs:
     - name: System dependencies
       run: |
         sudo apt update
+        
+        # PPA for updated graphics drivers
+        sudo add-apt-repository ppa:oibaf/graphics-drivers
+        sudo apt-get update
+
         # Common dependencies
         sudo apt install build-essential git cmake
         
@@ -61,6 +66,13 @@ jobs:
         
         #Xvfb, just to have a dummy screen
         sudo apt install xvfb vulkan-utils
+        
+    -name: Prepare Vulkan SDK
+      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      with:
+        vulkan-query-version: 1.3.204.0
+        vulkan-components: Vulkan-Headers, Vulkan-Loader
+        vulkan-use-cache: true
         
     - name: Vulkan extensions
       shell: bash -l {0}
@@ -127,15 +139,7 @@ jobs:
       run: |
         cd build
         make install
-        
-    #Copied from https://github.com/godotengine/godot/pull/47414
-    - name: Download SwiftShader
-      run: |
-        wget https://github.com/godotengine/regression-test-project/releases/download/_ci-deps/swiftshader-ubuntu20.04-20211002.zip
-        unzip swiftshader-ubuntu20.04-20211002.zip
-        curr="$(pwd)/libvk_swiftshader.so"
-        sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
-        
+             
     - name: Test
       shell: bash -l {0}
       run: |
@@ -144,6 +148,6 @@ jobs:
         yarpserver --write &
         
         # Run monado-service
-        VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json DRI_PRIME=0  XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
+        LIBGL_ALWAYS_SOFTWARE=true XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
     
 
