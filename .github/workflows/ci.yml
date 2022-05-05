@@ -65,12 +65,12 @@ jobs:
         sudo apt install wget unzip ninja-build curl patch python3 pkg-config libx11-dev glslang-tools libglvnd-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev 
         
         #Xvfb, just to have a dummy screen
-        sudo apt install xvfb vulkan-utils
+        sudo apt install xvfb vulkan-utils vulkan-swrast
    
     - name: Vulkan extensions
       shell: bash -l {0}
       run: |
-        VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json MESA_LOADER_DRIVER_OVERRIDE=zink vulkaninfo
+        LIBGL_ALWAYS_SOFTWARE=1 __GLX_VENDOR_LIBRARY_NAME=mesa VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.i686.json:/usr/share/vulkan/icd.d/lvp_icd.x86_64.json vulkaninfo
 
     
     - name: Source-based OpenXR installation
@@ -141,6 +141,6 @@ jobs:
         yarpserver --write &
         
         # Run monado-service
-        VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json MESA_LOADER_DRIVER_OVERRIDE=zink LIBGL_ALWAYS_SOFTWARE=true XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
+        LIBGL_ALWAYS_SOFTWARE=1 __GLX_VENDOR_LIBRARY_NAME=mesa VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.i686.json:/usr/share/vulkan/icd.d/lvp_icd.x86_64.json  XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
     
 
