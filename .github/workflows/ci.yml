@@ -135,6 +135,7 @@ jobs:
              
     - name: Test
       shell: bash -l {0}
+      if : false #Disabling until https://gitlab.freedesktop.org/monado/monado/-/issues/170 is fixed
       run: |
         export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
         
