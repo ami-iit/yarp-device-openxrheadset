@@ -28,6 +28,8 @@
 #include <ImagePortToQuadLayer.h>
 #include <LabelPortToQuadLayer.h>
 #include <EyesManager.h>
+#include <FramePorts.h>
+#include <AdditionalPosesPublisher.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -214,74 +216,6 @@ private:
         float         z;
         LabelPortToQuadLayer::Options options;
         LabelPortToQuadLayer layer;
-    };
-
-    class FramePorts
-    {
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_orientationPort{nullptr};
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_positionPort{nullptr};
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_angularVelocityPort{nullptr};
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_linearVelocityPort{nullptr};
-
-        IFrameTransform* m_tfPublisher;
-
-        std::string m_tfFrame;
-        std::string m_rootFrame;
-        std::string m_name;
-
-        std::unordered_map<std::string, double> m_lastWarning;
-
-        yarp::sig::Matrix m_localPose;
-        bool m_localPoseValid{false};
-
-
-    public:
-
-        bool open(const std::string& name, const std::string& portPrefix,
-                  IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
-
-        void close();
-
-        void publishFrame(const OpenXrInterface::Pose& pose,
-                          const OpenXrInterface::Velocity& velocity,
-                          yarp::os::Stamp& stamp);
-    };
-
-    class AdditionalPosesPublisher
-    {
-        IFrameTransform* m_tfPublisher;
-        std::string m_rootFrame;
-
-        std::vector<OpenXrInterface::NamedPoseVelocity> m_additionalPosesInputList;
-
-        struct AdditionalPoseInfo
-        {
-            std::string label;
-            double lastWarningTime{0.0};
-            size_t warningCount{0};
-            bool publishedOnce{false};
-            yarp::sig::Matrix localPose;
-            bool active{false};
-            OpenXrInterface::NamedPoseVelocity data;
-        };
-        std::unordered_map<std::string, AdditionalPoseInfo> m_additionalPoses;
-
-    public:
-
-        struct Label
-        {
-            std::string original;
-            std::string modified;
-        };
-
-        void initialize(IFrameTransform* tfPublisher,
-                        const std::vector<Label> &labels,
-                        const std::string& rootFrame);
-
-        std::vector<OpenXrInterface::NamedPoseVelocity>& inputs();
-
-        void publishFrames();
-
     };
 
     FramePorts m_headFramePorts;
