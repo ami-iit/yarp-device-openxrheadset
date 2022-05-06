@@ -173,6 +173,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_eyesManager.options().leftEyeFrame = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
     m_eyesManager.options().rightEyeFrame = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
+    m_rootFrameRaw = m_rootFrame + "_raw";
     m_eyesManager.options().leftAzimuthOffset = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().leftElevationOffset = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().eyeZPosition = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
@@ -181,6 +182,9 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_eyesManager.options().rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().splitEyes = cfg.check("split_eye_ports", yarp::os::Value(true)).asBool();
     m_eyesManager.options().portPrefix = m_prefix;
+
+    m_rawRootFrameTransform.resize(4,4);
+    m_rawRootFrameTransform.eye();
 
     std::vector<AdditionalPosesPublisher::Label> labels;
     yarp::os::Bottle& labelsGroup = cfg.findGroup("POSES_LABELS");
@@ -216,22 +220,22 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     }
     yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
 
-    if (!m_headFramePorts.open("Head", m_prefix + "/headpose", m_tfPublisher, m_headFrame, m_rootFrame))
+    if (!m_headFramePorts.open("Head", m_prefix + "/headpose", m_tfPublisher, m_headFrame, m_rootFrameRaw))
     {
         return false;
     }
 
-    if (!m_leftHandFramePorts.open("Left Hand", m_prefix + "/left_hand", m_tfPublisher, m_leftFrame, m_rootFrame))
+    if (!m_leftHandFramePorts.open("Left Hand", m_prefix + "/left_hand", m_tfPublisher, m_leftFrame, m_rootFrameRaw))
     {
         return false;
     }
 
-    if (!m_rightHandFramePorts.open("Right Hand", m_prefix + "/right_hand", m_tfPublisher, m_rightFrame, m_rootFrame))
+    if (!m_rightHandFramePorts.open("Right Hand", m_prefix + "/right_hand", m_tfPublisher, m_rightFrame, m_rootFrameRaw))
     {
         return false;
     }
 
-    m_additionalPosesPublisher.initialize(m_tfPublisher, labels, m_rootFrame);
+    m_additionalPosesPublisher.initialize(m_tfPublisher, labels, m_rootFrameRaw);
 
     // Start the thread
     if (!this->start()) {
@@ -387,6 +391,12 @@ void yarp::dev::OpenXrHeadset::run()
         m_openXrInterface.getAdditionalPoses(m_additionalPosesPublisher.inputs());
 
         m_stamp.update(m_openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
+
+        //Publish the transformation from the root frame to the OpenXR root frame
+        if (!m_tfPublisher->setTransform(m_rootFrameRaw, m_rootFrame, m_rawRootFrameTransform))
+        {
+            yCWarning(OPENXRHEADSET) << "Failed to update the transformation of the raw root frame.";
+        }
 
         m_headFramePorts.publishFrame(m_openXrInterface.headPose(), m_openXrInterface.headVelocity(), m_stamp);
         m_leftHandFramePorts.publishFrame(m_openXrInterface.leftHandPose(), m_openXrInterface.leftHandVelocity(), m_stamp);
@@ -792,6 +802,39 @@ bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const b
     }
 
     m_labels[labelIndex].layer.setEnabled(enabled);
+
+    return true;
+}
+
+bool yarp::dev::OpenXrHeadset::alignRootFrameToHeadset(const double distance)
+{
+    yCTrace(OPENXRHEADSET);
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    OpenXrInterface::Pose headPose = m_openXrInterface.headPose();
+
+    if (!headPose.positionValid || !headPose.rotationValid)
+    {
+        yCError(OPENXRHEADSET) << "Cannot align the root frame to the headset. The headset pose is not valid";
+        return false;
+    }
+
+    const Eigen::Matrix3f &root_R_headset = headPose.rotation.matrix();
+    // This code was taken from https://www.geometrictools.com/Documentation/EulerAngles.pdf
+    // Section 2.2. It computes the XZY inverse kinematics, and we consider only the rotation around Y
+    double gravityAngle = 0.0;
+    if ((root_R_headset(0,1) < +1.0) && (root_R_headset(0, 1) > -1.0))
+    {
+        gravityAngle = std::atan2(root_R_headset(0, 2), root_R_headset(0, 0));
+    }
+
+    OpenXrInterface::Pose rootFramePose;
+
+    rootFramePose.rotation = Eigen::AngleAxisf(-gravityAngle, Eigen::Vector3f::UnitY());
+    rootFramePose.position = -(rootFramePose.rotation * headPose.position);
+
+    poseToYarpMatrix(rootFramePose, m_rawRootFrameTransform);
 
     return true;
 }

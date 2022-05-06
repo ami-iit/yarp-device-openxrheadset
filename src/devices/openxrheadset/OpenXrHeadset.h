@@ -194,6 +194,12 @@ public:
      */
     virtual bool setLabelEnabled(const std::int32_t labelIndex, const bool enabled) override;
 
+    /**
+     * Align the root frame to the current headset position and angle around gravity
+     * @return True if successfull. False otherwise, e.g. if the current headset pose is not valid
+     */
+    virtual bool alignRootFrameToHeadset(const double distance) override;
+
 private:
 
     struct GuiParam
@@ -239,8 +245,11 @@ private:
     std::string      m_leftFrame;
     std::string      m_rightFrame;
     std::string      m_headFrame;
+    std::string      m_rootFrameRaw;
     std::string      m_rootFrame;
     PolyDriver       m_driver;
+
+    yarp::sig::Matrix m_rawRootFrameTransform;
 
     yarp::os::Port m_rpcPort;
 
