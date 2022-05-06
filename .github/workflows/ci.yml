@@ -1,0 +1,147 @@
+name: Continuous Integration with tests on Ubuntu using apt dependencies
+
+on:
+  push:
+  pull_request:
+  schedule:
+  # * is a special character in YAML so you have to quote this string
+  # Execute a "nightly" build at 2 AM UTC
+  - cron:  '0 2 * * *'
+  
+env:
+  YCM_TAG: v0.14.0
+  YARP_TAG: v3.6.0
+  OPENXR_TAG: main
+  MONADO_TAG: main
+
+jobs:
+  build:
+    name: '[${{ matrix.os }}@${{ matrix.build_type }}]'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@master
+
+
+    - name: Display environment variables
+      shell: bash
+      run: env
+
+    # Remove apt repos that are known to break from time to time
+    # See https://github.com/actions/virtual-environments/issues/323
+    - name: Remove broken apt repos
+      run: |
+        for apt_file in `grep -lr microsoft /etc/apt/sources.list.d/`; do sudo rm $apt_file; done
+
+    # ============
+    # DEPENDENCIES
+    # ============
+
+    - name: System dependencies
+      run: |
+        sudo apt update
+        
+        # PPA for updated graphics drivers
+        sudo add-apt-repository ppa:oibaf/graphics-drivers
+        sudo apt-get update
+
+        # Common dependencies
+        sudo apt install build-essential git cmake
+        
+        # OpenXR dependencies
+        sudo apt install libgl1-mesa-dev libvulkan-dev libx11-xcb-dev libxcb-dri2-0-dev libxcb-glx0-dev libxcb-icccm4-dev libxcb-keysyms1-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev mesa-common-dev
+        
+        # Yarp dependencies
+        sudo apt install libace-dev
+        
+        # yarp-device-openxrheadset dependencies
+        sudo apt install libeigen3-dev libglm-dev libglfw3-dev libglew-dev
+        
+        # Monado additional dependencies (just for testing)
+        sudo apt install wget unzip ninja-build curl patch python3 pkg-config libx11-dev glslang-tools libglvnd-dev ca-certificates libusb-1.0-0-dev libudev-dev libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev 
+        
+        #Xvfb, just to have a dummy screen
+        sudo apt install xvfb vulkan-utils mesa-vulkan-drivers
+   
+    - name: Vulkan extensions
+      shell: bash -l {0}
+      run: |
+        LIBGL_ALWAYS_SOFTWARE=1 __GLX_VENDOR_LIBRARY_NAME=mesa VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.i686.json:/usr/share/vulkan/icd.d/lvp_icd.x86_64.json vulkaninfo
+
+    
+    - name: Source-based OpenXR installation
+      shell: bash -l {0}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        git clone https://github.com/KhronosGroup/OpenXR-SDK.git --depth 1 --branch ${OPENXR_TAG}
+        cd OpenXR-SDK && mkdir -p build && cd build
+        cmake -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        make install
+        
+    - name: Source-based monado installation
+      shell: bash -l {0}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        git clone https://gitlab.freedesktop.org/monado/monado.git --depth 1 --branch ${MONADO_TAG}
+        cd monado && mkdir -p build && cd build
+        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release -DXRT_FEATURE_SERVICE:BOOL=OFF ..
+        ninja install
+        
+    - name: Source-based YARP installation
+      shell: bash -l {0}
+      run: |
+      
+        # YCM
+        cd ${GITHUB_WORKSPACE}
+        git clone -b ${YCM_TAG} https://github.com/robotology/ycm
+        cd ycm && mkdir -p build && cd build
+        cmake -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        make install
+        
+        cd ${GITHUB_WORKSPACE}
+        git clone https://github.com/robotology/yarp.git --depth 1 --branch ${YARP_TAG}
+        cd yarp && mkdir -p build && cd build
+        cmake -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release ..
+        make install
+
+
+    # ===================
+    # CMAKE-BASED PROJECT
+    # ===================
+
+    - name: Configure
+      shell: bash -l {0}
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DBUILD_TESTING:BOOL=ON ..
+
+    - name: Build
+      shell: bash -l {0}
+      run: |
+        cd build
+        make
+
+    - name: Install
+      shell: bash -l {0}
+      run: |
+        cd build
+        make install
+             
+    - name: Test
+      shell: bash -l {0}
+      if : false #Disabling until https://gitlab.freedesktop.org/monado/monado/-/issues/170 is fixed
+      run: |
+        export PATH=$PATH:${GITHUB_WORKSPACE}/install/bin
+        
+        yarpserver --write &
+        
+        # Run monado-service
+        LIBGL_ALWAYS_SOFTWARE=1 __GLX_VENDOR_LIBRARY_NAME=mesa VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.i686.json:/usr/share/vulkan/icd.d/lvp_icd.x86_64.json  XRT_COMPOSITOR_FORCE_XCB=1 XR_RUNTIME_JSON=${GITHUB_WORKSPACE}/install/share/openxr/1/openxr_monado.json xvfb-run ./build/bin/openxrheadset_test
+    
+
