@@ -280,6 +280,15 @@ public:
     // state of the eyes
     XrViewState view_state;
 
+    // time in which the reference space will change (for example when doing "Reset Seated Position")
+    XrTime local_reference_space_change_time;
+
+    // flag to determine if the reference space is about to change
+    bool local_reference_space_changing{true};
+
+    // time in which the poses are requested
+    XrTime locate_space_time;
+
     // layer with rendered eyes projection
     XrCompositionLayerProjection projection_layer;
 

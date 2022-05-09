@@ -180,6 +180,8 @@ public:
 
     int64_t currentNanosecondsSinceEpoch() const;
 
+    bool shouldResetLocalReferenceSpace();
+
     void close();
 };
 

@@ -392,6 +392,12 @@ void yarp::dev::OpenXrHeadset::run()
 
         m_stamp.update(m_openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
 
+        if (m_openXrInterface.shouldResetLocalReferenceSpace())
+        {
+            //The local reference space has been changed by the user.
+            m_rawRootFrameTransform.eye();
+        }
+
         //Publish the transformation from the root frame to the OpenXR root frame
         if (!m_tfPublisher->setTransform(m_rootFrameRaw, m_rootFrame, m_rawRootFrameTransform))
         {
