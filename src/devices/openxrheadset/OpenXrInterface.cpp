@@ -832,6 +832,8 @@ void OpenXrInterface::pollXrEvents()
                 m_pimpl->local_reference_space_change_time = referenceSpaceChanging.changeTime;
             }
 
+            break;
+
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);
         }
