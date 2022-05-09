@@ -814,15 +814,24 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_VIVE_TRACKER_CONNECTED_HTCX: {
             yCInfo(OPENXRHEADSET, "EVENT: Vive tracker connected!");
 
-            const XrEventDataViveTrackerConnectedHTCX& viveTrackerConnected =
-                    *reinterpret_cast<XrEventDataViveTrackerConnectedHTCX*>(&runtime_event);
-
             if (!listConnectedTrackers())
             {
                 m_pimpl->closing = true;
             }
 
             break;
+        }
+        case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING: {
+            yCInfo(OPENXRHEADSET, "EVENT: Reference space change pending!");
+            const XrEventDataReferenceSpaceChangePending& referenceSpaceChanging =
+                    *reinterpret_cast<XrEventDataReferenceSpaceChangePending*>(&runtime_event);
+
+            if (referenceSpaceChanging.referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL)
+            {
+                m_pimpl->local_reference_space_changing = true;
+                m_pimpl->local_reference_space_change_time = referenceSpaceChanging.changeTime;
+            }
+
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);
         }
@@ -903,7 +912,7 @@ void OpenXrInterface::updateXrSpaces()
     }
 
     result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space,
-                           m_pimpl->frame_state.predictedDisplayTime, &m_pimpl->view_space_location);
+                           m_pimpl->locate_space_time, &m_pimpl->view_space_location);
 
     if (!m_pimpl->checkXrOutput(result, "Failed to locate the head space!"))
     {
@@ -936,7 +945,7 @@ void OpenXrInterface::updateXrActions()
 
         for (PoseAction& pose : inputs.poses)
         {
-            result = pose.update(m_pimpl->session, m_pimpl->play_space, m_pimpl->frame_state.predictedDisplayTime);
+            result = pose.update(m_pimpl->session, m_pimpl->play_space, m_pimpl->locate_space_time);
             m_pimpl->checkXrOutput(result, "Failed to get the pose of %s!", pose.name.c_str()); //Continue anyway
         }
 
@@ -1302,6 +1311,7 @@ void OpenXrInterface::draw()
     }
 
     if (startXrFrame()) {
+        m_pimpl->locate_space_time = currentNanosecondsSinceEpoch();
         updateXrSpaces();
         updateXrActions();
         if (m_pimpl->frame_state.shouldRender) {
@@ -1573,7 +1583,22 @@ void OpenXrInterface::getAdditionalPoses(std::vector<NamedPoseVelocity> &additio
 
 int64_t OpenXrInterface::currentNanosecondsSinceEpoch() const
 {
+    //Updated when calling startXrFrame
     return m_pimpl->frame_state.predictedDisplayTime;
+}
+
+bool OpenXrInterface::shouldResetLocalReferenceSpace()
+{
+    bool shouldReset = m_pimpl->local_reference_space_changing &&
+            m_pimpl->locate_space_time > m_pimpl->local_reference_space_change_time;
+
+    if (shouldReset)
+    {
+        // This methods returns true only one
+        m_pimpl->local_reference_space_changing = false;
+    }
+
+    return shouldReset;
 }
 
 void OpenXrInterface::close()
