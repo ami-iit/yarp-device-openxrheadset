@@ -5,7 +5,7 @@ on:
   pull_request:
   schedule:
   # * is a special character in YAML so you have to quote this string
-  # Execute a "nightly" build at 2 AM UTC 
+  # Execute a "nightly" build at 2 AM UTC
   - cron:  '0 2 * * *'
 
 jobs:
@@ -30,11 +30,11 @@ jobs:
     - name: Dependencies
       shell: bash -l {0}
       run: |
-        # Compilation related dependencies 
-        mamba install cmake compilers make ninja pkg-config 
+        # Compilation related dependencies
+        mamba install cmake compilers make ninja pkg-config
         # Actual dependencies
         mamba install glew glfw eigen glm openxr-sdk yarp
-        
+
     - name: OpenGL [Linux]
       if: contains(matrix.os, 'ubuntu')
       shell: bash -l {0}
@@ -42,7 +42,7 @@ jobs:
         # OpenGL is not found on Ubuntu when using conda. Related issue https://github.com/robotology/robotology-superbuild/issues/929
         # See https://github.com/robotology/robotology-superbuild/issues/477
         mamba install expat-cos6-x86_64 freeglut libselinux-cos6-x86_64 libxau-cos6-x86_64 libxcb-cos6-x86_64 libxdamage-cos6-x86_64 libxext-cos6-x86_64 libxfixes-cos6-x86_64 libxxf86vm-cos6-x86_64 mesa-libgl-cos6-x86_64 mesa-libgl-devel-cos6-x86_64
-        
+
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
       shell: bash -l {0}
@@ -50,7 +50,7 @@ jobs:
         mkdir -p build
         cd build
         cmake -GNinja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
-      
+
     - name: Configure [Windows]
       if: contains(matrix.os, 'windows')
       shell: bash -l {0}
@@ -59,9 +59,9 @@ jobs:
         cd build
         cmake -G"Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
 
-    - name: Build 
+    - name: Build
       shell: bash -l {0}
       run: |
         cd build
         cmake --build . --config ${{ matrix.build_type }}
- 
+
