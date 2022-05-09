@@ -833,7 +833,6 @@ void OpenXrInterface::pollXrEvents()
             }
 
             break;
-
         }
         default: yCWarning(OPENXRHEADSET, "Unhandled event (type %d)", runtime_event.type);
         }
@@ -1565,7 +1564,10 @@ void OpenXrInterface::getAdditionalPoses(std::vector<NamedPoseVelocity> &additio
                 numberOfPoses += m_pimpl->top_level_paths[topLevelIndex].currentActions().poses.size() - 1;
             }
         }
-        numberOfPoses += m_pimpl->top_level_paths[topLevelIndex].currentActions().poses.size();
+        else
+        {
+            numberOfPoses += m_pimpl->top_level_paths[topLevelIndex].currentActions().poses.size();
+        }
     }
 
     additionalPoses.resize(numberOfPoses);
