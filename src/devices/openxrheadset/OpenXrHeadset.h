@@ -27,7 +27,7 @@
 #include <OpenXrInterface.h>
 #include <ImagePortToQuadLayer.h>
 #include <LabelPortToQuadLayer.h>
-#include <EyePort.h>
+#include <EyesManager.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -248,14 +248,7 @@ private:
 
     std::string m_prefix;
 
-    EyePort m_leftEye, m_rightEye;
-
-    double m_leftAzimuthOffset;
-    double m_leftElevationOffset;
-    double m_eyeZPosition;
-    double m_interCameraDistance;
-    double m_rightAzimuthOffset;
-    double m_rightElevationOffset;
+    EyesManager m_eyesManager;
 
     std::vector<GuiParam> m_huds;
     std::vector<LabelLayer> m_labels;
@@ -266,8 +259,6 @@ private:
     std::string      m_leftFrame;
     std::string      m_rightFrame;
     std::string      m_headFrame;
-    std::string      m_leftEyeFrame;
-    std::string      m_rightEyeFrame;
     std::string      m_rootFrame;
     PolyDriver       m_driver;
 

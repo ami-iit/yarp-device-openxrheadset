@@ -46,13 +46,15 @@ set(yarp_openxrheadset_HDRS
 set(yarp_openxrheadset_driver_SRCS
     OpenXrHeadset.cpp
     OpenXrYarpUtilities.cpp
-    EyePort.cpp
+    SingleEyePort.cpp
+    EyesManager.cpp
 )
 
 set(yarp_openxrheadset_driver_HDRS
     OpenXrHeadset.h
     OpenXrYarpUtilities.h
-    EyePort.h
+    SingleEyePort.h
+    EyesManager.h
 )
 
 set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)

@@ -6,15 +6,35 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include <EyePort.h>
+#include <SingleEyePort.h>
 #include <OpenXrYarpUtilities.h>
 
-bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &imagePortName, const std::string &anglesPortName,
+bool SingleEyePort::updateControlAngles()
+{
+    yCTrace(OPENXRHEADSET);
+
+    yarp::sig::Vector* inputAngles = m_eyeAnglesPort.read(false);
+
+    if (inputAngles)
+    {
+        if (inputAngles->size() != 2)
+        {
+            yCError(OPENXRHEADSET) << "The input to " + m_eyeAnglesPort.getName() + " is supposed to be 2-dimensional."
+                                      " The vector is supposed to contain the azimuth (positive anticlockwise) and elevation (positive upwards) angles in radians, in this order.";
+            return false;
+        }
+        setEyeRotation(inputAngles->operator()(0), inputAngles->operator()(1));
+    }
+
+    return true;
+}
+
+bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &anglesPortName,
                    yarp::dev::IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
 {
     yCTrace(OPENXRHEADSET);
     m_initialized = false;
-    if (!m_layer.initialize(quadLayer, imagePortName)) {
+    if (!m_layer.initialize(quadLayer)) {
         return false;
     }
 
@@ -51,7 +71,12 @@ bool EyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::strin
     return true;
 }
 
-void EyePort::close()
+bool SingleEyePort::openImagePort(const std::string &imagePortName)
+{
+    return m_layer.openImagePort(imagePortName);
+}
+
+void SingleEyePort::close()
 {
     m_initialized = false;
     m_eyeAnglesPort.close();
@@ -59,7 +84,7 @@ void EyePort::close()
     m_layer.close();
 }
 
-void EyePort::setEyePosition(const Eigen::Vector3f &position)
+void SingleEyePort::setEyePosition(const Eigen::Vector3f &position)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -74,7 +99,7 @@ void EyePort::setEyePosition(const Eigen::Vector3f &position)
     m_layer.setPosition(m_rotationOffset * m_desiredRotation * m_eyeRelativeImagePosition + m_eyePosition);
 }
 
-void EyePort::publishEyeTransform()
+void SingleEyePort::publishEyeTransform()
 {
     yCTrace(OPENXRHEADSET);
 
@@ -91,14 +116,14 @@ void EyePort::publishEyeTransform()
     }
 }
 
-bool EyePort::active() const
+bool SingleEyePort::active() const
 {
     yCTrace(OPENXRHEADSET);
 
     return m_initialized && m_layer.active();
 }
 
-std::string EyePort::controlPortName() const
+std::string SingleEyePort::controlPortName() const
 {
     yCTrace(OPENXRHEADSET);
 
@@ -109,7 +134,7 @@ std::string EyePort::controlPortName() const
     return m_eyeAnglesPort.getName();
 }
 
-void EyePort::setEyeRotationOffset(double azimuth, double elevation)
+void SingleEyePort::setEyeRotationOffset(double azimuth, double elevation)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -141,7 +166,7 @@ void EyePort::setEyeRotationOffset(double azimuth, double elevation)
     m_layer.setPose(eyeRotation * m_eyeRelativeImagePosition + m_eyePosition, eyeRotation);
 }
 
-void EyePort::setEyeRotation(double azimuth, double elevation)
+void SingleEyePort::setEyeRotation(double azimuth, double elevation)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -170,19 +195,19 @@ void EyePort::setEyeRotation(double azimuth, double elevation)
     m_layer.setNewImageDesiredPose(eyeRotation * m_eyeRelativeImagePosition + m_eyePosition, eyeRotation);
 }
 
-double EyePort::azimuthOffset() const
+double SingleEyePort::azimuthOffset() const
 {
     yCTrace(OPENXRHEADSET);
     return m_azimuthOffset;
 }
 
-double EyePort::elevationOffset() const
+double SingleEyePort::elevationOffset() const
 {
     yCTrace(OPENXRHEADSET);
     return m_elevationOffset;
 }
 
-void EyePort::setEyeRelativeImagePosition(const Eigen::Vector3f &position)
+void SingleEyePort::setEyeRelativeImagePosition(const Eigen::Vector3f &position)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -208,7 +233,7 @@ void EyePort::setEyeRelativeImagePosition(const Eigen::Vector3f &position)
     m_layer.setPosition(m_rotationOffset * m_desiredRotation * m_eyeRelativeImagePosition + m_eyePosition);
 }
 
-void EyePort::setVisibility(const IOpenXrQuadLayer::Visibility &visibility)
+void SingleEyePort::setVisibility(const IOpenXrQuadLayer::Visibility &visibility)
 {
     yCTrace(OPENXRHEADSET);
 
@@ -221,36 +246,40 @@ void EyePort::setVisibility(const IOpenXrQuadLayer::Visibility &visibility)
     m_layer.setVisibility(visibility);
 }
 
-float EyePort::layerWidth() const
+float SingleEyePort::layerWidth() const
 {
     yCTrace(OPENXRHEADSET);
 
     return m_layer.layerWidth();
 }
 
-float EyePort::layerHeight() const
+float SingleEyePort::layerHeight() const
 {
     yCTrace(OPENXRHEADSET);
 
     return m_layer.layerHeight();
 }
 
-bool EyePort::update()
+bool SingleEyePort::update()
 {
     yCTrace(OPENXRHEADSET);
 
-    yarp::sig::Vector* inputAngles = m_eyeAnglesPort.read(false);
-
-    if (inputAngles)
+    if (!updateControlAngles())
     {
-        if (inputAngles->size() != 2)
-        {
-            yCError(OPENXRHEADSET) << "The input to " + m_eyeAnglesPort.getName() + " is supposed to be 2-dimensional."
-                                      " The vector is supposed to contain the azimuth (positive anticlockwise) and elevation (positive upwards) angles in radians, in this order.";
-            return false;
-        }
-        setEyeRotation(inputAngles->operator()(0), inputAngles->operator()(1));
+        return false;
     }
 
     return m_layer.updateTexture();
+}
+
+bool SingleEyePort::update(const yarp::sig::ImageOf<yarp::sig::PixelRgb> &img, GLint startX, GLint startY, GLint endX, GLint endY)
+{
+    yCTrace(OPENXRHEADSET);
+
+    if (!updateControlAngles())
+    {
+        return false;
+    }
+
+    return m_layer.updateTexture(img, startX, startY, endX, endY);
 }
