@@ -123,5 +123,5 @@ service OpenXrHeadsetCommands
      * Align the root frame to the current headset position and angle around gravity
      * @return True if successfull. False otherwise, e.g. if the current headset pose is not valid
      */
-     bool alignRootFrameToHeadset(1:double distance);
+     bool alignRootFrameToHeadset();
 }

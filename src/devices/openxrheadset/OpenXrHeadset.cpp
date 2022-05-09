@@ -812,7 +812,7 @@ bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const b
     return true;
 }
 
-bool yarp::dev::OpenXrHeadset::alignRootFrameToHeadset(const double distance)
+bool yarp::dev::OpenXrHeadset::alignRootFrameToHeadset()
 {
     yCTrace(OPENXRHEADSET);
 
