@@ -411,6 +411,45 @@ std::string OpenXrInterface::Implementation::getInteractionProfileShortTag(const
     return "none";
 }
 
+std::string OpenXrInterface::Implementation::sessionStateToString(XrSessionState state)
+{
+    std::string output;
+    switch (state)
+    {
+    case XR_SESSION_STATE_IDLE:
+        output = "IDLE";
+        break;
+    case XR_SESSION_STATE_READY:
+        output = "READY";
+        break;
+    case XR_SESSION_STATE_SYNCHRONIZED:
+        output = "SYNCHRONIZED";
+        break;
+    case XR_SESSION_STATE_VISIBLE:
+        output = "VISIBLE";
+        break;
+    case XR_SESSION_STATE_FOCUSED:
+        output = "FOCUSED";
+        break;
+    case XR_SESSION_STATE_STOPPING:
+        output = "STOPPING";
+        break;
+    case XR_SESSION_STATE_LOSS_PENDING:
+        output = "LOSS_PENDING";
+        break;
+    case XR_SESSION_STATE_EXITING:
+        output = "EXITING";
+        break;
+    case XR_SESSION_STATE_UNKNOWN:
+    case XR_SESSION_STATE_MAX_ENUM:
+    default:
+        output = "UNKNOWN";
+        break;
+    }
+
+    return output;
+}
+
 
 InputActions &TopLevelPath::currentActions()
 {

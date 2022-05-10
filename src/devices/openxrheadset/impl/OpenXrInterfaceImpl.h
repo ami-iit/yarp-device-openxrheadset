@@ -229,6 +229,8 @@ public:
 
     std::string getInteractionProfileShortTag(const std::string& interactionProfile);
 
+    std::string sessionStateToString(XrSessionState state);
+
     // DATA
 
     // the instance handle can be thought of as the basic connection to the OpenXR runtime
