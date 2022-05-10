@@ -705,17 +705,20 @@ bool OpenXrInterface::prepareXrActions()
                                                      "camera",
                                                      "keyboard"};
 
-        std::vector<TopLevelPathDeclaration> trackers;
-        trackers.resize(trackersNameList.size());
+        m_pimpl->htc_trackers_status.clear();
+
         for (size_t name = 0; name < trackersNameList.size(); ++name)
         {
-            trackers[name].stringPath = trackersPrefix + trackersNameList[name];
-            trackers[name].actionNamePrefix = trackersNameList[name] + "_";
-            trackers[name].inputsDeclarations[HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG] = viveTrackerInputs;
+            TopLevelPathDeclaration tracker;
+            tracker.stringPath = trackersPrefix + trackersNameList[name];
+            tracker.actionNamePrefix = trackersNameList[name] + "_";
+            tracker.inputsDeclarations[HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG] = viveTrackerInputs;
+
+            topLevelPathsDeclaration.push_back(tracker);
+            m_pimpl->htc_trackers_status[tracker.stringPath].top_level_index = topLevelPathsDeclaration.size() - 1;
         }
 
         interactionProfilesPrefixes.push_back({HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG, "vive_tracker_"});
-        topLevelPathsDeclaration.insert(topLevelPathsDeclaration.end(), trackers.begin(), trackers.end());
     }
 
     if (!m_pimpl->fillActionBindings(interactionProfilesPrefixes, topLevelPathsDeclaration))
@@ -789,7 +792,7 @@ void OpenXrInterface::pollXrEvents()
                     m_pimpl->closing = true;
                 }
 
-                if (!updateInteractionProfile())
+                if (!updateInteractionProfiles())
                 {
                     m_pimpl->closing = true;
                 }
@@ -804,7 +807,7 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
             yCInfo(OPENXRHEADSET, "EVENT: interaction profile changed!");
 
-            if (!updateInteractionProfile())
+            if (!updateInteractionProfiles())
             {
                 m_pimpl->closing = true;
             }
@@ -814,7 +817,15 @@ void OpenXrInterface::pollXrEvents()
         case XR_TYPE_EVENT_DATA_VIVE_TRACKER_CONNECTED_HTCX: {
             yCInfo(OPENXRHEADSET, "EVENT: Vive tracker connected!");
 
-            if (!listConnectedTrackers())
+            if (!updateConnectedTrackers())
+            {
+                m_pimpl->closing = true;
+            }
+
+            yCInfo(OPENXRHEADSET, "Updating interaction profiles manually.");
+
+            //This is because we force the interaction profile to NO_INTERACTION_PROFILE_TAG of the not connected trackers.
+            if (!updateInteractionProfiles())
             {
                 m_pimpl->closing = true;
             }
@@ -970,7 +981,7 @@ void OpenXrInterface::updateXrActions()
     }
 }
 
-bool OpenXrInterface::updateInteractionProfile()
+bool OpenXrInterface::updateInteractionProfiles()
 {
     XrInteractionProfileState state = {.type = XR_TYPE_INTERACTION_PROFILE_STATE};
 
@@ -981,7 +992,6 @@ bool OpenXrInterface::updateInteractionProfile()
         XrResult result = xrGetCurrentInteractionProfile(m_pimpl->session, topLevel.xrPath, &state);
         if (!XR_SUCCEEDED(result))
         {
-            m_pimpl->checkXrOutput(result, "Failed to get the interaction profile of %s", topLevel.stringPath.c_str());
             topLevel.currentInteractionProfile = TOP_LEVEL_NOT_SUPPORTED_TAG;
         }
         else
@@ -1005,20 +1015,43 @@ bool OpenXrInterface::updateInteractionProfile()
                 topLevel.currentInteractionProfile = NO_INTERACTION_PROFILE_TAG;
             }
         }
-        yCInfo(OPENXRHEADSET) << "Interaction profile of" << topLevel.stringPath << ":" << topLevel.currentInteractionProfile;
     }
 
-    if (m_pimpl->top_level_paths[0].currentInteractionProfile != m_pimpl->top_level_paths[1].currentInteractionProfile)
-    {
-        yCWarning(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Make sure that both controllers are working.";
-    }
+    forceTrackersInteractionProfile();
+
+    printInteractionProfiles();
 
     return true;
 }
 
-bool OpenXrInterface::listConnectedTrackers()
+void OpenXrInterface::printInteractionProfiles()
+{
+    for (auto& topLevel : m_pimpl->top_level_paths)
+    {
+        if (topLevel.currentInteractionProfile == TOP_LEVEL_NOT_SUPPORTED_TAG)
+        {
+            yCError(OPENXRHEADSET, "Failed to get the interaction profile of %s", topLevel.stringPath.c_str());
+        }
+        else
+        {
+            yCInfo(OPENXRHEADSET) << "Interaction profile of" << topLevel.stringPath << ":" << topLevel.currentInteractionProfile;
+        }
+    }
+
+    if (m_pimpl->top_level_paths[0].currentInteractionProfile != m_pimpl->top_level_paths[1].currentInteractionProfile)
+    {
+        yCWarning(OPENXRHEADSET) << "The left and right hand have different interaction profiles. Maybe are you using a single controller?";
+    }
+}
+
+bool OpenXrInterface::updateConnectedTrackers()
 {
     yCTrace(OPENXRHEADSET);
+
+    for (auto& tracker : m_pimpl->htc_trackers_status)
+    {
+        tracker.second.connected = false; //Reset the connected flag
+    }
 
     uint32_t numberOfTrackers;
     XrResult result = m_pimpl->pfn_xrEnumerateViveTrackerPathsHTCX(m_pimpl->instance, 0, &numberOfTrackers, nullptr);
@@ -1057,6 +1090,8 @@ bool OpenXrInterface::listConnectedTrackers()
             if (m_pimpl->checkXrOutput(result, "Failed to convert the tracker %d role path to string.", i))
             {
                 yCInfo(OPENXRHEADSET, "Vive Tracker %zu role path: %s \n", i, sRolePath);
+
+                m_pimpl->htc_trackers_status[sRolePath].connected = true;
             }
         }
         else
@@ -1067,6 +1102,18 @@ bool OpenXrInterface::listConnectedTrackers()
     }
 
     return true;
+}
+
+void OpenXrInterface::forceTrackersInteractionProfile()
+{
+    for (auto& tracker : m_pimpl->htc_trackers_status)
+    {
+        if (!tracker.second.connected)
+        {
+            //Forcing the interaction profile of not connected trackers to NO_INTERACTION_PROFILE_TAG
+            m_pimpl->top_level_paths[tracker.second.top_level_index].currentInteractionProfile = NO_INTERACTION_PROFILE_TAG;
+        }
+    }
 }
 
 void OpenXrInterface::render()

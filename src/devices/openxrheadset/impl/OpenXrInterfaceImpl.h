@@ -149,6 +149,12 @@ struct TopLevelPathDeclaration
     std::unordered_map<std::string, InputActionsDeclaration> inputsDeclarations;
 };
 
+struct TrackerStatus
+{
+    bool connected{false};
+    size_t top_level_index;
+};
+
 struct SwapChainData
 {
     // the swapchain is a series of buffers that allows the application to render an image on a buffer differnt from the one in use
@@ -267,9 +273,14 @@ public:
     // flag to check if the HTC Vive trackers are supported by the runtime.
     bool htc_trackers_supported = false;
 
+    // Pointer to function to get the list of trackers
     PFN_xrEnumerateViveTrackerPathsHTCX pfn_xrEnumerateViveTrackerPathsHTCX = NULL;
 
+    // Vector of trackers connected
     std::vector<XrViveTrackerPathsHTCX> htc_trackers_connected;
+
+    // Map defining which tracker is connected
+    std::unordered_map<std::string, TrackerStatus> htc_trackers_status;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;

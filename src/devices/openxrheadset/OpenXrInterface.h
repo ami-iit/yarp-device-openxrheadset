@@ -97,9 +97,13 @@ class OpenXrInterface
 
     void updateXrActions();
 
-    bool updateInteractionProfile();
+    bool updateInteractionProfiles();
 
-    bool listConnectedTrackers();
+    void printInteractionProfiles();
+
+    bool updateConnectedTrackers();
+
+    void forceTrackersInteractionProfile();
 
     void render();
 
