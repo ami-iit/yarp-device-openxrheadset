@@ -762,7 +762,9 @@ void OpenXrInterface::pollXrEvents()
         }
         case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED: {
             XrEventDataSessionStateChanged* event = (XrEventDataSessionStateChanged*)&runtime_event;
-            yCInfo(OPENXRHEADSET, "EVENT: session state changed from %d to %d", m_pimpl->state, event->state);
+            yCInfo(OPENXRHEADSET, "EVENT: session state changed from %s to %s",
+                   m_pimpl->sessionStateToString(m_pimpl->state).c_str(),
+                   m_pimpl->sessionStateToString(event->state).c_str());
 
             m_pimpl->state = event->state;
 
