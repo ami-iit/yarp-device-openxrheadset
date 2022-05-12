@@ -22,12 +22,10 @@
 #elif defined(__APPLE__)
  #define GLFW_EXPOSE_NATIVE_COCOA
  #define GLFW_EXPOSE_NATIVE_NSGL
-#include <GL/glext.h>
  #include <GL/glx.h>
 #elif defined(__linux__)
  #define GLFW_EXPOSE_NATIVE_X11
  #define GLFW_EXPOSE_NATIVE_GLX
-#include <GL/glext.h>
  #include <GL/glx.h>
 #endif
 
