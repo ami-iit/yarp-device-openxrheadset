@@ -175,7 +175,7 @@ void InputActions::clear()
 }
 
 XrBool32 OpenXrInterface::Implementation::OpenXrDebugCallback(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT, const XrDebugUtilsMessengerCallbackDataEXT *data, void *) {
-    yCTrace(OPENXRHEADSET);
+
 
     if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     {
@@ -220,7 +220,6 @@ void OpenXrInterface::Implementation::submitLayer(const XrCompositionLayerBaseHe
 
 bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<InteractionProfileDeclaration> &interactionProfilesPrefixes, const std::vector<TopLevelPathDeclaration> &topLevelPaths)
 {
-
     //Create the actionset
     XrActionSetCreateInfo actionset_info = {
         .type = XR_TYPE_ACTION_SET_CREATE_INFO, .next = NULL, .priority = 0};

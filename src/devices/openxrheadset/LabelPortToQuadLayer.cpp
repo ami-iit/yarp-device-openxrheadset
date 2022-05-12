@@ -14,8 +14,6 @@
 
 bool LabelPortToQuadLayer::initialize(const Options &options)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The input quadLayer is not valid.";
@@ -105,7 +103,6 @@ void LabelPortToQuadLayer::close()
 
 bool LabelPortToQuadLayer::updateTexture()
 {
-    yCTrace(OPENXRHEADSET);
     assert(m_initThreadID == std::this_thread::get_id() &&
            "The updateTexture has to be called from the same thread in which it has been initialized.");
 
@@ -271,8 +268,6 @@ bool LabelPortToQuadLayer::updateTexture()
 
 void LabelPortToQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &rotation)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -284,8 +279,6 @@ void LabelPortToQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen:
 
 void LabelPortToQuadLayer::setPosition(const Eigen::Vector3f &position)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -297,8 +290,6 @@ void LabelPortToQuadLayer::setPosition(const Eigen::Vector3f &position)
 
 Eigen::Vector3f LabelPortToQuadLayer::layerPosition() const
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -310,8 +301,6 @@ Eigen::Vector3f LabelPortToQuadLayer::layerPosition() const
 
 void LabelPortToQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -323,8 +312,6 @@ void LabelPortToQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
 
 Eigen::Quaternionf LabelPortToQuadLayer::layerQuaternion() const
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -336,8 +323,6 @@ Eigen::Quaternionf LabelPortToQuadLayer::layerQuaternion() const
 
 void LabelPortToQuadLayer::setDimensions(float widthInMeters, float heightInMeters)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -349,8 +334,6 @@ void LabelPortToQuadLayer::setDimensions(float widthInMeters, float heightInMete
 
 void LabelPortToQuadLayer::setVisibility(const IOpenXrQuadLayer::Visibility &visibility)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -362,8 +345,6 @@ void LabelPortToQuadLayer::setVisibility(const IOpenXrQuadLayer::Visibility &vis
 
 float LabelPortToQuadLayer::layerWidth() const
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -375,8 +356,6 @@ float LabelPortToQuadLayer::layerWidth() const
 
 float LabelPortToQuadLayer::layerHeight() const
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_options.quadLayer)
     {
         yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";

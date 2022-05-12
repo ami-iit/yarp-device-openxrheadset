@@ -13,7 +13,6 @@
 
 bool OpenXrInterface::checkExtensions()
 {
-    yCTrace(OPENXRHEADSET);
     // reuse this variable for all our OpenXR return codes
     XrResult result = XR_SUCCESS;
 
@@ -84,8 +83,6 @@ bool OpenXrInterface::checkExtensions()
 
 void OpenXrInterface::printInstanceProperties()
 {
-    yCTrace(OPENXRHEADSET);
-
     XrResult result;
     XrInstanceProperties instance_props;
     instance_props.type = XR_TYPE_INSTANCE_PROPERTIES;
@@ -106,8 +103,6 @@ void OpenXrInterface::printInstanceProperties()
 
 bool OpenXrInterface::prepareXrInstance()
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!checkExtensions())
     {
         return false;
@@ -199,8 +194,6 @@ bool OpenXrInterface::prepareXrInstance()
 
 bool OpenXrInterface::prepareXrSystem()
 {
-    yCTrace(OPENXRHEADSET);
-
     XrSystemGetInfo system_get_info = {
         .type = XR_TYPE_SYSTEM_GET_INFO,
         .next = NULL,
@@ -309,8 +302,6 @@ void OpenXrInterface::printSystemProperties()
 
 bool OpenXrInterface::prepareGL()
 {
-    yCTrace(OPENXRHEADSET);
-
     m_pimpl->windowSize.resize(2);
     m_pimpl->windowSize[0] = (m_pimpl->viewconfig_views[0].recommendedImageRectWidth +
                               m_pimpl->viewconfig_views[1].recommendedImageRectWidth)/2;
@@ -358,8 +349,6 @@ bool OpenXrInterface::prepareGL()
 
 bool OpenXrInterface::prepareXrSession()
 {
-    yCTrace(OPENXRHEADSET);
-
 #ifdef XR_USE_PLATFORM_WIN32
     m_pimpl->graphics_binding_gl.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR;
     m_pimpl->graphics_binding_gl.next = nullptr;
@@ -409,8 +398,6 @@ bool OpenXrInterface::prepareXrSession()
 
 bool OpenXrInterface::prepareXrSwapchain()
 {
-    yCTrace(OPENXRHEADSET);
-
     m_pimpl->projection_view_swapchain_create_info.resize(m_pimpl->viewconfig_views.size());
     m_pimpl->projection_view_swapchains.resize(m_pimpl->viewconfig_views.size());
     m_pimpl->projection_view_depth_swapchains.resize(m_pimpl->viewconfig_views.size());
@@ -492,8 +479,6 @@ bool OpenXrInterface::prepareXrSwapchain()
 
 bool OpenXrInterface::prepareXrCompositionLayers()
 {
-    yCTrace(OPENXRHEADSET);
-
     // Prepare projection views structures for the rendering
     m_pimpl->projection_views.resize(m_pimpl->viewconfig_views.size());
     for (size_t i = 0; i < m_pimpl->projection_views.size(); i++) {
@@ -547,8 +532,6 @@ bool OpenXrInterface::prepareXrCompositionLayers()
 
 bool OpenXrInterface::prepareXrActions()
 {
-    yCTrace(OPENXRHEADSET);
-
     std::vector<InteractionProfileDeclaration> interactionProfilesPrefixes =
     {{KHR_SIMPLE_CONTROLLER_INTERACTION_PROFILE, "khr_"},
      {OCULUS_TOUCH_INTERACTION_PROFILE_TAG, "oculus_"},
@@ -729,8 +712,6 @@ bool OpenXrInterface::prepareXrActions()
 
 bool OpenXrInterface::prepareGlFramebuffer()
 {
-    yCTrace(OPENXRHEADSET);
-
     // Create a framebuffer for printing in our window (not required by OpenXr)
     glGenFramebuffers(1, &(m_pimpl->glFrameBufferId));
 
@@ -744,8 +725,6 @@ bool OpenXrInterface::prepareGlFramebuffer()
 
 void OpenXrInterface::pollXrEvents()
 {
-    yCTrace(OPENXRHEADSET);
-
     XrEventDataBuffer runtime_event;
     runtime_event.type = XR_TYPE_EVENT_DATA_BUFFER;
     runtime_event.next = NULL;
@@ -864,8 +843,6 @@ void OpenXrInterface::pollXrEvents()
 
 bool OpenXrInterface::startXrFrame()
 {
-    yCTrace(OPENXRHEADSET);
-
     XrFrameWaitInfo frame_wait_info = {.type = XR_TYPE_FRAME_WAIT_INFO, .next = NULL};
     XrResult result;
 
@@ -899,8 +876,6 @@ bool OpenXrInterface::startXrFrame()
 
 void OpenXrInterface::updateXrSpaces()
 {
-    yCTrace(OPENXRHEADSET);
-
     //Update location of the views
     XrViewLocateInfo view_locate_info = {.type = XR_TYPE_VIEW_LOCATE_INFO,
                                          .next = NULL,
@@ -938,8 +913,6 @@ void OpenXrInterface::updateXrSpaces()
 
 void OpenXrInterface::updateXrActions()
 {
-    yCTrace(OPENXRHEADSET);
-
     XrActiveActionSet active_actionsets =
         {.actionSet = m_pimpl->actionset,
          .subactionPath = XR_NULL_PATH};
@@ -1048,8 +1021,6 @@ void OpenXrInterface::printInteractionProfiles()
 
 bool OpenXrInterface::updateConnectedTrackers()
 {
-    yCTrace(OPENXRHEADSET);
-
     for (auto& tracker : m_pimpl->htc_trackers_status)
     {
         tracker.second.connected = false; //Reset the connected flag
@@ -1120,8 +1091,6 @@ void OpenXrInterface::forceTrackersInteractionProfile()
 
 void OpenXrInterface::render()
 {
-    yCTrace(OPENXRHEADSET);
-
     for (size_t i = 0; i < m_pimpl->projection_view_swapchains.size(); ++i)
     {
         // Acquire swapchain images
@@ -1258,8 +1227,6 @@ void OpenXrInterface::render()
 
 void OpenXrInterface::endXrFrame()
 {
-    yCTrace(OPENXRHEADSET);
-
     m_pimpl->layer_count = 0; //Reset the layer count
 
     if (m_pimpl->frame_state.shouldRender) {
@@ -1296,13 +1263,11 @@ void OpenXrInterface::endXrFrame()
 
 OpenXrInterface::OpenXrInterface()
 {
-    yCTrace(OPENXRHEADSET);
     m_pimpl = std::make_unique<Implementation>();
 }
 
 OpenXrInterface::~OpenXrInterface()
 {
-    yCTrace(OPENXRHEADSET);
     if (!m_pimpl->closed)
     {
         close();
@@ -1311,8 +1276,6 @@ OpenXrInterface::~OpenXrInterface()
 
 bool OpenXrInterface::initialize()
 {
-    yCTrace(OPENXRHEADSET);
-
     if (m_pimpl->initialized)
     {
         yCError(OPENXRHEADSET) << "The OpenXr interface has been already initialized.";
@@ -1338,15 +1301,11 @@ bool OpenXrInterface::initialize()
 
 bool OpenXrInterface::isInitialized() const
 {
-    yCTrace(OPENXRHEADSET);
-
     return m_pimpl->initialized;
 }
 
 void OpenXrInterface::draw()
 {
-    yCTrace(OPENXRHEADSET);
-
     if (m_pimpl->closing)
     {
         return;
@@ -1373,8 +1332,6 @@ void OpenXrInterface::draw()
 
 std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_pimpl->initialized)
     {
         yCError(OPENXRHEADSET) << "The OpenXr interface has not been initialized.";
@@ -1466,8 +1423,6 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
 
 bool OpenXrInterface::isRunning() const
 {
-    yCTrace(OPENXRHEADSET);
-
     return m_pimpl->initialized && !m_pimpl->closing;
 }
 
@@ -1656,8 +1611,6 @@ bool OpenXrInterface::shouldResetLocalReferenceSpace()
 
 void OpenXrInterface::close()
 {
-    yCTrace(OPENXRHEADSET);
-
     m_pimpl->closing = true;
 
     if (m_pimpl->glFrameBufferId != 0) {
