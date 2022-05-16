@@ -12,3 +12,5 @@ add_executable(OpenXrFrameViz main.cpp)
 target_link_libraries(OpenXrFrameViz PRIVATE  YARP::YARP_os YARP::YARP_sig
                                               YARP::YARP_dev YARP::YARP_math
                                               iDynTree::idyntree-visualization iDynTree::idyntree-yarp)
+
+install(TARGETS OpenXrFrameViz DESTINATION bin)

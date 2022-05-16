@@ -9,11 +9,18 @@
 service OpenXrHeadsetCommands
 {
     /**
-    * Get the current interaction profile
+    * Get the current interaction profile for the left hand
     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
     * @return a string indicating the interaction profile in use.
     */
-    string getInteractionProfile();
+    string getLeftHandInteractionProfile();
+
+    /**
+    * Get the current interaction profile for the right hand
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * @return a string indicating the interaction profile in use.
+    */
+    string getRightHandInteractionProfile();
 
     /**
      * Get the left image width and height.
@@ -111,4 +118,10 @@ service OpenXrHeadsetCommands
     * @return True if successfull, false if the index is out of bounds
     */
     bool setLabelEnabled(1:i32 labelIndex, 2:bool enabled);
+
+    /**
+     * Align the root frame to the current headset position and angle around gravity
+     * @return True if successfull. False otherwise, e.g. if the current headset pose is not valid
+     */
+     bool alignRootFrameToHeadset();
 }

@@ -97,7 +97,13 @@ class OpenXrInterface
 
     void updateXrActions();
 
-    bool updateInteractionProfile();
+    bool updateInteractionProfiles();
+
+    void printInteractionProfiles();
+
+    bool updateConnectedTrackers();
+
+    void forceTrackersInteractionProfile();
 
     void render();
 
@@ -121,6 +127,13 @@ public:
 
         Eigen::Vector3f linear;
         Eigen::Vector3f angular;
+    };
+
+    struct NamedPoseVelocity
+    {
+        std::string name;
+        Pose pose;
+        Velocity velocity;
     };
 
     OpenXrInterface();
@@ -157,7 +170,9 @@ public:
 
     Velocity rightHandVelocity() const;
 
-    std::string currentHandInteractionProfile() const;
+    std::string currentLeftHandInteractionProfile() const;
+
+    std::string currentRightHandInteractionProfile() const;
 
     void getButtons(std::vector<bool>& buttons) const;
 
@@ -165,7 +180,11 @@ public:
 
     void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
 
+    void getAdditionalPoses(std::vector<NamedPoseVelocity> &additionalPoses) const;
+
     int64_t currentNanosecondsSinceEpoch() const;
+
+    bool shouldResetLocalReferenceSpace();
 
     void close();
 };

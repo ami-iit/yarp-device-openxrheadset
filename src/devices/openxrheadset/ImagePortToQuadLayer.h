@@ -57,8 +57,6 @@ public:
 
     bool initialize(std::shared_ptr<IOpenXrQuadLayer> quadLayer)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!quadLayer)
         {
             yCError(OPENXRHEADSET) << "The input quadLayer is not valid.";
@@ -120,8 +118,6 @@ public:
 
     bool openImagePort(const std::string& portName)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_portPtr->open(portName))
         {
             yCError(OPENXRHEADSET) << "Failed to open the port named" << portName << ".";
@@ -135,8 +131,6 @@ public:
 
     bool initialize(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& portName)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!initialize(quadLayer))
         {
             return false;
@@ -152,7 +146,6 @@ public:
 
     bool updateTexture(const ImageType& img, GLint startX, GLint startY, GLint endX, GLint endY)
     {
-        yCTrace(OPENXRHEADSET);
         assert(m_initThreadID == std::this_thread::get_id() &&
                "The updateTexture has to be called from the same thread in which it has been initialized.");
 
@@ -228,8 +221,6 @@ public:
 
     bool updateTexture()
     {
-        yCTrace(OPENXRHEADSET);
-
         ImageType* img = m_portPtr->read(false);
 
         if (!img)
@@ -243,8 +234,6 @@ public:
     void setPose(const Eigen::Vector3f& position,
                  const Eigen::Quaternionf &quaternion)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -259,16 +248,12 @@ public:
     void setNewImageDesiredPose(const Eigen::Vector3f& position,
                                 const Eigen::Quaternionf &quaternion)
     {
-        yCTrace(OPENXRHEADSET);
-
         setNewImageDesiredPosition(position);
         setNewImageDesiredQuaternion(quaternion);
     }
 
     void setPosition(const Eigen::Vector3f& position)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -282,15 +267,11 @@ public:
 
     void setNewImageDesiredPosition(const Eigen::Vector3f& position)
     {
-        yCTrace(OPENXRHEADSET);
-
         m_newImageDesiredPosition = position;
     }
 
     Eigen::Vector3f layerPosition() const
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -302,8 +283,6 @@ public:
 
     void setQuaternion(const Eigen::Quaternionf &quaternion)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -317,15 +296,11 @@ public:
 
     void setNewImageDesiredQuaternion(const Eigen::Quaternionf &quaternion)
     {
-        yCTrace(OPENXRHEADSET);
-
         m_newImageDesiredQuaternion = quaternion;
     }
 
     Eigen::Quaternionf layerQuaternion() const
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -337,8 +312,6 @@ public:
 
     void setDimensions(float widthInMeters, float heightInMeters)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -350,8 +323,6 @@ public:
 
     void setVisibility(const IOpenXrQuadLayer::Visibility& visibility)
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -363,8 +334,6 @@ public:
 
     float layerWidth() const
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -376,8 +345,6 @@ public:
 
     float layerHeight() const
     {
-        yCTrace(OPENXRHEADSET);
-
         if (!m_quadLayer)
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
@@ -389,8 +356,6 @@ public:
 
     bool active() const
     {
-        yCTrace(OPENXRHEADSET);
-
         return m_active;
     }
 

@@ -28,6 +28,8 @@
 #include <ImagePortToQuadLayer.h>
 #include <LabelPortToQuadLayer.h>
 #include <EyesManager.h>
+#include <FramePorts.h>
+#include <AdditionalPosesPublisher.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -82,11 +84,18 @@ public:
 
     //OpenXrHeadsetCommands
     /**
-     * Get the current interaction profile
+     * Get the current interaction profile for the left hand
      * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
      * @return a string indicating the interaction profile in use.
      */
-    virtual std::string getInteractionProfile() override;
+    virtual std::string getLeftHandInteractionProfile() override;
+
+    /**
+     * Get the current interaction profile for the right hand
+     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+     * @return a string indicating the interaction profile in use.
+     */
+    virtual std::string getRightHandInteractionProfile() override;
 
     /**
      * Get the left image width and height.
@@ -185,6 +194,12 @@ public:
      */
     virtual bool setLabelEnabled(const std::int32_t labelIndex, const bool enabled) override;
 
+    /**
+     * Align the root frame to the current headset position and angle around gravity
+     * @return True if successfull. False otherwise, e.g. if the current headset pose is not valid
+     */
+    virtual bool alignRootFrameToHeadset() override;
+
 private:
 
     struct GuiParam
@@ -209,40 +224,11 @@ private:
         LabelPortToQuadLayer layer;
     };
 
-    class FramePorts
-    {
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_orientationPort{nullptr};
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_positionPort{nullptr};
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_angularVelocityPort{nullptr};
-        yarp::os::BufferedPort<yarp::os::Bottle>* m_linearVelocityPort{nullptr};
-
-        IFrameTransform* m_tfPublisher;
-
-        std::string m_tfFrame;
-        std::string m_rootFrame;
-        std::string m_name;
-
-        std::unordered_map<const char*, double> m_lastWarning;
-
-        yarp::sig::Matrix m_localPose;
-        bool m_localPoseValid{false};
-
-
-    public:
-
-        bool open(const std::string& name, const std::string& portPrefix,
-                  IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
-
-        void close();
-
-        void publishFrame(const OpenXrInterface::Pose& pose,
-                          const OpenXrInterface::Velocity& velocity,
-                          yarp::os::Stamp& stamp);
-    };
-
     FramePorts m_headFramePorts;
     FramePorts m_leftHandFramePorts;
     FramePorts m_rightHandFramePorts;
+
+    AdditionalPosesPublisher m_additionalPosesPublisher;
 
     yarp::os::Stamp m_stamp;
 
@@ -259,8 +245,11 @@ private:
     std::string      m_leftFrame;
     std::string      m_rightFrame;
     std::string      m_headFrame;
+    std::string      m_rootFrameRaw;
     std::string      m_rootFrame;
     PolyDriver       m_driver;
+
+    yarp::sig::Matrix m_rawRootFrameTransform;
 
     yarp::os::Port m_rpcPort;
 

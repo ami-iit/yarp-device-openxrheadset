@@ -70,6 +70,103 @@ XrResult Action<Eigen::Vector2f>::update(XrSession session)
     return output;
 }
 
+XrResult PoseAction::create(XrSession session, XrActionSet actionSet, const std::string &inputName)
+{
+    name = inputName;
+    XrActionCreateInfo action_info = {.type = XR_TYPE_ACTION_CREATE_INFO,
+                                      .next = NULL,
+                                      .actionType = XR_ACTION_TYPE_POSE_INPUT,
+                                      .countSubactionPaths = 0,
+                                      .subactionPaths = NULL};
+    strcpy(action_info.actionName, name.c_str());
+    strcpy(action_info.localizedActionName, name.c_str());
+
+    XrResult result = xrCreateAction(actionSet, &action_info, &xrAction);
+
+    if (!XR_SUCCEEDED(result))
+    {
+        return result;
+    }
+
+    XrPosef identity_pose =
+    {
+        .orientation = {.x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0},
+        .position = {.x = 0.0, .y = 0.0, .z = 0.0}
+    };
+
+    XrActionSpaceCreateInfo action_space_info = {.type = XR_TYPE_ACTION_SPACE_CREATE_INFO,
+                                                 .next = NULL,
+                                                 .action = xrAction,
+                                                 .subactionPath = XR_NULL_PATH,
+                                                 .poseInActionSpace = identity_pose};
+
+    result = xrCreateActionSpace(session, &action_space_info, &xrSpace);
+
+    return result;
+}
+
+XrResult PoseAction::update(XrSession session, XrSpace referenceSpace, XrTime time)
+{
+    XrActionStatePose action_state = {.type = XR_TYPE_ACTION_STATE_POSE, .next = NULL};
+    XrActionStateGetInfo get_info = {.type = XR_TYPE_ACTION_STATE_GET_INFO,
+                                     .next = NULL,
+                                     .action = xrAction,
+                                     .subactionPath = XR_NULL_PATH};
+
+    XrResult result = xrGetActionStatePose(session, &get_info, &action_state);
+
+    if (!XR_SUCCEEDED(result))
+    {
+        return result;
+    }
+
+    XrSpaceLocation xrSpaceLocation;
+    XrSpaceVelocity xrSpaceVelocity;
+
+    xrSpaceVelocity.type = XR_TYPE_SPACE_VELOCITY;
+    xrSpaceVelocity.next = NULL;
+    xrSpaceVelocity.velocityFlags = 0;
+    xrSpaceLocation.type = XR_TYPE_SPACE_LOCATION;
+    xrSpaceLocation.next = &xrSpaceVelocity;
+
+    result = xrLocateSpace(xrSpace, referenceSpace, time,
+                           &xrSpaceLocation);
+
+    if (!XR_SUCCEEDED(result))
+    {
+        return result;
+    }
+
+    pose = XrSpaceLocationToPose(xrSpaceLocation);
+    velocity = XrSpaceVelocityToVelocity(xrSpaceVelocity);
+
+    return result;
+}
+
+OpenXrInterface::Pose XrSpaceLocationToPose(const XrSpaceLocation &spaceLocation)
+{
+    OpenXrInterface::Pose output;
+    output.positionValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+    output.position = toEigen(spaceLocation.pose.position);
+
+    output.rotationValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+    output.rotation = toEigen(spaceLocation.pose.orientation);
+
+    return output;
+}
+
+OpenXrInterface::Velocity XrSpaceVelocityToVelocity(const XrSpaceVelocity &spaceVelocity)
+{
+    OpenXrInterface::Velocity output;
+    output.linearValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+    output.linear = toEigen(spaceVelocity.linearVelocity);
+
+    output.angularValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+    output.angular = toEigen(spaceVelocity.angularVelocity);
+
+    return output;
+}
+
 void InputActions::clear()
 {
     buttons.clear();
@@ -78,7 +175,7 @@ void InputActions::clear()
 }
 
 XrBool32 OpenXrInterface::Implementation::OpenXrDebugCallback(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT, const XrDebugUtilsMessengerCallbackDataEXT *data, void *) {
-    yCTrace(OPENXRHEADSET);
+
 
     if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     {
@@ -121,121 +218,239 @@ void OpenXrInterface::Implementation::submitLayer(const XrCompositionLayerBaseHe
     submitted_layers[layer_count-1] = layer;
 }
 
-OpenXrInterface::Pose OpenXrInterface::Implementation::getPose(const XrSpaceLocation &spaceLocation)
+bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<InteractionProfileDeclaration> &interactionProfilesPrefixes, const std::vector<TopLevelPathDeclaration> &topLevelPaths)
 {
-    Pose output;
-    output.positionValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
-    output.position = toEigen(spaceLocation.pose.position);
+    //Create the actionset
+    XrActionSetCreateInfo actionset_info = {
+        .type = XR_TYPE_ACTION_SET_CREATE_INFO, .next = NULL, .priority = 0};
+    strcpy(actionset_info.actionSetName, "yarp_device_actionset");
+    strcpy(actionset_info.localizedActionSetName, "YARP Device Actions");
 
-    output.rotationValid = spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
-    output.rotation = toEigen(spaceLocation.pose.orientation);
-
-    return output;
-}
-
-OpenXrInterface::Velocity OpenXrInterface::Implementation::getVelocity(const XrSpaceVelocity &spaceVelocity)
-{
-    Velocity output;
-    output.linearValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-    output.linear = toEigen(spaceVelocity.linearVelocity);
-
-    output.angularValid = spaceVelocity.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
-    output.angular = toEigen(spaceVelocity.angularVelocity);
-
-    return output;
-}
-
-bool OpenXrInterface::Implementation::suggestInteractionProfileBindings(const std::string &interactionProfileName,
-                                                                        const std::vector<XrActionSuggestedBinding> &poseBindings,
-                                                                        std::initializer_list<std::pair<const char*, const char*>> buttonsList,
-                                                                        std::initializer_list<std::pair<const char*, const char*>> axisList,
-                                                                        std::initializer_list<std::pair<const char*, const char*>> thumbStickList)
-{
-    std::vector<XrActionSuggestedBinding> bindings = poseBindings;
-    InputActions& inputsEntry = inputActions[interactionProfileName];
-
-    inputsEntry.clear();
-
-    for (auto& input : buttonsList)
-    {
-        XrPath path;
-        XrResult result = xrStringToPath(instance, input.first, &path);
-
-        if (!checkXrOutput(result, "Failed to get path of %s for %s.", input.first, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-
-        inputsEntry.buttons.emplace_back();
-        result = inputsEntry.buttons.back().create(actionset, input.second);
-        if (!checkXrOutput(result, "Failed to create action %s for %s.", input.second, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-        bindings.emplace_back();
-        bindings.back().action = inputsEntry.buttons.back().xrAction;
-        bindings.back().binding = path;
-    }
-
-    for (auto& input : axisList)
-    {
-        XrPath path;
-        XrResult result = xrStringToPath(instance, input.first, &path);
-
-        if (!checkXrOutput(result, "Failed to get path of %s for %s.", input.first, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-
-        inputsEntry.axes.emplace_back();
-        result = inputsEntry.axes.back().create(actionset, input.second);
-        if (!checkXrOutput(result, "Failed to create action %s for %s.", input.second, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-        bindings.emplace_back();
-        bindings.back().action = inputsEntry.axes.back().xrAction;
-        bindings.back().binding = path;
-    }
-
-    for (auto& input : thumbStickList)
-    {
-        XrPath path;
-        XrResult result = xrStringToPath(instance, input.first, &path);
-
-        if (!checkXrOutput(result, "Failed to get path of %s for %s.", input.first, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-
-        inputsEntry.thumbsticks.emplace_back();
-        result = inputsEntry.thumbsticks.back().create(actionset, input.second);
-        if (!checkXrOutput(result, "Failed to create action %s for %s.", input.second, interactionProfileName.c_str()))
-        {
-            return false;
-        }
-        bindings.emplace_back();
-        bindings.back().action = inputsEntry.thumbsticks.back().xrAction;
-        bindings.back().binding = path;
-    }
-
-
-    XrPath interaction_profile_path;
-    XrResult result = xrStringToPath(instance, interactionProfileName.c_str(),
-                                     &interaction_profile_path);
-    if (!checkXrOutput(result, "Failed to get the path of the interaction profile %s.", interactionProfileName.c_str()))
+    XrResult result = xrCreateActionSet(instance, &actionset_info, &actionset);
+    if (!checkXrOutput(result, "Failed to create actionset"))
         return false;
 
-    const XrInteractionProfileSuggestedBinding suggested_bindings = {
-        .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
-        .next = NULL,
-        .interactionProfile = interaction_profile_path,
-        .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
-        .suggestedBindings = bindings.data()};
+    //Allocate all the top level paths
+    top_level_paths.clear();
+    for (auto& level : topLevelPaths)
+    {
+        top_level_paths.emplace_back();
+        TopLevelPath& added = top_level_paths.back();
+        added.stringPath = level.stringPath;
+        XrResult result = xrStringToPath(instance, added.stringPath.c_str(), &added.xrPath);
 
-    result = xrSuggestInteractionProfileBindings(instance, &suggested_bindings);
-    if (!checkXrOutput(result, "Failed to suggest bindings for %s.", interactionProfileName.c_str()))
-        return false;
+        if (!checkXrOutput(result, "Failed to get path of %s.", added.stringPath.c_str()))
+        {
+            return false;
+        }
+        added.interactionProfileActions.clear();
+    }
+
+    // Parse all the poses, buttons, axes and thumbsticks for each interaction profile
+    for (auto& interactionProfile : interactionProfilesPrefixes)
+    {
+        std::vector<XrActionSuggestedBinding> bindings;
+        const std::string& profileName = interactionProfile.path;
+        const std::string& profilePrefix = interactionProfile.actionNamePrefix;
+
+
+        for (size_t i = 0; i < top_level_paths.size(); ++i)
+        {
+            const TopLevelPathDeclaration& currentTopLevelPathDeclaration = topLevelPaths[i];
+            const std::string& pathPrefix = currentTopLevelPathDeclaration.stringPath;
+            const std::string& pathActionNamePrefix = currentTopLevelPathDeclaration.actionNamePrefix;
+            auto actionDeclarationIterator = currentTopLevelPathDeclaration.inputsDeclarations.find(profileName);
+            if (actionDeclarationIterator != currentTopLevelPathDeclaration.inputsDeclarations.end())
+            {
+                const InputActionsDeclaration& actionDeclaration = actionDeclarationIterator->second;
+                InputActions& inputsEntry = top_level_paths[i].interactionProfileActions[profileName];
+                inputsEntry.clear();
+
+
+                for (auto& input : actionDeclaration.poses)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.poses.emplace_back();
+                    PoseAction& newAction = inputsEntry.poses.back();
+                    result = newAction.create(session, actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = newAction.xrAction;
+                    bindings.back().binding = xrPath;
+                }
+
+                for (auto& input : actionDeclaration.buttons)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.buttons.emplace_back();
+                    result = inputsEntry.buttons.back().create(actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = inputsEntry.buttons.back().xrAction;
+                    bindings.back().binding = xrPath;
+                }
+
+                for (auto& input : actionDeclaration.axes)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.axes.emplace_back();
+                    result = inputsEntry.axes.back().create(actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = inputsEntry.axes.back().xrAction;
+                    bindings.back().binding = xrPath;
+                }
+
+                for (auto& input : actionDeclaration.thumbsticks)
+                {
+                    XrPath xrPath;
+                    std::string fullActionPath = pathPrefix + input.path;
+                    std::string fullActionName = profilePrefix + pathActionNamePrefix + input.nameSuffix;
+                    XrResult result = xrStringToPath(instance, fullActionPath.c_str(), &xrPath);
+
+                    if (!checkXrOutput(result, "Failed to get path of %s for %s.", fullActionPath.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+
+                    inputsEntry.thumbsticks.emplace_back();
+                    result = inputsEntry.thumbsticks.back().create(actionset, fullActionName);
+                    if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
+                    {
+                        return false;
+                    }
+                    bindings.emplace_back();
+                    bindings.back().action = inputsEntry.thumbsticks.back().xrAction;
+                    bindings.back().binding = xrPath;
+                }
+            }
+        }
+
+        // Suggest the bindings to OpenXR
+        XrPath interaction_profile_path;
+        XrResult result = xrStringToPath(instance, profileName.c_str(),
+                                         &interaction_profile_path);
+        if (!checkXrOutput(result, "Failed to get the path of the interaction profile %s.", profileName.c_str()))
+            return false;
+
+        const XrInteractionProfileSuggestedBinding suggested_bindings = {
+            .type = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING,
+            .next = NULL,
+            .interactionProfile = interaction_profile_path,
+            .countSuggestedBindings = static_cast<uint32_t>(bindings.size()),
+            .suggestedBindings = bindings.data()};
+
+        result = xrSuggestInteractionProfileBindings(instance, &suggested_bindings);
+        if (!checkXrOutput(result, "Failed to suggest bindings for %s.", profileName.c_str()))
+            return false;
+
+    }
 
     return true;
+}
+
+std::string OpenXrInterface::Implementation::getInteractionProfileShortTag(const std::string &interactionProfile)
+{
+    if (interactionProfile == KHR_SIMPLE_CONTROLLER_INTERACTION_PROFILE)
+    {
+        return "khr_simple_controller";
+    }
+
+    if (interactionProfile == HTC_VIVE_INTERACTION_PROFILE_TAG)
+    {
+        return "htc_vive_controller";
+    }
+
+    if (interactionProfile == OCULUS_TOUCH_INTERACTION_PROFILE_TAG)
+    {
+        return "oculus_touch_controller";
+    }
+
+    if (interactionProfile == HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG)
+    {
+        return "htc_vive_tracker";
+    }
+
+    return "none";
+}
+
+std::string OpenXrInterface::Implementation::sessionStateToString(XrSessionState state)
+{
+    std::string output;
+    switch (state)
+    {
+    case XR_SESSION_STATE_IDLE:
+        output = "IDLE";
+        break;
+    case XR_SESSION_STATE_READY:
+        output = "READY";
+        break;
+    case XR_SESSION_STATE_SYNCHRONIZED:
+        output = "SYNCHRONIZED";
+        break;
+    case XR_SESSION_STATE_VISIBLE:
+        output = "VISIBLE";
+        break;
+    case XR_SESSION_STATE_FOCUSED:
+        output = "FOCUSED";
+        break;
+    case XR_SESSION_STATE_STOPPING:
+        output = "STOPPING";
+        break;
+    case XR_SESSION_STATE_LOSS_PENDING:
+        output = "LOSS_PENDING";
+        break;
+    case XR_SESSION_STATE_EXITING:
+        output = "EXITING";
+        break;
+    case XR_SESSION_STATE_UNKNOWN:
+    case XR_SESSION_STATE_MAX_ENUM:
+    default:
+        output = "UNKNOWN";
+        break;
+    }
+
+    return output;
+}
+
+
+InputActions &TopLevelPath::currentActions()
+{
+    return interactionProfileActions[currentInteractionProfile];
 }

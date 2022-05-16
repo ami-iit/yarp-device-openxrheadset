@@ -11,8 +11,6 @@
 
 bool SingleEyePort::updateControlAngles()
 {
-    yCTrace(OPENXRHEADSET);
-
     yarp::sig::Vector* inputAngles = m_eyeAnglesPort.read(false);
 
     if (inputAngles)
@@ -32,7 +30,6 @@ bool SingleEyePort::updateControlAngles()
 bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &anglesPortName,
                    yarp::dev::IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
 {
-    yCTrace(OPENXRHEADSET);
     m_initialized = false;
     if (!m_layer.initialize(quadLayer)) {
         return false;
@@ -86,8 +83,6 @@ void SingleEyePort::close()
 
 void SingleEyePort::setEyePosition(const Eigen::Vector3f &position)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         yCError(OPENXRHEADSET) << "Eye port not initialized.";
@@ -101,8 +96,6 @@ void SingleEyePort::setEyePosition(const Eigen::Vector3f &position)
 
 void SingleEyePort::publishEyeTransform()
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         yCError(OPENXRHEADSET) << "Eye port not initialized.";
@@ -118,15 +111,11 @@ void SingleEyePort::publishEyeTransform()
 
 bool SingleEyePort::active() const
 {
-    yCTrace(OPENXRHEADSET);
-
     return m_initialized && m_layer.active();
 }
 
 std::string SingleEyePort::controlPortName() const
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         return "";
@@ -136,8 +125,6 @@ std::string SingleEyePort::controlPortName() const
 
 void SingleEyePort::setEyeRotationOffset(double azimuth, double elevation)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         yCError(OPENXRHEADSET) << "Eye port not initialized.";
@@ -168,8 +155,6 @@ void SingleEyePort::setEyeRotationOffset(double azimuth, double elevation)
 
 void SingleEyePort::setEyeRotation(double azimuth, double elevation)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         yCError(OPENXRHEADSET) << "Eye port not initialized.";
@@ -197,20 +182,16 @@ void SingleEyePort::setEyeRotation(double azimuth, double elevation)
 
 double SingleEyePort::azimuthOffset() const
 {
-    yCTrace(OPENXRHEADSET);
     return m_azimuthOffset;
 }
 
 double SingleEyePort::elevationOffset() const
 {
-    yCTrace(OPENXRHEADSET);
     return m_elevationOffset;
 }
 
 void SingleEyePort::setEyeRelativeImagePosition(const Eigen::Vector3f &position)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         yCError(OPENXRHEADSET) << "Eye port not initialized.";
@@ -235,8 +216,6 @@ void SingleEyePort::setEyeRelativeImagePosition(const Eigen::Vector3f &position)
 
 void SingleEyePort::setVisibility(const IOpenXrQuadLayer::Visibility &visibility)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!m_initialized)
     {
         yCError(OPENXRHEADSET) << "Eye port not initialized.";
@@ -248,22 +227,16 @@ void SingleEyePort::setVisibility(const IOpenXrQuadLayer::Visibility &visibility
 
 float SingleEyePort::layerWidth() const
 {
-    yCTrace(OPENXRHEADSET);
-
     return m_layer.layerWidth();
 }
 
 float SingleEyePort::layerHeight() const
 {
-    yCTrace(OPENXRHEADSET);
-
     return m_layer.layerHeight();
 }
 
 bool SingleEyePort::update()
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!updateControlAngles())
     {
         return false;
@@ -274,8 +247,6 @@ bool SingleEyePort::update()
 
 bool SingleEyePort::update(const yarp::sig::ImageOf<yarp::sig::PixelRgb> &img, GLint startX, GLint startY, GLint endX, GLint endY)
 {
-    yCTrace(OPENXRHEADSET);
-
     if (!updateControlAngles())
     {
         return false;
