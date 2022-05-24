@@ -18,6 +18,15 @@ struct PosePublisherSettings
 {
     yarp::dev::IFrameTransform* tfPublisher;
     std::string rootFrame;
+    double period{0.01};
+
+    struct ValidityChecks
+    {
+        double maxDistance{0.1};
+        double maxAngularDistanceInRad{0.5};
+    };
+
+    ValidityChecks checks;
 };
 
 class PosePublisher
@@ -30,7 +39,12 @@ class PosePublisher
     yarp::sig::Matrix m_localPose;
     bool m_active{false};
     OpenXrInterface::NamedPoseVelocity m_data;
+    OpenXrInterface::NamedPoseVelocity m_lastValidData;
     std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
+
+    bool positionJumped();
+
+    bool rotationJumped();
 
 public:
     PosePublisher();

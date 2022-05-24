@@ -229,7 +229,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         return false;
     }
 
-    m_additionalPosesPublisher.initialize(m_tfPublisher, labels, m_rootFrameRaw);
+    m_additionalPosesPublisher.initialize(m_tfPublisher, labels, m_rootFrameRaw, getPeriod());
 
     // Start the thread
     if (!this->start()) {

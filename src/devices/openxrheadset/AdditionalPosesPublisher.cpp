@@ -11,11 +11,12 @@
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
 
-void AdditionalPosesPublisher::initialize(yarp::dev::IFrameTransform *tfPublisher, const std::vector<Label>& labels, const std::string &rootFrame)
+void AdditionalPosesPublisher::initialize(yarp::dev::IFrameTransform *tfPublisher, const std::vector<Label>& labels, const std::string &rootFrame, double period)
 {
     m_settings = std::make_shared<PosePublisherSettings>();
     m_settings->tfPublisher = tfPublisher;
     m_settings->rootFrame = rootFrame;
+    m_settings->period = period;
 
     for (auto& label : labels)
     {

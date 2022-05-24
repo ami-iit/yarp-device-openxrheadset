@@ -11,6 +11,53 @@
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
 
+bool PosePublisher::positionJumped()
+{
+    if (!m_lastValidData.pose.positionValid || !m_data.pose.positionValid)
+    {
+        return false; //Also the last "valid" pose is not valid, or the input is already not valid
+    }
+
+    if (!m_lastValidData.velocity.linearValid)
+    {
+        yCWarning(OPENXRHEADSET) << "The last valid pose of" << m_label << "has non-valid linear velocity. Assuming there are jumps.";
+        return true;
+    }
+
+    Eigen::Vector3f expectedPosition = m_lastValidData.pose.position + m_settings->period * m_lastValidData.velocity.linear;
+
+    return (expectedPosition - m_data.pose.position).norm() > m_settings->checks.maxDistance;
+}
+
+bool PosePublisher::rotationJumped()
+{
+    if (!m_lastValidData.pose.rotationValid || !m_data.pose.rotationValid)
+    {
+        return false; //Also the last "valid" pose is not valid, or the input is already not valid
+    }
+
+    if (!m_lastValidData.velocity.angularValid)
+    {
+        yCWarning(OPENXRHEADSET) << "The last valid pose of" << m_label << "has non-valid angular velocity. Assuming there are jumps.";
+        return true;
+    }
+
+    double angularVelocity = m_lastValidData.velocity.angular.norm();
+    Eigen::Vector3f angularAxis = Eigen::Vector3f::UnitX();
+
+    if (angularVelocity > 1e-15)
+    {
+        angularAxis = m_lastValidData.velocity.angular.normalized();
+    }
+
+    Eigen::Quaternionf expectedRotationDifference;
+    expectedRotationDifference = Eigen::AngleAxisf(m_settings->period * angularVelocity, angularAxis);
+
+    Eigen::Quaternionf actualRotationDifference = m_data.pose.rotation * m_lastValidData.pose.rotation.inverse();
+
+    return std::abs(actualRotationDifference.angularDistance(expectedRotationDifference)) > m_settings->checks.maxAngularDistanceInRad;
+}
+
 PosePublisher::PosePublisher()
 {
     m_localPose.resize(4,4);
@@ -34,8 +81,15 @@ bool PosePublisher::configured() const
 
 void PosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
 {
+    if (!configured())
+    {
+        return;
+    }
+
     m_data = input;
-    m_active = true;
+    bool inputValid = m_data.pose.positionValid && m_data.pose.rotationValid; //we consider the input valid if both the position and the rotation are valid
+    bool wasActive = m_publishedOnce && !m_active; //if the pose was published once, but now it is not active, it means that there has been problems. So we should be active only if the input is valid
+    m_active = !wasActive || inputValid; //We are active if: - it is the first time we update, - we were active the step before, - we received a valid input
 }
 
 void PosePublisher::publish()
@@ -60,6 +114,8 @@ void PosePublisher::publish()
                 }
                 m_publishedOnce = true;
             }
+
+            m_lastValidData = m_data;
             poseToYarpMatrix(m_data.pose, m_localPose);
 
             if (!m_settings->tfPublisher->setTransform(m_label, m_settings->rootFrame, m_localPose))
