@@ -10,27 +10,17 @@
 #define YARP_DEV_ADDITIONALPOSESPUBLISHER_H
 
 #include <OpenXrInterface.h>
+#include <PosePublisher.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
 
 class AdditionalPosesPublisher
 {
-    yarp::dev::IFrameTransform* m_tfPublisher;
-    std::string m_rootFrame;
+    std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
 
     std::vector<OpenXrInterface::NamedPoseVelocity> m_additionalPosesInputList;
 
-    struct AdditionalPoseInfo
-    {
-        std::string label;
-        double lastWarningTime{0.0};
-        size_t warningCount{0};
-        bool publishedOnce{false};
-        yarp::sig::Matrix localPose;
-        bool active{false};
-        OpenXrInterface::NamedPoseVelocity data;
-    };
-    std::unordered_map<std::string, AdditionalPoseInfo> m_additionalPoses;
+    std::unordered_map<std::string, PosePublisher> m_additionalPoses;
 
 public:
 
