@@ -46,6 +46,12 @@ class PosePublisher
 
     bool rotationJumped();
 
+    void resetWarnings();
+
+    void publishOldTransform();
+
+    void publishNewTransform();
+
 public:
     PosePublisher();
 
