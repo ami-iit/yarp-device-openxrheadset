@@ -58,6 +58,38 @@ bool PosePublisher::rotationJumped()
     return std::abs(actualRotationDifference.angularDistance(expectedRotationDifference)) > m_settings->checks.maxAngularDistanceInRad;
 }
 
+void PosePublisher::filterJumps()
+{
+    bool positionHasJumped = positionJumped();
+    bool rotationHasJumped = rotationJumped();
+
+    if (positionHasJumped)
+    {
+        yCWarning(OPENXRHEADSET) << m_label << "position had a jump. Keeping the old position.";
+        m_data.pose.position = m_lastValidData.pose.position;
+    }
+
+    if (rotationHasJumped)
+    {
+        yCWarning(OPENXRHEADSET) << m_label << "rotation had a jump. Keeping the old rotation.";
+        m_data.pose.rotation = m_lastValidData.pose.rotation;
+    }
+
+    m_lastValidData = m_data;
+
+    if (!positionHasJumped && !rotationHasJumped)
+    {
+        m_lastValidDataTime = yarp::os::Time::now();
+    }
+
+    if ((m_lastValidDataTime - yarp::os::Time::now()) > m_settings->checks.lastDataExpirationTime)
+    {
+        yCWarning(OPENXRHEADSET) << m_label << "last valid data has expired. The pose will be aligned to the measured one.";
+        m_lastValidData.pose.positionValid = false;
+        m_lastValidData.pose.rotationValid = false;
+    }
+}
+
 void PosePublisher::resetWarnings()
 {
     m_lastWarningTime = 0.0;
@@ -104,7 +136,6 @@ void PosePublisher::publishNewTransform()
         m_publishedOnce = true;
     }
 
-    m_lastValidData = m_data;
     poseToYarpMatrix(m_data.pose, m_localPose);
 
     if (!m_settings->tfPublisher->setTransform(m_label, m_settings->rootFrame, m_localPose))
@@ -165,17 +196,7 @@ void PosePublisher::publish()
         return;
     }
 
-    if (positionJumped())
-    {
-        yCWarning(OPENXRHEADSET) << m_label << "position had a jump. Keeping the old position.";
-        m_data.pose.position = m_lastValidData.pose.position;
-    }
-
-    if (rotationJumped())
-    {
-        yCWarning(OPENXRHEADSET) << m_label << "rotation had a jump. Keeping the old rotation.";
-        m_data.pose.rotation = m_lastValidData.pose.rotation;
-    }
+    filterJumps();
 
     resetWarnings();
 
