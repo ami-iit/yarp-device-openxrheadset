@@ -56,6 +56,8 @@ class PosePublisher
 
     void publishNewTransform();
 
+    void deactivate();
+
 public:
     PosePublisher();
 

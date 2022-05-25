@@ -119,9 +119,7 @@ void PosePublisher::publishOldTransform()
     if (m_warningCount > 6)
     {
         yCWarning(OPENXRHEADSET) << m_label << " was not valid for 30s. Deactivated.";
-        m_lastWarningTime = 0.0;
-        m_warningCount = 0;
-        m_active = false;
+        deactivate();
     }
 }
 
@@ -145,6 +143,17 @@ void PosePublisher::publishNewTransform()
 
     m_data.pose.positionValid = false; //We invalidate the data after use. This is to detect if some pose do not get updated.
     m_data.pose.rotationValid = false;
+}
+
+void PosePublisher::deactivate()
+{
+    resetWarnings();
+
+    //Invalidate previous pose
+    m_lastValidData.pose.positionValid = false;
+    m_lastValidData.pose.rotationValid = false;
+
+    m_active = false;
 }
 
 PosePublisher::PosePublisher()
