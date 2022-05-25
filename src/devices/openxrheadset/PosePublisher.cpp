@@ -82,7 +82,7 @@ void PosePublisher::filterJumps()
         m_lastValidDataTime = yarp::os::Time::now();
     }
 
-    if ((m_lastValidDataTime - yarp::os::Time::now()) > m_settings->checks.lastDataExpirationTime)
+    if ((yarp::os::Time::now() - m_lastValidDataTime) > m_settings->checks.lastDataExpirationTime)
     {
         yCWarning(OPENXRHEADSET) << m_label << "last valid data has expired. The pose will be aligned to the measured one.";
         m_lastValidData.pose.positionValid = false;
@@ -165,7 +165,7 @@ void PosePublisher::configure(std::shared_ptr<PosePublisherSettings> settings)
 
 bool PosePublisher::configured() const
 {
-    return m_settings == nullptr;
+    return m_settings != nullptr;
 }
 
 void PosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
