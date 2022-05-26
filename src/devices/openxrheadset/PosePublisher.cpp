@@ -85,13 +85,13 @@ void PosePublisher::filterJumps()
 
     if (positionHasJumped)
     {
-        yCWarning(OPENXRHEADSET) << m_label << "position had a jump. Keeping the old position.";
+        yCWarning(OPENXRHEADSET) << m_label << "position had a jump.";
         m_data.pose.position = (1 - interpolationFactor) * m_lastValidData.pose.position + interpolationFactor * m_data.pose.position;
     }
 
     if (rotationHasJumped)
     {
-        yCWarning(OPENXRHEADSET) << m_label << "rotation had a jump. Keeping the old rotation.";
+        yCWarning(OPENXRHEADSET) << m_label << "rotation had a jump.";
         m_data.pose.rotation = m_lastValidData.pose.rotation.slerp(interpolationFactor, m_data.pose.rotation);
     }
 

@@ -30,10 +30,8 @@ public:
         std::string modified;
     };
 
-    void initialize(yarp::dev::IFrameTransform* tfPublisher,
-                    const std::vector<Label> &labels,
-                    const std::string& rootFrame,
-                    double period);
+    void initialize(const std::vector<Label> &labels,
+                    const PosePublisherSettings &settings);
 
     std::vector<OpenXrInterface::NamedPoseVelocity>& inputs();
 
