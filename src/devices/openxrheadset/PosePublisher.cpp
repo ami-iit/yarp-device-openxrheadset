@@ -63,30 +63,44 @@ void PosePublisher::filterJumps()
     bool positionHasJumped = positionJumped();
     bool rotationHasJumped = rotationJumped();
 
+    double interpolationFactor = 0.0;
+
+    if (!positionHasJumped && !rotationHasJumped)
+    {
+        m_lastValidDataTime = yarp::os::Time::now();
+        m_convergingToJump = false;
+    }
+    else
+    {
+        if ((yarp::os::Time::now() - m_lastValidDataTime) > (m_settings->checks.lastDataExpirationTime))
+        {
+            if (!m_convergingToJump) //Print the warning only once
+            {
+                yCWarning(OPENXRHEADSET) << m_label << "last valid data has expired. The pose will converge to the measured one.";
+            }
+            m_convergingToJump = true;
+            interpolationFactor = m_settings->checks.convergenceRatio;
+        }
+    }
+
     if (positionHasJumped)
     {
         yCWarning(OPENXRHEADSET) << m_label << "position had a jump. Keeping the old position.";
-        m_data.pose.position = m_lastValidData.pose.position;
+        m_data.pose.position = (1 - interpolationFactor) * m_lastValidData.pose.position + interpolationFactor * m_data.pose.position;
     }
 
     if (rotationHasJumped)
     {
         yCWarning(OPENXRHEADSET) << m_label << "rotation had a jump. Keeping the old rotation.";
-        m_data.pose.rotation = m_lastValidData.pose.rotation;
+        m_data.pose.rotation = m_lastValidData.pose.rotation.slerp(interpolationFactor, m_data.pose.rotation);
     }
 
     m_lastValidData = m_data;
 
-    if (!positionHasJumped && !rotationHasJumped)
+    if ((yarp::os::Time::now() - m_lastValidDataTime) > (m_settings->checks.lastDataExpirationTime + m_settings->checks.maxConvergenceTime))
     {
-        m_lastValidDataTime = yarp::os::Time::now();
-    }
-
-    if ((yarp::os::Time::now() - m_lastValidDataTime) > m_settings->checks.lastDataExpirationTime)
-    {
-        yCWarning(OPENXRHEADSET) << m_label << "last valid data has expired. The pose will be aligned to the measured one.";
-        m_lastValidData.pose.positionValid = false;
-        m_lastValidData.pose.rotationValid = false;
+        yCWarning(OPENXRHEADSET) << m_label << "last valid convergence has expired. The pose will be aligned to the measured one.";
+        resetLastValidData();
     }
 }
 
@@ -94,6 +108,15 @@ void PosePublisher::resetWarnings()
 {
     m_lastWarningTime = 0.0;
     m_warningCount = 0;
+}
+
+void PosePublisher::resetLastValidData()
+{
+    //Invalidate previous pose
+    m_lastValidData.pose.positionValid = false;
+    m_lastValidData.pose.rotationValid = false;
+
+    m_convergingToJump = false;
 }
 
 void PosePublisher::publishOldTransform()
@@ -148,10 +171,7 @@ void PosePublisher::publishNewTransform()
 void PosePublisher::deactivate()
 {
     resetWarnings();
-
-    //Invalidate previous pose
-    m_lastValidData.pose.positionValid = false;
-    m_lastValidData.pose.rotationValid = false;
+    resetLastValidData();
 
     m_active = false;
 }

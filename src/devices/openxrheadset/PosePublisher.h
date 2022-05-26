@@ -24,7 +24,9 @@ struct PosePublisherSettings
     {
         double maxDistance{0.1};
         double maxAngularDistanceInRad{0.5};
-        double lastDataExpirationTime{5.0};
+        double lastDataExpirationTime{3.0};
+        double maxConvergenceTime{2.0};
+        double convergenceRatio{0.1};
     };
 
     ValidityChecks checks;
@@ -43,6 +45,7 @@ class PosePublisher
     OpenXrInterface::NamedPoseVelocity m_lastValidData;
     std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
     double m_lastValidDataTime;
+    bool m_convergingToJump{false};
 
     bool positionJumped();
 
@@ -51,6 +54,8 @@ class PosePublisher
     void filterJumps();
 
     void resetWarnings();
+
+    void resetLastValidData();
 
     void publishOldTransform();
 
