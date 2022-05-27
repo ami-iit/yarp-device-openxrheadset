@@ -24,9 +24,9 @@ struct PosePublisherSettings
     {
         double maxDistance{0.1};
         double maxAngularDistanceInRad{0.5};
-        double lastDataExpirationTime{3.0};
+        double lastDataExpirationTime{5.0};
         double maxConvergenceTime{3.0};
-        double convergenceRatio{0.1};
+        double convergenceRatio{0.05};
     };
 
     ValidityChecks checks;

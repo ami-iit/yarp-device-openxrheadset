@@ -235,9 +235,9 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     posePublisherSettings.period = getPeriod();
     posePublisherSettings.checks.maxDistance = cfg.check("pose_check_max_distance", yarp::os::Value(0.1)).asFloat64();
     posePublisherSettings.checks.maxAngularDistanceInRad = cfg.check("pose_check_max_angle_rad", yarp::os::Value(0.5)).asFloat64();
-    posePublisherSettings.checks.lastDataExpirationTime = cfg.check("pose_check_expiration_time", yarp::os::Value(3.0)).asFloat64();
+    posePublisherSettings.checks.lastDataExpirationTime = cfg.check("pose_check_expiration_time", yarp::os::Value(5.0)).asFloat64();
     posePublisherSettings.checks.maxConvergenceTime = cfg.check("pose_check_max_convergence_time", yarp::os::Value(3.0)).asFloat64();
-    posePublisherSettings.checks.convergenceRatio = cfg.check("pose_check_convergence_ratio", yarp::os::Value(0.1)).asFloat64();
+    posePublisherSettings.checks.convergenceRatio = cfg.check("pose_check_convergence_ratio", yarp::os::Value(0.05)).asFloat64();
 
     if (posePublisherSettings.checks.convergenceRatio < 0 || posePublisherSettings.checks.convergenceRatio > 1)
     {
