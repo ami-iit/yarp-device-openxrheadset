@@ -229,7 +229,23 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         return false;
     }
 
-    m_additionalPosesPublisher.initialize(m_tfPublisher, labels, m_rootFrameRaw);
+    PosePublisherSettings posePublisherSettings;
+    posePublisherSettings.tfPublisher = m_tfPublisher;
+    posePublisherSettings.rootFrame = m_rootFrameRaw;
+    posePublisherSettings.period = getPeriod();
+    posePublisherSettings.checks.maxDistance = cfg.check("pose_check_max_distance", yarp::os::Value(0.1)).asFloat64();
+    posePublisherSettings.checks.maxAngularDistanceInRad = cfg.check("pose_check_max_angle_rad", yarp::os::Value(0.5)).asFloat64();
+    posePublisherSettings.checks.lastDataExpirationTime = cfg.check("pose_check_expiration_time", yarp::os::Value(5.0)).asFloat64();
+    posePublisherSettings.checks.maxConvergenceTime = cfg.check("pose_check_max_convergence_time", yarp::os::Value(3.0)).asFloat64();
+    posePublisherSettings.checks.convergenceRatio = cfg.check("pose_check_convergence_ratio", yarp::os::Value(0.05)).asFloat64();
+
+    if (posePublisherSettings.checks.convergenceRatio < 0 || posePublisherSettings.checks.convergenceRatio > 1)
+    {
+        posePublisherSettings.checks.convergenceRatio = std::min(1.0, std::max(0.0, posePublisherSettings.checks.convergenceRatio));
+        yCWarning(OPENXRHEADSET) << "pose_check_convergence_ratio is supposed to be in the range [0, 1]. Clamping to" << posePublisherSettings.checks.convergenceRatio << ".";
+    }
+
+    m_additionalPosesPublisher.initialize(labels, posePublisherSettings);
 
     // Start the thread
     if (!this->start()) {
