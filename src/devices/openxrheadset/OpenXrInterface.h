@@ -61,6 +61,11 @@ public:
     virtual void setEnabled(bool enabled) = 0;
 };
 
+struct OpenXrInterfaceSettings
+{
+    double posesPredictionInMs{0.0};
+};
+
 class OpenXrInterface
 {
     class Implementation;
@@ -148,7 +153,7 @@ public:
 
     OpenXrInterface& operator=(OpenXrInterface&& other) = delete;
 
-    bool initialize();
+    bool initialize(const OpenXrInterfaceSettings& settings = OpenXrInterfaceSettings());
 
     bool isInitialized() const;
 

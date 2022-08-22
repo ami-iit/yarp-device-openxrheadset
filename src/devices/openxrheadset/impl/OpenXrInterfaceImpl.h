@@ -302,6 +302,9 @@ public:
     // time in which the poses are requested
     XrTime locate_space_time;
 
+    // amount of prediction in nanoseconds to retrieve a pose (if negative it will add delay)
+    long locate_space_prediction_in_ns{0};
+
     // layer with rendered eyes projection
     XrCompositionLayerProjection projection_layer;
 

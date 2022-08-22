@@ -255,6 +255,7 @@ private:
 
     std::atomic_bool m_closed{ false };
 
+    OpenXrInterfaceSettings m_openXrInterfaceSettings;
     OpenXrInterface m_openXrInterface;
 
     std::vector<bool> m_buttons;
