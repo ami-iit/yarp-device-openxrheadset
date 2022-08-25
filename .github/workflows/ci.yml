@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Release, Debug]
-        os: [ubuntu-latest]
+        os: [ubuntu-22.04]
 
     steps:
     - uses: actions/checkout@master
@@ -44,10 +44,6 @@ jobs:
     - name: System dependencies
       run: |
         sudo apt update
-
-        # PPA for updated graphics drivers
-        sudo add-apt-repository ppa:oibaf/graphics-drivers
-        sudo apt-get update
 
         # Common dependencies
         sudo apt install build-essential git cmake
