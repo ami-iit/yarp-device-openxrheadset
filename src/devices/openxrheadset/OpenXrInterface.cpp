@@ -8,7 +8,7 @@
 
 #include <impl/OpenXrInterfaceImpl.h>
 
-//#define DEBUG_RENDERING
+#define DEBUG_RENDERING
 
 
 bool OpenXrInterface::checkExtensions()
@@ -1141,13 +1141,9 @@ void OpenXrInterface::render()
 
     GLint ww, wh;
     glfwGetWindowSize(m_pimpl->window, &ww, &wh);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     //Left Eye
-    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
-            swapchain_images[m_pimpl->projection_view_swapchains[0].acquired_index].image, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
-            swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
 
 #ifdef DEBUG_RENDERING
     //Set green color
@@ -1159,19 +1155,20 @@ void OpenXrInterface::render()
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Replicate swapchain on screen
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    // Replicate on VR
 
+    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
+        swapchain_images[m_pimpl->projection_view_swapchains[0].acquired_index].image, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
+        swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
 
-    glBlitFramebuffer(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
-                      0, 0, ww/2, wh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId, 0, 0, ww / 2, wh,
+                           0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //Right Eye
-    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[1].
-            swapchain_images[m_pimpl->projection_view_swapchains[1].acquired_index].image, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[1].
-            swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 #ifdef DEBUG_RENDERING
     //Set blue color
@@ -1185,13 +1182,20 @@ void OpenXrInterface::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
 
+    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[1].
+        swapchain_images[m_pimpl->projection_view_swapchains[1].acquired_index].image, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[1].
+        swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
+
     // Replicate swapchain on screen
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
-                      ww/2 + 1, 0, ww, wh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId, 
+                           ww / 2 + 1, 0, ww, wh,
+                           0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //------------------------------
-
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
