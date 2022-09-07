@@ -1195,7 +1195,6 @@ void OpenXrInterface::render()
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //------------------------------
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
