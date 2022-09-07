@@ -160,6 +160,12 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         }
     }
 
+    double period = cfg.check("vr_period", yarp::os::Value(0.011)).asFloat64();
+    this->setPeriod(period);
+
+
+    m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
+
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_leftFrame = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
     m_rightFrame = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
@@ -268,7 +274,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
-        if (!m_openXrInterface.initialize())
+        if (!m_openXrInterface.initialize(m_openXrInterfaceSettings))
         {
             yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
             return false;

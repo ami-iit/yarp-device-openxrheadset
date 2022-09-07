@@ -1274,13 +1274,15 @@ OpenXrInterface::~OpenXrInterface()
     }
 }
 
-bool OpenXrInterface::initialize()
+bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
 {
     if (m_pimpl->initialized)
     {
         yCError(OPENXRHEADSET) << "The OpenXr interface has been already initialized.";
         return false;
     }
+
+    m_pimpl->locate_space_prediction_in_ns = static_cast<long>(std::round(settings.posesPredictionInMs * 1e6));
 
     m_pimpl->closing = false;
     m_pimpl->closed = false;
@@ -1320,7 +1322,7 @@ void OpenXrInterface::draw()
     }
 
     if (startXrFrame()) {
-        m_pimpl->locate_space_time = currentNanosecondsSinceEpoch();
+        m_pimpl->locate_space_time = currentNanosecondsSinceEpoch() + m_pimpl->locate_space_prediction_in_ns;
         updateXrSpaces();
         updateXrActions();
         if (m_pimpl->frame_state.shouldRender) {
