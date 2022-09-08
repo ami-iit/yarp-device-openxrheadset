@@ -882,7 +882,7 @@ void OpenXrInterface::updateXrSpaces()
                                          .viewConfigurationType =
                                              XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
                                          .displayTime = m_pimpl->frame_state.predictedDisplayTime,
-                                         .space = m_pimpl->play_space};
+                                         .space = m_pimpl->view_space};
 
 
     uint32_t output_viewCount = m_pimpl->views.size();
