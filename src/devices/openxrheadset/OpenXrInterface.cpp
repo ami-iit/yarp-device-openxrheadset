@@ -1147,13 +1147,32 @@ void OpenXrInterface::render()
 
 #ifdef DEBUG_RENDERING
     //Set green color
-    glClearColor(0, 1, 0, 1);
+    //glClearColor(0, 1, 0, 1);
+    
+    //Clear the backgorund color
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    int width, height, numComponents;
+
+    unsigned char* texId = stbi_load("Mario.bmp", &width, &height, &numComponents, 4);
+
+    if (texId == NULL)
+        cout << "Cannot load texture" << endl;
+
+    
+
+    GLuint fboId = 0;
+    glGenFramebuffers(1, &fboId);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
+
+    stbi_image_free(texId);
 #else
     glClearColor(0, 0, 0, 0);
-#endif
-
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#endif
+
 
     // Replicate on VR
 
