@@ -906,9 +906,9 @@ void OpenXrInterface::updateXrSpaces()
 
     for (size_t i = 1; i < m_pimpl->views.size(); ++i)
     {
-        m_pimpl->mid_views_pose.position = toXr(toEigen(m_pimpl->mid_views_pose.position) + toEigen(m_pimpl->views[i].pose.position));
+        m_pimpl->mid_views_pose.position = toXr(Eigen::Vector3f(toEigen(m_pimpl->mid_views_pose.position) + toEigen(m_pimpl->views[i].pose.position)));
     }
-    m_pimpl->mid_views_pose.position = toXr(toEigen(m_pimpl->mid_views_pose.position)/static_cast<float>(m_pimpl->views.size()));
+    m_pimpl->mid_views_pose.position = toXr(Eigen::Vector3f(toEigen(m_pimpl->mid_views_pose.position)/static_cast<float>(m_pimpl->views.size())));
 
     result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space,
                            m_pimpl->locate_space_time, &m_pimpl->view_space_location);
@@ -1301,7 +1301,7 @@ void OpenXrInterface::endXrFrame()
         {
             if (layer->shouldSubmit())
             {
-                layer->layer.pose = toXr(toEigen(m_pimpl->mid_views_pose) * toEigen(layer->desiredHeadFixedPose));
+                layer->layer.pose = toXr(Eigen::Matrix4f(toEigen(m_pimpl->mid_views_pose) * toEigen(layer->desiredHeadFixedPose)));
                 m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) &layer->layer);
             }
         }
