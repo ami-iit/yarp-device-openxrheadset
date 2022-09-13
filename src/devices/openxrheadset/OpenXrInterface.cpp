@@ -1301,6 +1301,7 @@ void OpenXrInterface::endXrFrame()
         {
             if (layer->shouldSubmit())
             {
+                layer->layer.pose = toXr(toEigen(m_pimpl->mid_views_pose) * toEigen(layer->desiredHeadFixedPose));
                 m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) &layer->layer);
             }
         }
@@ -1450,7 +1451,7 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
         .type = XR_TYPE_COMPOSITION_LAYER_QUAD,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->view_space,        //Head fixed
+        .space = m_pimpl->play_space,        //Head fixed
         .eyeVisibility = XR_EYE_VISIBILITY_BOTH,
         .subImage = {
             .swapchain = XR_NULL_HANDLE,

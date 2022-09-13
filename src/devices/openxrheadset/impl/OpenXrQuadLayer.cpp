@@ -24,12 +24,12 @@ void OpenXrQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quat
 
 void OpenXrQuadLayer::setPosition(const Eigen::Vector3f &position)
 {
-    layer.pose.position = toXr(position);
+    desiredHeadFixedPose.position = toXr(position);
 }
 
 void OpenXrQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
 {
-    layer.pose.orientation = toXr(quaternion);
+    desiredHeadFixedPose.orientation = toXr(quaternion);
 }
 
 void OpenXrQuadLayer::setDimensions(float widthInMeters, float heightInMeters)
@@ -180,12 +180,12 @@ float OpenXrQuadLayer::layerHeight() const
 
 Eigen::Vector3f OpenXrQuadLayer::layerPosition() const
 {
-    return toEigen(layer.pose.position);
+    return toEigen(desiredHeadFixedPose.position);
 }
 
 Eigen::Quaternionf OpenXrQuadLayer::layerQuaternion() const
 {
-    return toEigen(layer.pose.orientation);
+    return toEigen(desiredHeadFixedPose.orientation);
 }
 
 void OpenXrQuadLayer::setEnabled(bool enabled)
