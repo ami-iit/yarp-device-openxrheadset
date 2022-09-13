@@ -14,7 +14,7 @@
 #include <Eigen/Geometry>
 
 
-inline Eigen::Vector3f toEigen(const XrVector3f vector)
+inline Eigen::Vector3f toEigen(const XrVector3f &vector)
 {
     Eigen::Vector3f output;
     output[0] = vector.x;
@@ -23,7 +23,7 @@ inline Eigen::Vector3f toEigen(const XrVector3f vector)
     return output;
 }
 
-inline Eigen::Quaternionf toEigen(const XrQuaternionf quaternion)
+inline Eigen::Quaternionf toEigen(const XrQuaternionf &quaternion)
 {
     Eigen::Quaternionf output;
     output.w() = quaternion.w;
