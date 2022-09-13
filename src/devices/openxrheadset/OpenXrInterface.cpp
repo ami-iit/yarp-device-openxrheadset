@@ -902,6 +902,14 @@ void OpenXrInterface::updateXrSpaces()
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
+    m_pimpl->mid_views_pose = m_pimpl->views[0].pose;
+
+    for (size_t i = 1; i < m_pimpl->views.size(); ++i)
+    {
+        m_pimpl->mid_views_pose.position = toXr(toEigen(m_pimpl->mid_views_pose.position) + toEigen(m_pimpl->views[i].pose.position));
+    }
+    m_pimpl->mid_views_pose.position = toXr(toEigen(m_pimpl->mid_views_pose.position)/static_cast<float>(m_pimpl->views.size()));
+
     result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space,
                            m_pimpl->locate_space_time, &m_pimpl->view_space_location);
 

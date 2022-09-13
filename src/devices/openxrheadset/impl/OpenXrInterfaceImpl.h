@@ -271,6 +271,9 @@ public:
     // array of views, filled by the runtime with current HMD display pose (basically the position of each eye)
     std::vector<XrView> views;
 
+    // position of a frame in the middle of the eyes, oriented as the first eye
+    XrPosef mid_views_pose;
+
     // List of top level paths to retrieve the state of each action
     std::vector<TopLevelPath> top_level_paths;
 
