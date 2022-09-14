@@ -10,6 +10,8 @@
 
 #define DEBUG_RENDERING
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 bool OpenXrInterface::checkExtensions()
 {
