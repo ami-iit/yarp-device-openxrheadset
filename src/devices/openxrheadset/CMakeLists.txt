@@ -90,6 +90,7 @@ target_link_libraries(yarp_openxrheadset
     OpenGL::GL
     Eigen3::Eigen
     GLFont::GLFont
+    stb_image
 )
 
 if (NOT WIN32)
@@ -117,6 +118,7 @@ if(BUILD_TESTING)
         OpenGL::GL
         Eigen3::Eigen
         GLFont::GLFont
+        stb_image
         )
 
     if (NOT WIN32)
