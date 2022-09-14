@@ -79,6 +79,8 @@ private:
 
     SingleEyePort m_leftEye, m_rightEye;
     yarp::os::BufferedPort<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_commonImagePort;
+    yarp::sig::ImageOf<yarp::sig::PixelRgb> m_previousImage;
+    bool m_firstTime{true};
     Options m_options;
 };
 

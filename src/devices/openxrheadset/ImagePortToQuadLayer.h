@@ -35,6 +35,8 @@ class ImagePortToQuadLayer
     Eigen::Quaternionf m_newImageDesiredQuaternion;
     std::thread::id m_initThreadID;
     bool m_active{false};
+    ImageType m_previousImage;
+    bool m_firstTime{true};
 
 public:
 
@@ -223,12 +225,29 @@ public:
     {
         ImageType* img = m_portPtr->read(false);
 
+        bool usingPrevious = false;
         if (!img)
         {
-            return true;
+            if (m_firstTime)
+            {
+                return true;
+            }
+
+            img = &m_previousImage;
+            usingPrevious = true;
         }
 
-        return updateTexture(*img, 0, 0, img->width(), img->height());
+        m_firstTime = false;
+
+        if (!updateTexture(*img, 0, 0, img->width(), img->height()))
+            return false;
+
+        if (!usingPrevious)
+        {
+            m_previousImage.copy(*img);
+        }
+
+        return true;
     }
 
     void setPose(const Eigen::Vector3f& position,

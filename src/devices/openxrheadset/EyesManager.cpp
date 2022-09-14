@@ -95,23 +95,39 @@ bool EyesManager::update()
     }
     else
     {
-        yarp::sig::ImageOf<yarp::sig::PixelRgb>* image = m_commonImagePort.read(false);
-        if (!image)
+        yarp::sig::ImageOf<yarp::sig::PixelRgb>* img = m_commonImagePort.read(false);
+
+        bool usingPrevious = false;
+        if (!img)
         {
-            return true;
+            if (m_firstTime)
+            {
+                return true;
+            }
+
+            img = &m_previousImage;
+            usingPrevious = true;
         }
 
-        GLint splitx = static_cast<GLint>(std::round(image->width()/2.0));
+        m_firstTime = false;
 
-        if (!m_leftEye.update(*image, 0, 0, splitx, image->height()))
+        GLint splitx = static_cast<GLint>(std::round(img->width()/2.0));
+
+        if (!m_leftEye.update(*img, 0, 0, splitx, img->height()))
         {
             yCError(OPENXRHEADSET) << "Failed to update left eye.";
             return false;
         }
-        if (!m_rightEye.update(*image, splitx + 1, 0, image->width(), image->height()))
+
+        if (!m_rightEye.update(*img, splitx + 1, 0, img->width(), img->height()))
         {
             yCError(OPENXRHEADSET) << "Failed to update right eye.";
             return false;
+        }
+
+        if (!usingPrevious)
+        {
+            m_previousImage.copy(*img);
         }
     }
 
