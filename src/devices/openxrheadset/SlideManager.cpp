@@ -45,12 +45,12 @@ bool SlideManager::initialize(const Options &options)
             }
             else
             {
-                yCInfo(OPENXRHEADSET) << "Skipping" << entry.path() << "since it is not a supported file.";
+                yCInfo(OPENXRHEADSET) << "Skipping" << entry.path().generic_string() << "since it is not a supported file.";
             }
         }
         else
         {
-            yCInfo(OPENXRHEADSET) << "Skipping" << entry.path() << "since it is not a file.";
+            yCInfo(OPENXRHEADSET) << "Skipping" << entry.path().generic_string() << "since it is not a file.";
         }
     }
 
@@ -62,6 +62,7 @@ bool SlideManager::initialize(const Options &options)
         {
             m_stbImages.push_back(rawImage);
             m_loadedImages[image.first].setExternal(rawImage, width, height);
+            yCInfo(OPENXRHEADSET) << "Loaded image:" << image.second;
         }
         else
         {
@@ -118,12 +119,18 @@ bool SlideManager::updateTexture()
     {
         inputString = bottle->get(0).toString();
     }
+    else
+    {
+        return true;
+    }
 
     if (inputString == "")
     {
         m_layer.setEnabled(false);
         return true;
     }
+
+    m_layer.setEnabled(true);
 
     auto yarpImageIt = m_loadedImages.find(inputString);
 
