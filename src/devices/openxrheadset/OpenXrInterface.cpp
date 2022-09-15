@@ -11,8 +11,7 @@
 
 #define DEBUG_RENDERING
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../../vendor/stb/stb_image.h"
+#include <stb_image.h>
 
 bool OpenXrInterface::checkExtensions()
 {
@@ -525,7 +524,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         .type = XR_TYPE_COMPOSITION_LAYER_PROJECTION,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->play_space,
+        .space = m_pimpl->view_space,
         .viewCount = static_cast<uint32_t>(m_pimpl->projection_views.size()),
         .views = m_pimpl->projection_views.data(),
     };
@@ -1160,7 +1159,7 @@ void OpenXrInterface::render()
     int width, height, numComponents;
 
     stbi_set_flip_vertically_on_load(1);
-    unsigned char* imgData = stbi_load("../../../res/textures/Mario.bmp", &width, &height, &numComponents, 4);
+    unsigned char* imgData = stbi_load("Mario.bmp", &width, &height, &numComponents, 4);
 
     if (imgData == NULL)
         std::cout << "Cannot load texture" << std::endl;
@@ -1175,7 +1174,7 @@ void OpenXrInterface::render()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);		// MANDATORY - vertical clamp
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgData);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindTexture(GL_TEXTURE_2D, 0);
     
     
     GLuint fboId = 0;
@@ -1335,6 +1334,8 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrCompositionLayers();
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
+
+    //init
 
     m_pimpl->initialized = ok;
 
@@ -1690,6 +1691,8 @@ void OpenXrInterface::close()
     m_pimpl->headLockedQuadLayers.clear();
     m_pimpl->submitted_layers.clear();
     m_pimpl->layer_count = 0;
+
+    //delete
 
     if (m_pimpl->window)
     {
