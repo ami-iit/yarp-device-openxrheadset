@@ -38,10 +38,10 @@ bool SlideManager::initialize(const Options &options)
     {
         if (entry.is_regular_file())
         {
-            std::string extension = entry.path().extension();
+            std::string extension = entry.path().extension().generic_string();
             if (supportedExtensions.find(extension) != supportedExtensions.end())
             {
-                imagesPath[entry.path().stem()] = entry.path(); //Map: filename (wihtout extension) -> path
+                imagesPath[entry.path().stem().generic_string()] = entry.path().generic_string(); //Map: filename (wihtout extension) -> path
             }
             else
             {
