@@ -359,6 +359,17 @@ public:
         return m_active;
     }
 
+    void setEnabled(bool enabled)
+    {
+        if (!m_quadLayer)
+        {
+            yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
+            return;
+        }
+
+        m_quadLayer->setEnabled(enabled);
+    }
+
 };
 
 #endif // YARP_OPENXRHEADSET_IMAGEPORTTOQUADLAYER_H
