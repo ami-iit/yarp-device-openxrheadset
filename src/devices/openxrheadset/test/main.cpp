@@ -13,6 +13,8 @@
 #include <array>
 #include <ImagePortToQuadLayer.h>
 #include <LabelPortToQuadLayer.h>
+#include <SlideManager.h>
+#include <Resources.h>
 
 int main()
 {
@@ -20,6 +22,8 @@ int main()
     OpenXrInterface openXrInterface;
     std::array<ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>>, 2> displayPorts;
     LabelPortToQuadLayer label;
+    SlideManager slide;
+
 
     if (!openXrInterface.initialize())
     {
@@ -52,6 +56,16 @@ int main()
     label.setDimensions(0.1, 0.02);
     label.setPosition({-0.05, 0, -0.1});
 
+    SlideManager::Options slideOptions;
+    slideOptions.quadLayer = openXrInterface.addHeadFixedQuadLayer();
+    slideOptions.portName = "/openxrtest/slide:i";
+    slideOptions.slidesPath = resourcesPath() + "/testImages";
+
+    slide.initialize(slideOptions);
+    slide.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
+    slide.setDimensions(0.1, 0.02);
+    slide.setPosition({-0.05, 0, -0.1});
+
     for (size_t i = 0; i < 10; ++i)
     {
         if (openXrInterface.isRunning())
@@ -63,7 +77,7 @@ int main()
                 }
             }
 
-            if (!label.updateTexture())
+            if (!slide.updateTexture())
             {
                 yError() << "Failed to update label";
                 return EXIT_FAILURE;
@@ -83,7 +97,7 @@ int main()
         displayPorts[eye].close();
     }
 
-    label.close();
+    slide.close();
 
     openXrInterface.close();
 
