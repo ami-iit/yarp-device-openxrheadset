@@ -5,10 +5,9 @@
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
 add_library(stb_image stb_image.h stb_image.cpp)
-target_include_directories(stb_image PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
 target_include_directories(stb_image PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
-                                            "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/stb_image>")
+                                            "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/stb_image>")
 
 set_target_properties(stb_image PROPERTIES
                                 OUTPUT_NAME stb_image
