@@ -6,12 +6,13 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
+#include <iostream>
 #include <impl/OpenXrInterfaceImpl.h>
 
 #define DEBUG_RENDERING
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "../../vendor/stb/stb_image.h"
 
 bool OpenXrInterface::checkExtensions()
 {
@@ -1150,25 +1151,40 @@ void OpenXrInterface::render()
 #ifdef DEBUG_RENDERING
     //Set green color
     //glClearColor(0, 1, 0, 1);
-    
     //Clear the backgorund color
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     int width, height, numComponents;
 
-    unsigned char* texId = stbi_load("Mario.bmp", &width, &height, &numComponents, 4);
+    stbi_set_flip_vertically_on_load(1);
+    unsigned char* imgData = stbi_load("../../../res/textures/Mario.bmp", &width, &height, &numComponents, 4);
 
-    if (texId == NULL)
-        cout << "Cannot load texture" << endl;
+    if (imgData == NULL)
+        std::cout << "Cannot load texture" << std::endl;
 
+    GLuint texId = 0;
+    glGenTextures(1, &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// MANDATORY
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// MANDATORY
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);		// MANDATORY - horizontal clamp
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);		// MANDATORY - vertical clamp
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgData);
+    glBindTexture(GL_TEXTURE_2D, 0);
     
-
+    
     GLuint fboId = 0;
     glGenFramebuffers(1, &fboId);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
 
-    stbi_image_free(texId);
+    if (imgData)
+        stbi_image_free(imgData);
 #else
     glClearColor(0, 0, 0, 0);
     //Clear the backgorund color
@@ -1184,7 +1200,7 @@ void OpenXrInterface::render()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
         swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
 
-    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId, 0, 0, ww / 2, wh,
+    glBlitNamedFramebuffer(fboId, m_pimpl->glFrameBufferId, 0, 0, ww / 2, wh,
                            0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
