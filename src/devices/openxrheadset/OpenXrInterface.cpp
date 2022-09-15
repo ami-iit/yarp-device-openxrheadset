@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <impl/OpenXrInterfaceImpl.h>
+#include <Resources.h>
 
 #define DEBUG_RENDERING
 
@@ -1159,7 +1160,8 @@ void OpenXrInterface::render()
     int width, height, numComponents;
 
     stbi_set_flip_vertically_on_load(1);
-    unsigned char* imgData = stbi_load("Mario.bmp", &width, &height, &numComponents, 4);
+    std::string marioPath = resourcesPath() + "/textures/Mario.bmp";
+    unsigned char* imgData = stbi_load(marioPath.c_str(), &width, &height, &numComponents, 4);
 
     if (imgData == NULL)
         std::cout << "Cannot load texture" << std::endl;
