@@ -26,6 +26,7 @@ public:
     {
         std::shared_ptr<IOpenXrQuadLayer> quadLayer;
         std::string slidesPath;
+        std::string initialSlide;
         std::string portName;
 
         bool parseFromConfigurationFile(const std::string &inputPortName, yarp::os::Searchable& labelGroup);
@@ -57,6 +58,8 @@ public:
     float layerHeight() const;
 
     void setEnabled(bool enabled);
+
+    bool setImage(const std::string& imagename);
 
 private:
 

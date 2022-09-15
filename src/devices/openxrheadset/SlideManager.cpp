@@ -88,7 +88,6 @@ bool SlideManager::initialize(const Options &options)
 
     m_options = options;
 
-
     return true;
 }
 
@@ -124,28 +123,7 @@ bool SlideManager::updateTexture()
         return true;
     }
 
-    if (inputString == "")
-    {
-        m_layer.setEnabled(false);
-        return true;
-    }
-
-    m_layer.setEnabled(true);
-
-    auto yarpImageIt = m_loadedImages.find(inputString);
-
-    if (yarpImageIt == m_loadedImages.end())
-    {
-        yCWarning(OPENXRHEADSET) << "Failed to find the requested image:" << inputString;
-        return true;
-    }
-
-    if (!m_layer.updateTexture(yarpImageIt->second, 0, 0, yarpImageIt->second.width(), yarpImageIt->second.height()))
-    {
-        return false;
-    }
-
-    return true;
+    return setImage(inputString);
 }
 
 void SlideManager::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &rotation)
@@ -198,11 +176,38 @@ void SlideManager::setEnabled(bool enabled)
     m_layer.setEnabled(enabled);
 }
 
+bool SlideManager::setImage(const std::string &imagename)
+{
+    if (imagename == "")
+    {
+        m_layer.setEnabled(false);
+        return true;
+    }
+
+    auto yarpImageIt = m_loadedImages.find(imagename);
+
+    if (yarpImageIt == m_loadedImages.end())
+    {
+        yCWarning(OPENXRHEADSET) << "Failed to find the requested image:" << imagename;
+        return true;
+    }
+
+    m_layer.setEnabled(true);
+
+    if (!m_layer.updateTexture(yarpImageIt->second, 0, 0, yarpImageIt->second.width(), yarpImageIt->second.height()))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool SlideManager::Options::parseFromConfigurationFile(const std::string &inputPortName, yarp::os::Searchable &labelGroup)
 {
     portName = inputPortName;
 
     slidesPath = labelGroup.check("slides_path", yarp::os::Value("./")).asString();
+    initialSlide = labelGroup.check("initial_slide", yarp::os::Value("")).asString();
 
     return true;
 }

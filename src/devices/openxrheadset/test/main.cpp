@@ -59,12 +59,14 @@ int main()
     SlideManager::Options slideOptions;
     slideOptions.quadLayer = openXrInterface.addHeadFixedQuadLayer();
     slideOptions.portName = "/openxrtest/slide:i";
+    slideOptions.initialSlide = "skeleton";
     slideOptions.slidesPath = resourcesPath() + "/testImages";
 
     slide.initialize(slideOptions);
-    slide.setVisibility(IOpenXrQuadLayer::Visibility::LEFT_EYE);
-    slide.setDimensions(0.1, 0.02);
-    slide.setPosition({-0.05, 0, -0.1});
+    slide.setVisibility(IOpenXrQuadLayer::Visibility::RIGHT_EYE);
+    slide.setDimensions(0.1, 0.01);
+    slide.setPosition({0.0, 0, -0.1});
+    slide.setImage("skeleton");
 
     for (size_t i = 0; i < 10; ++i)
     {
@@ -77,9 +79,15 @@ int main()
                 }
             }
 
-            if (!slide.updateTexture())
+            if (!label.updateTexture())
             {
                 yError() << "Failed to update label";
+                return EXIT_FAILURE;
+            }
+
+            if (!slide.updateTexture())
+            {
+                yError() << "Failed to update slide";
                 return EXIT_FAILURE;
             }
 

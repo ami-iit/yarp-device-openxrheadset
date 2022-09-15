@@ -373,6 +373,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             slide.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
             slide.layer.setDimensions(slide.width, slide.height);
             slide.layer.setPosition({slide.x, slide.y, slide.z});
+            slide.layer.setImage(slide.options.initialSlide);
         }
     }
 
