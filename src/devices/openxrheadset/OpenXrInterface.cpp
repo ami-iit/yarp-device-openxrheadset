@@ -9,10 +9,9 @@
 #include <iostream>
 #include <impl/OpenXrInterfaceImpl.h>
 #include <Resources.h>
+#include <stb_image.h>
 
 #define DEBUG_RENDERING
-
-#include <stb_image.h>
 
 bool OpenXrInterface::checkExtensions()
 {
@@ -1157,35 +1156,7 @@ void OpenXrInterface::render()
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    int width, height, numComponents;
-
-    stbi_set_flip_vertically_on_load(1);
-    std::string marioPath = resourcesPath() + "/textures/Mario.bmp";
-    unsigned char* imgData = stbi_load(marioPath.c_str(), &width, &height, &numComponents, 4);
-
-    if (imgData == NULL)
-        std::cout << "Cannot load texture" << std::endl;
-
-    GLuint texId = 0;
-    glGenTextures(1, &texId);
-    glBindTexture(GL_TEXTURE_2D, texId);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// MANDATORY
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// MANDATORY
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);		// MANDATORY - horizontal clamp
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);		// MANDATORY - vertical clamp
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgData);
-    //glBindTexture(GL_TEXTURE_2D, 0);
-    
-    
-    GLuint fboId = 0;
-    glGenFramebuffers(1, &fboId);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
-
-    if (imgData)
-        stbi_image_free(imgData);
 #else
     glClearColor(0, 0, 0, 0);
     //Clear the backgorund color
@@ -1195,13 +1166,13 @@ void OpenXrInterface::render()
 
     // Replicate on VR
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pimpl->glFrameBufferId);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
         swapchain_images[m_pimpl->projection_view_swapchains[0].acquired_index].image, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
         swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
 
-    glBlitNamedFramebuffer(fboId, m_pimpl->glFrameBufferId, 0, 0, ww / 2, wh,
+    glBlitNamedFramebuffer(fboId, m_pimpl->glFrameBufferId, 0, 0, width / 2, height,
                            0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
@@ -1336,6 +1307,32 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrCompositionLayers();
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
+
+    //init
+
+    int width, height, numComponents;
+    stbi_set_flip_vertically_on_load(1);
+    std::string marioPath = resourcesPath() + "/textures/Mario.bmp";
+    unsigned char* imgData = stbi_load(marioPath.c_str(), &width, &height, &numComponents, 4);
+
+    if (imgData == NULL)
+        std::cout << "Cannot load texture" << std::endl;
+
+    GLuint texId = 0;
+    glGenTextures(1, &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	        // MANDATORY
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	        // MANDATORY
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);		// MANDATORY - horizontal clamp
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);		// MANDATORY - vertical clamp
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgData);
+
+    GLuint fboId = 0;
+    glGenFramebuffers(1, &fboId);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     //init
 
@@ -1693,6 +1690,11 @@ void OpenXrInterface::close()
     m_pimpl->headLockedQuadLayers.clear();
     m_pimpl->submitted_layers.clear();
     m_pimpl->layer_count = 0;
+
+    //delete
+
+    if (imgData)
+        stbi_image_free(imgData);
 
     //delete
 
