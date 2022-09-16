@@ -31,6 +31,8 @@ class ImagePortToQuadLayer
     GLuint m_glReadBufferId = 0;
     GLuint m_imageTexture;
     GLint m_pixelFormat;
+    size_t m_previousWidth{ 0 };
+    size_t m_previousHeight{ 0 };
     Eigen::Vector3f m_newImageDesiredPosition;
     Eigen::Quaternionf m_newImageDesiredQuaternion;
     std::thread::id m_initThreadID;
@@ -172,8 +174,19 @@ public:
         //This has to be called from the same thread where the initialize method has been called
         glBindFramebuffer(GL_FRAMEBUFFER, m_glReadBufferId);
         glBindTexture(GL_TEXTURE_2D, m_imageTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, img.width(), img.height(),
-            0, m_pixelFormat, GL_UNSIGNED_BYTE, img.getRawImage());
+
+        if (m_previousWidth > img.width() && m_previousHeight > img.height())
+        {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(),
+                            m_pixelFormat, GL_UNSIGNED_BYTE, img.getRawImage());
+        }
+        else
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, img.width(), img.height(),
+                0, m_pixelFormat, GL_UNSIGNED_BYTE, img.getRawImage());
+            m_previousWidth = img.width();
+            m_previousHeight = img.height();
+        }
 
         //Then bind the write framebuffer, using the OpenXr texture as target texture
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glWriteBufferId);
