@@ -138,8 +138,8 @@ bool OpenGLQuadLayer::render(float aspectRatio)
 
 void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)
 {
-    //setPosition(position);
-    //setQuaternion(quaternion);
+    setPosition(position);
+    setQuaternion(quaternion);
 }
 
 void OpenGLQuadLayer::setPosition(const Eigen::Vector3f &position)
@@ -250,12 +250,6 @@ Eigen::Quaternionf OpenGLQuadLayer::layerQuaternion() const
 void OpenGLQuadLayer::setEnabled(bool enabled)
 {
     //this->isEnabled = enabled;
-}
-
-bool OpenGLQuadLayer::shouldSubmit() const
-{
-    //return hasVisibility && released && isEnabled;
-    return false;
 }
 
 OpenGLQuadLayer::OpenGLQuadLayer()

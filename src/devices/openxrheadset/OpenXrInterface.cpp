@@ -1143,17 +1143,23 @@ void OpenXrInterface::render()
     glfwGetWindowSize(m_pimpl->window, &ww, &wh);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    glClearColor(0, 0, 0, 0);
+    //Clear the backgorund color
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     //Left Eye
 
 #ifdef DEBUG_RENDERING
-    //Set green color
-    glClearColor(0, 1, 0, 1);
+   
+    glViewport(0, 0, ww / 2, wh);
+    m_pimpl->testLayer->render(float(ww / 2) / wh);
+
+
 #else
     glClearColor(0, 0, 0, 0);
-#endif
-
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#endif
 
     // Replicate on VR
 
@@ -1171,11 +1177,10 @@ void OpenXrInterface::render()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 #ifdef DEBUG_RENDERING
-    //Set blue color
-    glClearColor(0, 0, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //Restore default clear
-    glClearColor(0, 0, 0, 0);
+
+    glViewport(ww / 2, 0, ww / 2, wh);
+    m_pimpl->testLayer->render(float(ww / 2) / wh);
+
 #else
     //Clear the backgorund color
     glClearColor(0, 0, 0, 0);
@@ -1298,6 +1303,9 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrCompositionLayers();
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
+
+    m_pimpl->testLayer = std::make_shared<OpenGLQuadLayer>();
+    m_pimpl->testLayer->initialize();
 
     m_pimpl->initialized = ok;
 
