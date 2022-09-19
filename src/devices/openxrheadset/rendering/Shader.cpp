@@ -7,17 +7,26 @@
 
 #include "Renderer.h"
 
-Shader::Shader(const std::string& filepath)
-	: m_FilePath(filepath), m_RendererID(0)
+Shader::Shader()
+	: m_RendererID(0)
 
 {
-    ShaderProgramSource source = ParseShader(filepath);
-    m_RendererID = CreateShader(source.VertexSource, source.FragmentSource);
+
 }
 
 Shader::~Shader()
 {
+    if (!m_initialized)
+        return;
+
     GLCall(glDeleteProgram(m_RendererID));
+}
+
+void Shader::initialize(const std::string& shaderPath)
+{
+    ShaderProgramSource source = ParseShader(shaderPath);
+    m_RendererID = CreateShader(source.VertexSource, source.FragmentSource);
+    m_initialized = true;
 }
 
 ShaderProgramSource Shader::ParseShader(const std::string& filepath)

@@ -14,12 +14,22 @@ struct ShaderProgramSource
 class Shader
 {
 private:
-	std::string m_FilePath;				// for debug purposes
 	unsigned int m_RendererID;
 	std::unordered_map<std::string, int> m_UniformLocationCache;
+	bool m_initialized{ false };
+
 public:
-	Shader(const std::string& filepath);
+	Shader();
 	~Shader();
+
+	Shader(const Shader&) = delete;
+	Shader(Shader&&) = delete;
+
+	Shader& operator=(const Shader&) = delete;
+	Shader& operator=(Shader&&) = delete;
+
+
+	void initialize(const std::string& shaderPath);
 
 	void Bind() const;					// it would be "use program" for shaders, but let's use "bind" for consistency
 	void Unbind() const;
