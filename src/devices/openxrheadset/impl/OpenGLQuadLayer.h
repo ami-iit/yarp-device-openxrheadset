@@ -86,8 +86,6 @@ public:
     virtual Eigen::Quaternionf layerQuaternion() const override;
 
     virtual void setEnabled(bool enabled) override;
-
-    bool shouldSubmit() const;
 };
 
 #endif // YARP_DEV_OPENGLQUADLAYER_H

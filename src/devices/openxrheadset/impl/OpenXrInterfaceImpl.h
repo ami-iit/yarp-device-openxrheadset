@@ -13,6 +13,7 @@
 #include <OpenXrHeadsetLogComponent.h>
 #include <OpenXrInterface.h>
 #include <impl/OpenXrQuadLayer.h>
+#include <impl/OpenGLQuadLayer.h>
 #include <OpenXrEigenConversions.h>
 
 
@@ -347,6 +348,8 @@ public:
 
     // Internal OpenGL framebuffer ID
     GLuint glFrameBufferId = 0;
+
+    std::shared_ptr<OpenGLQuadLayer> testLayer;
 
     std::atomic<bool> initialized{false};
 
