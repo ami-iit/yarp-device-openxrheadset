@@ -1,16 +1,21 @@
 #pragma once
 
+#include <vector>
+
 class IndexBuffer
 {
 private:
-	unsigned int m_RendererID;
-	unsigned int m_Count;
+	unsigned int m_RendererID{ 0 };
+	std::vector<unsigned int> m_data;
+
 public:
-	IndexBuffer(const unsigned int* data, unsigned int count);
+	IndexBuffer();
 	~IndexBuffer();
+
+	void setIndices(const std::vector<unsigned int>& data);
 
 	void Bind() const;
 	void Unbind() const;
 
-	inline unsigned int GetCount() const { return m_Count; }
+	unsigned int GetCount() const;
 };

@@ -28,6 +28,7 @@ set(yarp_openxrheadset_SRCS
   OpenXrInterface.cpp
   impl/OpenXrQuadLayer.cpp
   impl/OpenXrInterfaceImpl.cpp
+  impl/OpenGLQuadLayer.cpp
   LabelPortToQuadLayer.cpp
   SlideManager.cpp
 )
@@ -41,6 +42,7 @@ set(yarp_openxrheadset_HDRS
   OpenXrInterface.h
   OpenXrEigenConversions.h
   impl/OpenXrQuadLayer.h
+  impl/OpenGLQuadLayer.h
   impl/OpenXrInterfaceImpl.h
   SlideManager.h
   )
