@@ -57,7 +57,7 @@ public:
         VerticalAlignement verticalAlignement{VerticalAlignement::Center};
         HorizontalAlignement horizontalAlignement{HorizontalAlignement::Center};
 
-        bool parseFromConfigurationFile(const std::string &portName, yarp::os::Searchable& labelGroup);
+        bool parseFromConfigurationFile(const std::string &inputPortName, yarp::os::Searchable& labelGroup);
     };
 
     bool initialize(const Options& options);

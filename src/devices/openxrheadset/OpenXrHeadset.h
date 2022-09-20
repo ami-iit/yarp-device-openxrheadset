@@ -28,6 +28,7 @@
 #include <ImagePortToQuadLayer.h>
 #include <LabelPortToQuadLayer.h>
 #include <EyesManager.h>
+#include <SlideManager.h>
 #include <FramePorts.h>
 #include <AdditionalPosesPublisher.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
@@ -224,6 +225,17 @@ private:
         LabelPortToQuadLayer layer;
     };
 
+    struct SlideLayer
+    {
+        float         width;
+        float         height;
+        float         x;
+        float         y;
+        float         z;
+        SlideManager::Options options;
+        SlideManager layer;
+    };
+
     FramePorts m_headFramePorts;
     FramePorts m_leftHandFramePorts;
     FramePorts m_rightHandFramePorts;
@@ -238,6 +250,7 @@ private:
 
     std::vector<GuiParam> m_huds;
     std::vector<LabelLayer> m_labels;
+    std::vector<SlideLayer> m_slides;
 
     bool m_getStickAsAxis;
 

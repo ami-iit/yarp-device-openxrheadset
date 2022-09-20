@@ -158,6 +158,57 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 }
             }
         }
+
+        paramParser.clear();
+        int slideCount = cfg.find("slides").asInt32();
+        if (slideCount)
+        {
+            paramParser.push_back({"width",  DOUBLE});
+            paramParser.push_back({"height", DOUBLE});
+            paramParser.push_back({"x",      DOUBLE});
+            paramParser.push_back({"y",      DOUBLE});
+            paramParser.push_back({"z",      DOUBLE});
+
+            for (int i = 0; i < slideCount; ++i)
+            {
+                std::string       groupName  = "SLIDE_" + std::to_string(i);
+                yarp::os::Bottle& slideGroup = cfg.findGroup(groupName);
+
+                if (slideGroup.isNull())
+                {
+                    yCError(OPENXRHEADSET) << "group:" << groupName << "not found in configuration file..";
+                    return false;
+                }
+
+                for (auto& p : paramParser)
+                {
+                    if (!slideGroup.check(p.name) || !(slideGroup.find(p.name).*isFunctionMap[p.type])())
+                    {
+                        std::string err_type = err_msgs.find(p.type) == err_msgs.end() ? "[unknow type]" : err_msgs[p.type];
+                        yCError(OPENXRHEADSET) << "parameter" << p.name << "not found or not" << err_type << "in" << groupName << "group in configuration file";
+                        return false;
+                    }
+                }
+
+                m_slides.emplace_back();
+                SlideLayer& slide = m_slides.back();
+
+                slide.width   = slideGroup.find("width").asFloat64();
+                slide.height  = slideGroup.find("height").asFloat64();
+                slide.x       = slideGroup.find("x").asFloat64();
+                slide.y       = slideGroup.find("y").asFloat64();
+                slide.z       = -std::max(0.01, std::abs(slideGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
+
+                std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
+                std::string portName = m_prefix + "/" + groupName;
+
+                if (!slide.options.parseFromConfigurationFile(portName, slideGroup))
+                {
+                    yCError(OPENXRHEADSET) << "Failed to parse" << groupName;
+                    return false;
+                }
+            }
+        }
     }
 
     double period = cfg.check("vr_period", yarp::os::Value(0.011)).asFloat64();
@@ -311,6 +362,19 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             label.layer.setDimensions(label.width, label.height);
             label.layer.setPosition({label.x, label.y, label.z});
         }
+
+        for (SlideLayer& slide : m_slides)
+        {
+            slide.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+            if (!slide.layer.initialize(slide.options)) {
+                yCError(OPENXRHEADSET) << "Cannot initialize" << slide.options.portName << "slide.";
+                return false;
+            }
+            slide.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            slide.layer.setDimensions(slide.width, slide.height);
+            slide.layer.setPosition({slide.x, slide.y, slide.z});
+            slide.layer.setImage(slide.options.initialSlide);
+        }
     }
 
     for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
@@ -348,6 +412,11 @@ void yarp::dev::OpenXrHeadset::threadRelease()
     for (auto& label : m_labels)
     {
         label.layer.close();
+    }
+
+    for (auto& slide : m_slides)
+    {
+        slide.layer.close();
     }
 
     m_openXrInterface.close();
@@ -389,7 +458,14 @@ void yarp::dev::OpenXrHeadset::run()
         for (LabelLayer& label : m_labels)
         {
             if (!label.layer.updateTexture()) {
-                yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "display texture.";
+                yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "label.";
+                return;
+            }
+        }
+        for (SlideLayer& slide : m_slides)
+        {
+            if (!slide.layer.updateTexture()) {
+                yCError(OPENXRHEADSET) << "Failed to update" << slide.options.portName << "slide.";
                 return;
             }
         }
