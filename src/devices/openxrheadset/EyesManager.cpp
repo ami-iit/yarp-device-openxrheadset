@@ -20,11 +20,10 @@ EyesManager::Options &EyesManager::options()
     return m_options;
 }
 
-bool EyesManager::initialize(yarp::dev::IFrameTransform *tfPublisher, const std::string &headFrame)
+bool EyesManager::initialize()
 {
     if (!m_leftEye.open(m_options.leftEyeQuadLayer,
-                        m_options.portPrefix + "/eyeAngles/left:i",
-                        tfPublisher, m_options.leftEyeFrame, headFrame)) {
+                        m_options.portPrefix + "/eyeAngles/left:i")) {
         yCError(OPENXRHEADSET) << "Cannot initialize left display texture.";
         return false;
     }
@@ -34,8 +33,7 @@ bool EyesManager::initialize(yarp::dev::IFrameTransform *tfPublisher, const std:
     m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
 
     if (!m_rightEye.open(m_options.rightEyeQuadLayer,
-                         m_options.portPrefix + "/eyeAngles/right:i",
-                         tfPublisher, m_options.rightEyeFrame, headFrame)) {
+                         m_options.portPrefix + "/eyeAngles/right:i")) {
         yCError(OPENXRHEADSET) << "Cannot initialize right display texture.";
         return false;
     }
@@ -116,12 +114,6 @@ bool EyesManager::update()
     }
 
     return true;
-}
-
-void EyesManager::publishEyesTransforms()
-{
-    m_leftEye.publishEyeTransform();
-    m_rightEye.publishEyeTransform();
 }
 
 std::vector<double> EyesManager::getLeftImageDimensions()

@@ -19,8 +19,7 @@ typedef bool(yarp::os::Value::*valueIsType)(void) const;
 
 yarp::dev::OpenXrHeadset::OpenXrHeadset()
     : yarp::dev::DeviceDriver(),
-      yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes), // ~90 fps
-      m_stamp(0,0.0)
+      yarp::os::PeriodicThread(0.011, yarp::os::ShouldUseSystemClock::Yes) // ~90 fps
 {}
 
 yarp::dev::OpenXrHeadset::~OpenXrHeadset()
@@ -218,11 +217,6 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
 
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
-    m_leftFrame = cfg.check("tf_left_hand_frame", yarp::os::Value("openxr_left_hand")).asString();
-    m_rightFrame = cfg.check("tf_right_hand_frame", yarp::os::Value("openxr_right_hand")).asString();
-    m_headFrame = cfg.check("tf_head_frame", yarp::os::Value("openxr_head")).asString();
-    m_eyesManager.options().leftEyeFrame = cfg.check("tf_left_eye_frame", yarp::os::Value("openxr_left_eye")).asString();
-    m_eyesManager.options().rightEyeFrame = cfg.check("tf_right_eye_frame", yarp::os::Value("openxr_right_eye")).asString();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     m_rootFrameRaw = m_rootFrame + "_raw";
     m_eyesManager.options().leftAzimuthOffset = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
@@ -237,7 +231,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_rawRootFrameTransform.resize(4,4);
     m_rawRootFrameTransform.eye();
 
-    std::vector<AdditionalPosesPublisher::Label> labels;
+    std::vector<PosesManager::Label> labels;
     yarp::os::Bottle& labelsGroup = cfg.findGroup("POSES_LABELS");
     for (size_t i = 1; i < labelsGroup.size(); ++i) //The first element is the name of the group itself
     {
@@ -271,21 +265,6 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     }
     yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
 
-    if (!m_headFramePorts.open("Head", m_prefix + "/headpose", m_tfPublisher, m_headFrame, m_rootFrameRaw))
-    {
-        return false;
-    }
-
-    if (!m_leftHandFramePorts.open("Left Hand", m_prefix + "/left_hand", m_tfPublisher, m_leftFrame, m_rootFrameRaw))
-    {
-        return false;
-    }
-
-    if (!m_rightHandFramePorts.open("Right Hand", m_prefix + "/right_hand", m_tfPublisher, m_rightFrame, m_rootFrameRaw))
-    {
-        return false;
-    }
-
     PosePublisherSettings posePublisherSettings;
     posePublisherSettings.tfPublisher = m_tfPublisher;
     posePublisherSettings.rootFrame = m_rootFrameRaw;
@@ -302,7 +281,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         yCWarning(OPENXRHEADSET) << "pose_check_convergence_ratio is supposed to be in the range [0, 1]. Clamping to" << posePublisherSettings.checks.convergenceRatio << ".";
     }
 
-    m_additionalPosesPublisher.initialize(labels, posePublisherSettings);
+    m_posesManager.initialize(labels, posePublisherSettings);
 
     // Start the thread
     if (!this->start()) {
@@ -334,7 +313,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
         m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
 
-        if (!m_eyesManager.initialize(m_tfPublisher, m_headFrame))
+        if (!m_eyesManager.initialize())
         {
             yCError(OPENXRHEADSET) << "Failed to initialize eyes.";
         }
@@ -427,9 +406,6 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         m_tfPublisher = nullptr;
     }
 
-    m_headFramePorts.close();
-    m_leftHandFramePorts.close();
-    m_rightHandFramePorts.close();
     m_eyesManager.close();
 
     m_rpcPort.close();
@@ -474,9 +450,7 @@ void yarp::dev::OpenXrHeadset::run()
         m_openXrInterface.getButtons(m_buttons);
         m_openXrInterface.getAxes(m_axes);
         m_openXrInterface.getThumbsticks(m_thumbsticks);
-        m_openXrInterface.getAdditionalPoses(m_additionalPosesPublisher.inputs());
-
-        m_stamp.update(m_openXrInterface.currentNanosecondsSinceEpoch() * 1e-9);
+        m_openXrInterface.getAllPoses(m_posesManager.inputs());
 
         if (m_openXrInterface.shouldResetLocalReferenceSpace())
         {
@@ -490,13 +464,7 @@ void yarp::dev::OpenXrHeadset::run()
             yCWarning(OPENXRHEADSET) << "Failed to update the transformation of the raw root frame.";
         }
 
-        m_headFramePorts.publishFrame(m_openXrInterface.headPose(), m_openXrInterface.headVelocity(), m_stamp);
-        m_leftHandFramePorts.publishFrame(m_openXrInterface.leftHandPose(), m_openXrInterface.leftHandVelocity(), m_stamp);
-        m_rightHandFramePorts.publishFrame(m_openXrInterface.rightHandPose(), m_openXrInterface.rightHandVelocity(), m_stamp);
-
-        m_eyesManager.publishEyesTransforms();
-
-        m_additionalPosesPublisher.publishFrames();
+        m_posesManager.publishFrames();
     }
     else
     {

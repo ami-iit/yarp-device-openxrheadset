@@ -6,31 +6,31 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include <AdditionalPosesPublisher.h>
+#include <PosesManager.h>
 #include <OpenXrHeadsetLogComponent.h>
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
 
-void AdditionalPosesPublisher::initialize(const std::vector<Label>& labels, const PosePublisherSettings &settings)
+void PosesManager::initialize(const std::vector<Label>& labels, const PosePublisherSettings &settings)
 {
     m_settings = std::make_shared<PosePublisherSettings>(settings);
 
     for (auto& label : labels)
     {
-        m_additionalPoses[label.original].setLabel(label.modified);
+        m_poses[label.original].setLabel(label.modified);
     }
 }
 
-std::vector<OpenXrInterface::NamedPoseVelocity> &AdditionalPosesPublisher::inputs()
+std::vector<OpenXrInterface::NamedPoseVelocity> &PosesManager::inputs()
 {
-    return m_additionalPosesInputList;
+    return m_posesInputList;
 }
 
-void AdditionalPosesPublisher::publishFrames()
+void PosesManager::publishFrames()
 {
-    for (auto& inputPose : m_additionalPosesInputList)
+    for (auto& inputPose : m_posesInputList)
     {
-        PosePublisher& publisher = m_additionalPoses[inputPose.name];
+        PosePublisher& publisher = m_poses[inputPose.name];
 
         if (!publisher.configured())
         {
@@ -40,7 +40,7 @@ void AdditionalPosesPublisher::publishFrames()
         publisher.update(inputPose);
     }
 
-    for (auto& poseIt : m_additionalPoses)
+    for (auto& poseIt : m_poses)
     {
         poseIt.second.publish();
     }

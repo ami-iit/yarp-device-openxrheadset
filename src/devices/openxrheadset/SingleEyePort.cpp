@@ -27,8 +27,7 @@ bool SingleEyePort::updateControlAngles()
     return true;
 }
 
-bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &anglesPortName,
-                   yarp::dev::IFrameTransform *tfPublisher, const std::string &tfFrame, const std::string &rootFrame)
+bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string &anglesPortName)
 {
     m_initialized = false;
     if (!m_layer.initialize(quadLayer)) {
@@ -44,24 +43,12 @@ bool SingleEyePort::open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std:
 
     m_eyeAnglesPort.setReadOnly();
 
-    if (!tfPublisher)
-    {
-        yCError(OPENXRHEADSET) << "The transform server interface is not valid.";
-        return false;
-    }
 
     m_desiredRotation.setIdentity();
     m_rotationOffset.setIdentity();
     m_eyeRelativeImagePosition.setZero();
     m_eyeRelativeImagePosition[2] = -1.0; //Initialize the z position of the camera image visualization at 1m distance
     m_eyePosition.setZero();
-
-    m_localPose.resize(4,4);
-    m_localPose.eye();
-
-    m_tfPublisher = tfPublisher;
-    m_tfFrame = tfFrame;
-    m_rootFrame = rootFrame;
 
     m_initialized = true;
 
@@ -77,7 +64,6 @@ void SingleEyePort::close()
 {
     m_initialized = false;
     m_eyeAnglesPort.close();
-    m_tfPublisher = nullptr;
     m_layer.close();
 }
 
@@ -92,21 +78,6 @@ void SingleEyePort::setEyePosition(const Eigen::Vector3f &position)
     m_eyePosition = position;
 
     m_layer.setPosition(m_rotationOffset * m_desiredRotation * m_eyeRelativeImagePosition + m_eyePosition);
-}
-
-void SingleEyePort::publishEyeTransform()
-{
-    if (!m_initialized)
-    {
-        yCError(OPENXRHEADSET) << "Eye port not initialized.";
-        return;
-    }
-
-    poseToYarpMatrix(m_layer.layerPosition(), m_layer.layerQuaternion(), m_localPose);
-    if (!m_tfPublisher->setTransform(m_tfFrame, m_rootFrame, m_localPose))
-    {
-        yCWarning(OPENXRHEADSET) << "Failed to publish" << m_tfFrame << "frame.";
-    }
 }
 
 bool SingleEyePort::active() const

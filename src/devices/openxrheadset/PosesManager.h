@@ -6,21 +6,21 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#ifndef YARP_DEV_ADDITIONALPOSESPUBLISHER_H
-#define YARP_DEV_ADDITIONALPOSESPUBLISHER_H
+#ifndef YARP_DEV_POSESMANAGER_H
+#define YARP_DEV_POSESMANAGER_H
 
 #include <OpenXrInterface.h>
 #include <PosePublisher.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
 
-class AdditionalPosesPublisher
+class PosesManager
 {
     std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
 
-    std::vector<OpenXrInterface::NamedPoseVelocity> m_additionalPosesInputList;
+    std::vector<OpenXrInterface::NamedPoseVelocity> m_posesInputList;
 
-    std::unordered_map<std::string, PosePublisher> m_additionalPoses;
+    std::unordered_map<std::string, PosePublisher> m_poses;
 
 public:
 
@@ -40,4 +40,4 @@ public:
 };
 
 
-#endif // YARP_DEV_ADDITIONALPOSESPUBLISHER_H
+#endif // YARP_DEV_POSESMANAGER_H

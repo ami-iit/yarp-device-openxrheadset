@@ -185,7 +185,7 @@ public:
 
     void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
 
-    void getAdditionalPoses(std::vector<NamedPoseVelocity> &additionalPoses) const;
+    void getAllPoses(std::vector<NamedPoseVelocity> &additionalPoses) const;
 
     int64_t currentNanosecondsSinceEpoch() const;
 

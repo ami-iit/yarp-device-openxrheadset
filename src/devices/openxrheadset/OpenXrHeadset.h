@@ -29,8 +29,7 @@
 #include <LabelPortToQuadLayer.h>
 #include <EyesManager.h>
 #include <SlideManager.h>
-#include <FramePorts.h>
-#include <AdditionalPosesPublisher.h>
+#include <PosesManager.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -236,13 +235,7 @@ private:
         SlideManager layer;
     };
 
-    FramePorts m_headFramePorts;
-    FramePorts m_leftHandFramePorts;
-    FramePorts m_rightHandFramePorts;
-
-    AdditionalPosesPublisher m_additionalPosesPublisher;
-
-    yarp::os::Stamp m_stamp;
+    PosesManager m_posesManager;
 
     std::string m_prefix;
 
@@ -255,9 +248,6 @@ private:
     bool m_getStickAsAxis;
 
     IFrameTransform* m_tfPublisher;
-    std::string      m_leftFrame;
-    std::string      m_rightFrame;
-    std::string      m_headFrame;
     std::string      m_rootFrameRaw;
     std::string      m_rootFrame;
     PolyDriver       m_driver;

@@ -50,8 +50,7 @@ set(yarp_openxrheadset_driver_SRCS
     OpenXrYarpUtilities.cpp
     SingleEyePort.cpp
     EyesManager.cpp
-    AdditionalPosesPublisher.cpp
-    FramePorts.cpp
+    PosesManager.cpp
     PosePublisher.cpp
 )
 
@@ -60,8 +59,7 @@ set(yarp_openxrheadset_driver_HDRS
     OpenXrYarpUtilities.h
     SingleEyePort.h
     EyesManager.h
-    AdditionalPosesPublisher.h
-    FramePorts.h
+    PosesManager.h
     PosePublisher.h
 )
 
