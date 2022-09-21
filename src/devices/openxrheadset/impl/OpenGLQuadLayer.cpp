@@ -69,36 +69,79 @@ bool OpenGLQuadLayer::initialize()
     return true;
 }
 
-bool OpenGLQuadLayer::render(float aspectRatio)
+bool OpenGLQuadLayer::setRenderAspectRatio(float aspectRatio)
+{
+    if (aspectRatio <= 0.4f || aspectRatio >= 2.4f)
+        return false;
+    else
+    {
+        m_aspectRatio = aspectRatio;
+        return true;
+    }
+}
+
+bool OpenGLQuadLayer::setRenderFov(float fov)
+{
+    if (fov <= 0.0f || fov >= 180.0f)
+        return false;
+    else
+    {
+        m_fov = fov;
+        return true;
+    }
+}
+
+bool OpenGLQuadLayer::setRenderDepth(float zNear, float zFar)
+{
+    if (zNear <= 0.0f || zNear >= 1000.0f || zFar <= 0.0f || zFar >= 1000.0f)
+        return false;
+    else
+    {
+        m_zNear = zNear;
+        m_zFar = zFar;
+        return true;
+    }
+}
+
+bool OpenGLQuadLayer::setRenderPose(glm::vec3 modelTranslation, glm::vec3 modelRotation, glm::vec3 modelScale)
+{
+    m_modelTranslation = modelTranslation;
+    m_modelRotation = modelRotation;
+    m_modelScale = modelScale;
+    return true;
+}
+
+bool OpenGLQuadLayer::setRenderColor(float r, float g, float b, float alpha)
+{
+    if (r < 0.0f || r > 1.0f || g < 0.0f || g > 1.0f || b < 0.0f || b > 1.0f || alpha < 0.0f || alpha > 1.0f)
+        return false;
+    else
+    {
+        m_r = r;
+        m_g = g;
+        m_b = b;
+        m_alpha = alpha;
+        return true;
+    }
+}
+
+bool OpenGLQuadLayer::render()
 {
     Renderer renderer;
 
-    /* IC's for models A & B */
-    glm::vec3 translationA(-0.5f, 0.1f, -3.0f);
-    glm::vec3 translationB( 0.5f, 0.1f, -3.0f);
-    glm::vec3 rotationA( 30.0f,  20.0f,  10.0f);        // rotation angles: degrees
-    glm::vec3 rotationB(-30.0f, -20.0f, -10.0f);        // rotation angles: degrees
-    glm::vec3 scaleA(1.0f, 1.0f, 1.0f);
-    glm::vec3 scaleB(1.0f, 1.0f, 1.0f);
-    float fov = 60.0f;                            // overall Field Of View (for both A & B)
-
-    float z_near = 0.1f;
-    float z_far = 100.0f;
-
-        
     {
         m_texture.Bind();
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), translationA);
-        model = glm::rotate(model, glm::radians(rotationA.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(rotationA.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(rotationA.z), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::scale(model, scaleA);
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), m_modelTranslation);
+        model = glm::rotate(model, glm::radians(m_modelRotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(m_modelRotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(m_modelRotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::scale(model, m_modelScale);
         glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 proj = glm::perspective(glm::radians(fov), aspectRatio, z_near, z_far);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
+        glm::mat4 proj = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
         m_shader.Bind();                                                                                             // bind shader
-        m_shader.SetUniform4f("u_Color", m_r, 0.3f, 0.8f, 1.0f);                                                       // setup uniform
+        m_shader.SetUniform4f("u_Color", m_r, m_g, m_b, m_alpha);                                                       // setup uniform
         m_shader.SetUniformMat4f("u_M", model);
         m_shader.SetUniformMat4f("u_V", view);
         m_shader.SetUniformMat4f("u_P", proj);
@@ -106,34 +149,14 @@ bool OpenGLQuadLayer::render(float aspectRatio)
         renderer.Draw(m_va, m_ib, m_shader);
     }
 
-    {
-        m_texture.Bind();
-
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), translationB);
-        model = glm::rotate(model, glm::radians(rotationB.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(rotationB.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(rotationB.z), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::scale(model, scaleB);
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 proj = glm::perspective(glm::radians(fov), aspectRatio, z_near, z_far);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
-
-        m_shader.Bind();                                                                                             // bind shader
-        m_shader.SetUniform4f("u_Color", 1 - m_r, 0.3f, 0.8f, 1.0f);                                                   // setup uniform
-        m_shader.SetUniformMat4f("u_M", model);
-        m_shader.SetUniformMat4f("u_V", view);
-        m_shader.SetUniformMat4f("u_P", proj);
-
-        renderer.Draw(m_va, m_ib, m_shader);
-    }
-
-    if (m_r > 1.0f)
+    if (m_r >= 1.0f)
         m_increment = -0.05f;
-    else if (m_r < 0.0f)
+    else if (m_r <= 0.0f)
         m_increment = 0.05f;
 
     m_r += m_increment;
     
-    return false;
+    return true;
 }
 
 void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)

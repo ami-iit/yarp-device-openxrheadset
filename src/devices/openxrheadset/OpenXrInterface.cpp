@@ -1152,7 +1152,10 @@ void OpenXrInterface::render()
 #ifdef DEBUG_RENDERING
    
     glViewport(0, 0, ww / 2, wh);
-    m_pimpl->testLayer->render(float(ww / 2) / wh);
+    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -2.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    m_pimpl->testLayerLeft->render();
+    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    m_pimpl->testLayerLeft->render();
 
 
 #else
@@ -1179,7 +1182,8 @@ void OpenXrInterface::render()
 #ifdef DEBUG_RENDERING
 
     glViewport(ww / 2, 0, ww / 2, wh);
-    m_pimpl->testLayer->render(float(ww / 2) / wh);
+    m_pimpl->testLayerRight->setRenderPose(glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    m_pimpl->testLayerRight->render();
 
 #else
     //Clear the backgorund color
@@ -1304,8 +1308,16 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
 
-    m_pimpl->testLayer = std::make_shared<OpenGLQuadLayer>();
-    m_pimpl->testLayer->initialize();
+    m_pimpl->testLayerLeft = std::make_shared<OpenGLQuadLayer>();
+    m_pimpl->testLayerLeft->initialize();
+    m_pimpl->testLayerRight = std::make_shared<OpenGLQuadLayer>();
+    m_pimpl->testLayerRight->initialize();
+    GLint ww, wh;
+    glfwGetWindowSize(m_pimpl->window, &ww, &wh);
+    m_pimpl->testLayerLeft->setRenderAspectRatio(float(ww / 2) / wh);
+    m_pimpl->testLayerRight->setRenderAspectRatio(float(ww / 2) / wh);
+    m_pimpl->testLayerLeft->setRenderColor(0.0, 1.0, 0.0, 0.4);
+    m_pimpl->testLayerRight->setRenderColor(0.0, 0.0, 1.0, 0.4);
 
     m_pimpl->initialized = ok;
 
