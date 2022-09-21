@@ -31,7 +31,7 @@ uniform sampler2D u_Texture;
 void main()
 {
 	vec4 texColor = texture(u_Texture, v_TexCoord);
-	color = texColor + u_Color;
+	color = texColor - u_Color;
 	
 	/* GRAYSCALE FILTER */
 	//float bw = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;

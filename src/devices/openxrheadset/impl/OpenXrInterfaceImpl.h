@@ -349,7 +349,8 @@ public:
     // Internal OpenGL framebuffer ID
     GLuint glFrameBufferId = 0;
 
-    std::shared_ptr<OpenGLQuadLayer> testLayer;
+    std::shared_ptr<OpenGLQuadLayer> testLayerLeft;
+    std::shared_ptr<OpenGLQuadLayer> testLayerRight;
 
     std::atomic<bool> initialized{false};
 

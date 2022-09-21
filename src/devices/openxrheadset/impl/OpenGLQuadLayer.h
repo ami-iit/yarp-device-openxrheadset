@@ -34,7 +34,19 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     Texture m_texture;
 
     float m_r = 0.0f;
+    float m_g = 0.0f;
+    float m_b = 0.0f;
+    float m_alpha = 1.0f;
     float m_increment = 0.05f;
+
+    glm::vec3 m_modelTranslation = glm::vec3( 0.0f, 0.0f,-3.0f);
+    glm::vec3 m_modelRotation    = glm::vec3( 0.0f, 0.0f, 0.0f);              // rotation angles: degrees
+    glm::vec3 m_modelScale       = glm::vec3( 1.0f, 1.0f, 1.0f);
+    float m_fov = 60.0f;                                                      // Field Of View
+
+    float m_zNear = 0.1f;
+    float m_zFar = 100.0f;
+    float m_aspectRatio = 1.0f;
 
 public:
 
@@ -52,7 +64,17 @@ public:
 
     bool initialize();
 
-    bool render(float aspectRatio);
+    bool setRenderAspectRatio(float aspectRatio);
+
+    bool setRenderFov(float fov);
+
+    bool setRenderDepth(float zNear, float zFar);
+
+    bool setRenderPose(glm::vec3 modelTranslation, glm::vec3 modelRotation, glm::vec3 modelScale);
+
+    bool setRenderColor(float r, float g, float b, float alpha);
+
+    bool render();
 
     virtual void setPose(const Eigen::Vector3f& position,
                          const Eigen::Quaternionf &quaternion) override;
