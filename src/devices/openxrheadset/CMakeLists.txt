@@ -52,6 +52,7 @@ set(yarp_openxrheadset_driver_SRCS
     EyesManager.cpp
     PosesManager.cpp
     PosePublisher.cpp
+    CustomPosePublisher.cpp
     FilteredPosePublisher.cpp
 )
 
@@ -62,6 +63,7 @@ set(yarp_openxrheadset_driver_HDRS
     EyesManager.h
     PosesManager.h
     PosePublisher.h
+    CustomPosePublisher.h
     FilteredPosePublisher.h
 )
 

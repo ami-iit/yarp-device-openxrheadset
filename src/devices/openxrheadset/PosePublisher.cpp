@@ -72,19 +72,19 @@ void PosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVelocity &in
     m_active = !wasActive || inputValid; //We are active if: - it is the first time we update, - we were active the step before, - we received a valid input
 }
 
-OpenXrInterface::Pose PosePublisher::pose() const
+OpenXrInterface::NamedPoseVelocity PosePublisher::data() const
 {
     if (!canPublish())
     {
-        return OpenXrInterface::Pose();
+        return OpenXrInterface::NamedPoseVelocity();
     }
 
     if (usePreviousPose())
     {
-        return yarpMatrixToPose(m_localPose);
+        return m_previouslyPublishedData;
     }
 
-    return m_data.pose;
+    return m_data;
 }
 
 void PosePublisher::publish()
@@ -100,12 +100,13 @@ void PosePublisher::publish()
         {
             m_label = m_data.name;
         }
-        m_publishedOnce = true;
     }
 
     if (!usePreviousPose())
     {
         poseToYarpMatrix(m_data.pose, m_localPose);
+        m_publishedOnce = true;
+        m_previouslyPublishedData = m_data;
         m_data.pose.positionValid = false; //We invalidate the data after use. This is to detect if some pose do not get updated.
         m_data.pose.rotationValid = false;
     }

@@ -245,7 +245,6 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         labels.push_back({labelList->get(0).asString(), labelList->get(1).asString()});
     }
 
-
     //opening tf client
     yarp::os::Property tfClientCfg;
     tfClientCfg.put("device", cfg.check("tfDevice", yarp::os::Value("transformClient")).asString());
@@ -281,7 +280,20 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         yCWarning(OPENXRHEADSET) << "pose_check_convergence_ratio is supposed to be in the range [0, 1]. Clamping to" << posePublisherSettings.checks.convergenceRatio << ".";
     }
 
-    m_posesManager.initialize(labels, posePublisherSettings);
+    std::vector<CustomPosePublisherSettings> customPoses;
+    int custom_poses_count = cfg.find("custom_poses").asInt32();
+    for (int i = 0; i < custom_poses_count; ++i)
+    {
+        customPoses.emplace_back();
+        std::string groupName = "CUSTOM_POSE_" + std::to_string(i);
+        if (!customPoses.back().parseFromConfigurationFile(m_tfPublisher, m_rootFrameRaw, cfg.findGroup(groupName)))
+        {
+            yCError(OPENXRHEADSET) << "Failed to parse" << groupName;
+            return false;
+        }
+    }
+
+    m_posesManager.initialize(labels, customPoses, posePublisherSettings);
 
     // Start the thread
     if (!this->start()) {

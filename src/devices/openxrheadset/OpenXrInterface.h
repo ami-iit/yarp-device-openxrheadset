@@ -139,6 +139,8 @@ public:
         std::string name;
         Pose pose;
         Velocity velocity;
+
+        static NamedPoseVelocity Identity(const std::string& name);
     };
 
     OpenXrInterface();

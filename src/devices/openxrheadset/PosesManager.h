@@ -11,8 +11,10 @@
 
 #include <OpenXrInterface.h>
 #include <FilteredPosePublisher.h>
+#include <CustomPosePublisher.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
+#include <unordered_map>
 
 class PosesManager
 {
@@ -21,6 +23,12 @@ class PosesManager
     std::vector<OpenXrInterface::NamedPoseVelocity> m_posesInputList;
 
     std::unordered_map<std::string, FilteredPosePublisher> m_poses;
+
+    std::vector<CustomPosePublisher> m_customPoses;
+
+    std::unordered_map<std::string, std::string> m_labelsReverseMap;
+
+    OpenXrInterface::NamedPoseVelocity m_rootPose;
 
 public:
 
@@ -31,6 +39,7 @@ public:
     };
 
     void initialize(const std::vector<Label> &labels,
+                    const std::vector<CustomPosePublisherSettings> &customPoses,
                     const FilteredPosePublisherSettings &settings);
 
     std::vector<OpenXrInterface::NamedPoseVelocity>& inputs();

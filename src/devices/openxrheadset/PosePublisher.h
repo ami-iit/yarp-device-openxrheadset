@@ -23,7 +23,7 @@ struct PosePublisherSettings
 class PosePublisher
 {
     std::string m_label;
-    OpenXrInterface::NamedPoseVelocity m_data;
+    OpenXrInterface::NamedPoseVelocity m_data, m_previouslyPublishedData;
     yarp::sig::Matrix m_localPose;
     std::shared_ptr<PosePublisherSettings> m_baseSettings{nullptr};
     bool m_active{false};
@@ -55,7 +55,7 @@ public:
 
     virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input);
 
-    OpenXrInterface::Pose pose() const;
+    OpenXrInterface::NamedPoseVelocity data() const;
 
     void publish();
 

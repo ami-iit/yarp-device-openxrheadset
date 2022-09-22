@@ -1691,3 +1691,19 @@ void OpenXrInterface::close()
 
     m_pimpl->closed = true;
 }
+
+OpenXrInterface::NamedPoseVelocity OpenXrInterface::NamedPoseVelocity::Identity(const std::string &name)
+{
+    OpenXrInterface::NamedPoseVelocity output;
+    output.name = name;
+    output.pose.positionValid = true;
+    output.pose.position.setZero();
+    output.pose.rotationValid = true;
+    output.pose.rotation.setIdentity();
+    output.velocity.linearValid = true;
+    output.velocity.linear.setZero();
+    output.velocity.angularValid = true;
+    output.velocity.angular.setZero();
+
+    return output;
+}
