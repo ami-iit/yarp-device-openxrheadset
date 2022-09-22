@@ -6,12 +6,12 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include <PosePublisher.h>
+#include <FilteredPosePublisher.h>
 #include <OpenXrHeadsetLogComponent.h>
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
 
-bool PosePublisher::positionJumped()
+bool FilteredPosePublisher::positionJumped()
 {
     if (!m_lastValidData.pose.positionValid || !m_data.pose.positionValid)
     {
@@ -29,7 +29,7 @@ bool PosePublisher::positionJumped()
     return (expectedPosition - m_data.pose.position).norm() > m_settings->checks.maxDistance;
 }
 
-bool PosePublisher::rotationJumped()
+bool FilteredPosePublisher::rotationJumped()
 {
     if (!m_lastValidData.pose.rotationValid || !m_data.pose.rotationValid)
     {
@@ -58,7 +58,7 @@ bool PosePublisher::rotationJumped()
     return std::abs(actualRotationDifference.angularDistance(expectedRotationDifference)) > m_settings->checks.maxAngularDistanceInRad;
 }
 
-void PosePublisher::filterJumps()
+void FilteredPosePublisher::filterJumps()
 {
     bool positionHasJumped = positionJumped();
     bool rotationHasJumped = rotationJumped();
@@ -104,13 +104,13 @@ void PosePublisher::filterJumps()
     }
 }
 
-void PosePublisher::resetWarnings()
+void FilteredPosePublisher::resetWarnings()
 {
     m_lastWarningTime = 0.0;
     m_warningCount = 0;
 }
 
-void PosePublisher::resetLastValidData()
+void FilteredPosePublisher::resetLastValidData()
 {
     //Invalidate previous pose
     m_lastValidData.pose.positionValid = false;
@@ -119,7 +119,7 @@ void PosePublisher::resetLastValidData()
     m_convergingToJump = false;
 }
 
-void PosePublisher::publishOldTransform()
+void FilteredPosePublisher::publishOldTransform()
 {
     if (!m_publishedOnce)
     {
@@ -146,7 +146,7 @@ void PosePublisher::publishOldTransform()
     }
 }
 
-void PosePublisher::publishNewTransform()
+void FilteredPosePublisher::publishNewTransform()
 {
     if (!m_publishedOnce)
     {
@@ -168,7 +168,7 @@ void PosePublisher::publishNewTransform()
     m_data.pose.rotationValid = false;
 }
 
-void PosePublisher::deactivate()
+void FilteredPosePublisher::deactivate()
 {
     resetWarnings();
     resetLastValidData();
@@ -176,28 +176,28 @@ void PosePublisher::deactivate()
     m_active = false;
 }
 
-PosePublisher::PosePublisher()
+FilteredPosePublisher::FilteredPosePublisher()
 {
     m_localPose.resize(4,4);
     m_localPose.eye();
 }
 
-void PosePublisher::setLabel(const std::string &label)
+void FilteredPosePublisher::setLabel(const std::string &label)
 {
     m_label = label;
 }
 
-void PosePublisher::configure(std::shared_ptr<PosePublisherSettings> settings)
+void FilteredPosePublisher::configure(std::shared_ptr<FilteredPosePublisherSettings> settings)
 {
     m_settings = settings;
 }
 
-bool PosePublisher::configured() const
+bool FilteredPosePublisher::configured() const
 {
     return m_settings != nullptr;
 }
 
-void PosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
+void FilteredPosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
 {
     if (!configured())
     {
@@ -210,7 +210,7 @@ void PosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
     m_active = !wasActive || inputValid; //We are active if: - it is the first time we update, - we were active the step before, - we received a valid input
 }
 
-void PosePublisher::publish()
+void FilteredPosePublisher::publish()
 {
     if (!configured() || !m_active)
     {

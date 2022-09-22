@@ -11,9 +11,9 @@
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
 
-void PosesManager::initialize(const std::vector<Label>& labels, const PosePublisherSettings &settings)
+void PosesManager::initialize(const std::vector<Label>& labels, const FilteredPosePublisherSettings &settings)
 {
-    m_settings = std::make_shared<PosePublisherSettings>(settings);
+    m_settings = std::make_shared<FilteredPosePublisherSettings>(settings);
 
     for (auto& label : labels)
     {
@@ -30,7 +30,7 @@ void PosesManager::publishFrames()
 {
     for (auto& inputPose : m_posesInputList)
     {
-        PosePublisher& publisher = m_poses[inputPose.name];
+        FilteredPosePublisher& publisher = m_poses[inputPose.name];
 
         if (!publisher.configured())
         {

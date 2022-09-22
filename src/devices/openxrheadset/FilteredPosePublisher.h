@@ -6,15 +6,15 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#ifndef YARP_DEV_POSEPUBLISHER_H
-#define YARP_DEV_POSEPUBLISHER_H
+#ifndef YARP_DEV_FILTEREDPOSEPUBLISHER_H
+#define YARP_DEV_FILTEREDPOSEPUBLISHER_H
 
 #include <OpenXrInterface.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
 #include <memory>
 
-struct PosePublisherSettings
+struct FilteredPosePublisherSettings
 {
     yarp::dev::IFrameTransform* tfPublisher;
     std::string rootFrame;
@@ -32,7 +32,7 @@ struct PosePublisherSettings
     ValidityChecks checks;
 };
 
-class PosePublisher
+class FilteredPosePublisher
 {
 
     std::string m_label;
@@ -43,7 +43,7 @@ class PosePublisher
     bool m_active{false};
     OpenXrInterface::NamedPoseVelocity m_data;
     OpenXrInterface::NamedPoseVelocity m_lastValidData;
-    std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
+    std::shared_ptr<FilteredPosePublisherSettings> m_settings{nullptr};
     double m_lastValidDataTime;
     bool m_convergingToJump{false};
 
@@ -64,11 +64,11 @@ class PosePublisher
     void deactivate();
 
 public:
-    PosePublisher();
+    FilteredPosePublisher();
 
     void setLabel(const std::string& label);
 
-    void configure(std::shared_ptr<PosePublisherSettings> settings);
+    void configure(std::shared_ptr<FilteredPosePublisherSettings> settings);
 
     bool configured() const;
 
@@ -77,4 +77,4 @@ public:
     void publish();
 };
 
-#endif // YARP_DEV_POSEPUBLISHER_H
+#endif // YARP_DEV_FILTEREDPOSEPUBLISHER_H

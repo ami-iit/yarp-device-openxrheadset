@@ -51,7 +51,7 @@ set(yarp_openxrheadset_driver_SRCS
     SingleEyePort.cpp
     EyesManager.cpp
     PosesManager.cpp
-    PosePublisher.cpp
+    FilteredPosePublisher.cpp
 )
 
 set(yarp_openxrheadset_driver_HDRS
@@ -60,7 +60,7 @@ set(yarp_openxrheadset_driver_HDRS
     SingleEyePort.h
     EyesManager.h
     PosesManager.h
-    PosePublisher.h
+    FilteredPosePublisher.h
 )
 
 set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)

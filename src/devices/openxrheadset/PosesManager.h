@@ -10,17 +10,17 @@
 #define YARP_DEV_POSESMANAGER_H
 
 #include <OpenXrInterface.h>
-#include <PosePublisher.h>
+#include <FilteredPosePublisher.h>
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
 
 class PosesManager
 {
-    std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
+    std::shared_ptr<FilteredPosePublisherSettings> m_settings{nullptr};
 
     std::vector<OpenXrInterface::NamedPoseVelocity> m_posesInputList;
 
-    std::unordered_map<std::string, PosePublisher> m_poses;
+    std::unordered_map<std::string, FilteredPosePublisher> m_poses;
 
 public:
 
@@ -31,7 +31,7 @@ public:
     };
 
     void initialize(const std::vector<Label> &labels,
-                    const PosePublisherSettings &settings);
+                    const FilteredPosePublisherSettings &settings);
 
     std::vector<OpenXrInterface::NamedPoseVelocity>& inputs();
 

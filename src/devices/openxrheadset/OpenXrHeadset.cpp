@@ -265,7 +265,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     }
     yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
 
-    PosePublisherSettings posePublisherSettings;
+    FilteredPosePublisherSettings posePublisherSettings;
     posePublisherSettings.tfPublisher = m_tfPublisher;
     posePublisherSettings.rootFrame = m_rootFrameRaw;
     posePublisherSettings.period = getPeriod();
