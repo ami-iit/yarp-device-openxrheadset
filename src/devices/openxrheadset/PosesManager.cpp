@@ -37,7 +37,7 @@ void PosesManager::publishFrames()
             publisher.configure(m_settings);
         }
 
-        publisher.update(inputPose);
+        publisher.updateInputPose(inputPose);
     }
 
     for (auto& poseIt : m_poses)

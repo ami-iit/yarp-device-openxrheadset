@@ -13,11 +13,10 @@
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
 #include <memory>
+#include <PosePublisher.h>
 
-struct FilteredPosePublisherSettings
+struct FilteredPosePublisherSettings : public PosePublisherSettings
 {
-    yarp::dev::IFrameTransform* tfPublisher;
-    std::string rootFrame;
     double period{0.01};
 
     struct ValidityChecks
@@ -32,49 +31,32 @@ struct FilteredPosePublisherSettings
     ValidityChecks checks;
 };
 
-class FilteredPosePublisher
+class FilteredPosePublisher : public PosePublisher
 {
 
-    std::string m_label;
-    double m_lastWarningTime{0.0};
-    size_t m_warningCount{0};
-    bool m_publishedOnce{false};
-    yarp::sig::Matrix m_localPose;
-    bool m_active{false};
-    OpenXrInterface::NamedPoseVelocity m_data;
+    OpenXrInterface::NamedPoseVelocity m_filteredData;
     OpenXrInterface::NamedPoseVelocity m_lastValidData;
     std::shared_ptr<FilteredPosePublisherSettings> m_settings{nullptr};
     double m_lastValidDataTime;
     bool m_convergingToJump{false};
 
-    bool positionJumped();
+    bool positionJumped(const OpenXrInterface::NamedPoseVelocity& input);
 
-    bool rotationJumped();
+    bool rotationJumped(const OpenXrInterface::NamedPoseVelocity& input);
 
-    void filterJumps();
-
-    void resetWarnings();
+    OpenXrInterface::NamedPoseVelocity filterJumps(const OpenXrInterface::NamedPoseVelocity& input);
 
     void resetLastValidData();
 
-    void publishOldTransform();
-
-    void publishNewTransform();
-
-    void deactivate();
+    virtual void deactivate() override;
 
 public:
-    FilteredPosePublisher();
-
-    void setLabel(const std::string& label);
 
     void configure(std::shared_ptr<FilteredPosePublisherSettings> settings);
 
-    bool configured() const;
+    virtual bool configured() const override;
 
-    void update(const OpenXrInterface::NamedPoseVelocity& input);
-
-    void publish();
+    virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input) override;
 };
 
 #endif // YARP_DEV_FILTEREDPOSEPUBLISHER_H
