@@ -7,6 +7,8 @@
  */
 
 #include <OpenXrYarpUtilities.h>
+#include <OpenXrHeadsetLogComponent.h>
+#include <yarp/os/LogStream.h>
 
 void poseToYarpMatrix(const Eigen::Vector3f &inputPosition, const Eigen::Quaternionf &inputQuaternion, yarp::sig::Matrix &output)
 {
@@ -53,4 +55,32 @@ void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle> * const &por
         port->setEnvelope(stamp);
         port->write();
     }
+}
+
+OpenXrInterface::Pose yarpMatrixToPose(const yarp::sig::Matrix &input)
+{
+    OpenXrInterface::Pose output;
+
+    if (input.rows() != 4 || input.cols() != 4)
+    {
+        yCWarning(OPENXRHEADSET) << "[yarpMatrixToPose] The input matrix is not 4x4.";
+        return output;
+    }
+
+    Eigen::Matrix3f rotationMatrix;
+    for (size_t i = 0; i < 3; ++i)
+    {
+        for (size_t j = 0; j < 3; ++j)
+        {
+            rotationMatrix(i,j) = input(i, j);
+        }
+        output.position(i) = input(i, 3);
+    }
+
+    output.rotation = Eigen::Quaternionf(rotationMatrix);
+
+    output.positionValid = true;
+    output.rotationValid = true;
+
+    return output;
 }

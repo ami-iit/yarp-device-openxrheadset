@@ -33,6 +33,10 @@ class PosePublisher
 
     void resetWarnings();
 
+    bool usePreviousPose() const;
+
+    bool canPublish() const;
+
 protected:
 
     virtual void deactivate();
@@ -51,9 +55,10 @@ public:
 
     virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input);
 
+    OpenXrInterface::Pose pose() const;
+
     void publish();
 
-    bool isActive() const;
 };
 
 #endif // YARP_DEV_POSEPUBLISHER_H

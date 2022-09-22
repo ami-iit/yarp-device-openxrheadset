@@ -17,6 +17,16 @@ void PosePublisher::resetWarnings()
     m_warningCount = 0;
 }
 
+bool PosePublisher::usePreviousPose() const
+{
+    return !m_data.pose.positionValid || !m_data.pose.rotationValid;
+}
+
+bool PosePublisher::canPublish() const
+{
+    return configured() && m_active && (m_publishedOnce || !usePreviousPose());
+}
+
 void PosePublisher::deactivate()
 {
     resetWarnings();
@@ -62,10 +72,24 @@ void PosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVelocity &in
     m_active = !wasActive || inputValid; //We are active if: - it is the first time we update, - we were active the step before, - we received a valid input
 }
 
+OpenXrInterface::Pose PosePublisher::pose() const
+{
+    if (!canPublish())
+    {
+        return OpenXrInterface::Pose();
+    }
+
+    if (usePreviousPose())
+    {
+        return yarpMatrixToPose(m_localPose);
+    }
+
+    return m_data.pose;
+}
+
 void PosePublisher::publish()
 {
-    bool usePreviousTransform = !m_data.pose.positionValid || !m_data.pose.rotationValid;
-    if (!configured() || !m_active || (!m_publishedOnce && usePreviousTransform))
+    if (!canPublish())
     {
         return;
     }
@@ -79,7 +103,7 @@ void PosePublisher::publish()
         m_publishedOnce = true;
     }
 
-    if (!usePreviousTransform)
+    if (!usePreviousPose())
     {
         poseToYarpMatrix(m_data.pose, m_localPose);
         m_data.pose.positionValid = false; //We invalidate the data after use. This is to detect if some pose do not get updated.
@@ -106,9 +130,4 @@ void PosePublisher::publish()
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
     }
-}
-
-bool PosePublisher::isActive() const
-{
-    return m_active;
 }
