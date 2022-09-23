@@ -30,6 +30,10 @@ class PosesManager
 
     OpenXrInterface::NamedPoseVelocity m_rootPose;
 
+    CustomPosePublisher m_rootFramePublisher;
+
+    OpenXrInterface::Pose m_rootFrameRawRelativePose, m_rootFrameRawRelativePoseInverse;
+
 public:
 
     struct Label
@@ -38,13 +42,16 @@ public:
         std::string modified;
     };
 
-    void initialize(const std::vector<Label> &labels,
+    void initialize(const std::string& editedRootFrame,
+                    const std::vector<Label> &labels,
                     const std::vector<CustomPosePublisherSettings> &customPoses,
                     const FilteredPosePublisherSettings &settings);
 
     std::vector<OpenXrInterface::NamedPoseVelocity>& inputs();
 
     void publishFrames();
+
+    void setTransformFromRawToRootFrame(const OpenXrInterface::Pose& relativePose);
 
 };
 

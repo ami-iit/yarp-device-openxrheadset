@@ -28,16 +28,14 @@ struct CustomPosePublisherSettings : PosePublisherSettings
     std::string parentFrame;
     std::string name;
 
-    std::array<bool, 3> positionMask = {false, false, false};
+    std::array<bool, 3> positionMask = {true, true, true};
     Eigen::Vector3f relativePosition;
 
-    std::array<bool, 3> rotationMask = {false, false, false};
+    std::array<bool, 3> rotationMask = {true, true, true};
     std::array<RotationAxis, 3> anglesOrder = {RotationAxis::y, RotationAxis::x, RotationAxis::z};
     Eigen::Vector3f relativeRotation;
 
-    bool parseFromConfigurationFile(yarp::dev::IFrameTransform* publisher,
-                                    const std::string& rootFrameName,
-                                    const yarp::os::Bottle& inputGroup);
+    bool parseFromConfigurationFile(const yarp::os::Bottle& inputGroup);
 
 };
 
@@ -45,23 +43,24 @@ class CustomPosePublisher : public PosePublisher
 {
     std::shared_ptr<CustomPosePublisherSettings> m_settings;
     std::string m_parentFrame;
+    std::string m_name;
 
 public:
 
     void configure(std::shared_ptr<CustomPosePublisherSettings> settings);
 
+    const std::string& name() const;
+
     const std::string& relativeFrame() const;
+
+    void setRelativePosition(const Eigen::Vector3f relativePosition);
+
+    void setRelativeOrientation(const Eigen::Quaternionf& relativeOrientation);
 
     virtual bool configured() const override;
 
     virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input) override;
 
 };
-
-//Notes
-// if it is the openxr_origin, or its alias, then the input pose is the identity
-//the pose of the parent frame should be set from outside
-//the name of the parent frame should be chosen amongs the set of labels first
-//and then among the set of pose publisher
 
 #endif // YARP_DEV_CUSTOMPOSEPUBLISHER_H

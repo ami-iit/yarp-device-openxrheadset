@@ -228,8 +228,11 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_eyesManager.options().splitEyes = cfg.check("split_eye_ports", yarp::os::Value(true)).asBool();
     m_eyesManager.options().portPrefix = m_prefix;
 
-    m_rawRootFrameTransform.resize(4,4);
-    m_rawRootFrameTransform.eye();
+    m_rootFrameRawHRootFrame.position.setZero();
+    m_rootFrameRawHRootFrame.positionValid = true;
+    m_rootFrameRawHRootFrame.rotation.setIdentity();
+    m_rootFrameRawHRootFrame.rotationValid = true;
+
 
     std::vector<PosesManager::Label> labels;
     yarp::os::Bottle& labelsGroup = cfg.findGroup("POSES_LABELS");
@@ -266,7 +269,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
     FilteredPosePublisherSettings posePublisherSettings;
     posePublisherSettings.tfPublisher = m_tfPublisher;
-    posePublisherSettings.rootFrame = m_rootFrameRaw;
+    posePublisherSettings.rawRootFrame = m_rootFrameRaw;
     posePublisherSettings.period = getPeriod();
     posePublisherSettings.checks.maxDistance = cfg.check("pose_check_max_distance", yarp::os::Value(0.1)).asFloat64();
     posePublisherSettings.checks.maxAngularDistanceInRad = cfg.check("pose_check_max_angle_rad", yarp::os::Value(0.5)).asFloat64();
@@ -286,14 +289,14 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     {
         customPoses.emplace_back();
         std::string groupName = "CUSTOM_POSE_" + std::to_string(i);
-        if (!customPoses.back().parseFromConfigurationFile(m_tfPublisher, m_rootFrameRaw, cfg.findGroup(groupName)))
+        if (!customPoses.back().parseFromConfigurationFile(cfg.findGroup(groupName)))
         {
             yCError(OPENXRHEADSET) << "Failed to parse" << groupName;
             return false;
         }
     }
 
-    m_posesManager.initialize(labels, customPoses, posePublisherSettings);
+    m_posesManager.initialize(m_rootFrame, labels, customPoses, posePublisherSettings);
 
     // Start the thread
     if (!this->start()) {
@@ -467,14 +470,12 @@ void yarp::dev::OpenXrHeadset::run()
         if (m_openXrInterface.shouldResetLocalReferenceSpace())
         {
             //The local reference space has been changed by the user.
-            m_rawRootFrameTransform.eye();
+            m_rootFrameRawHRootFrame.position.setZero();
+            m_rootFrameRawHRootFrame.rotation.setIdentity();
         }
 
         //Publish the transformation from the root frame to the OpenXR root frame
-        if (!m_tfPublisher->setTransform(m_rootFrameRaw, m_rootFrame, m_rawRootFrameTransform))
-        {
-            yCWarning(OPENXRHEADSET) << "Failed to update the transformation of the raw root frame.";
-        }
+        m_posesManager.setTransformFromRawToRootFrame(m_rootFrameRawHRootFrame);
 
         m_posesManager.publishFrames();
     }
@@ -838,12 +839,9 @@ bool yarp::dev::OpenXrHeadset::alignRootFrameToHeadset()
         gravityAngle = std::atan2(root_R_headset(0, 2), root_R_headset(0, 0));
     }
 
-    OpenXrInterface::Pose rootFramePose;
 
-    rootFramePose.rotation = Eigen::AngleAxisf(-gravityAngle, Eigen::Vector3f::UnitY());
-    rootFramePose.position = -(rootFramePose.rotation * headPose.position);
-
-    poseToYarpMatrix(rootFramePose, m_rawRootFrameTransform);
+    m_rootFrameRawHRootFrame.rotation = Eigen::AngleAxisf(gravityAngle, Eigen::Vector3f::UnitY());
+    m_rootFrameRawHRootFrame.position = headPose.position;
 
     return true;
 }

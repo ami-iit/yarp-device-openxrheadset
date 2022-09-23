@@ -56,7 +56,7 @@ const std::string &PosePublisher::label() const
 
 bool PosePublisher::configured() const
 {
-    return m_baseSettings != nullptr;
+    return m_baseSettings != nullptr && m_baseSettings->tfPublisher != nullptr;
 }
 
 void PosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVelocity &input)
@@ -127,7 +127,7 @@ void PosePublisher::publish()
         }
     }
 
-    if (!m_baseSettings->tfPublisher->setTransform(m_label, m_baseSettings->rootFrame, m_localPose))
+    if (!m_baseSettings->tfPublisher->setTransform(m_label, m_baseSettings->rawRootFrame, m_localPose))
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
     }

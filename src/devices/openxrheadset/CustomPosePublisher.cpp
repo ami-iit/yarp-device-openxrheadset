@@ -17,15 +17,44 @@ void CustomPosePublisher::configure(std::shared_ptr<CustomPosePublisherSettings>
     {
         m_settings = settings;
         m_parentFrame = settings->parentFrame;
+        m_name = settings->name;
         //We publish the transform relative to the parent frame
-        m_settings->rootFrame = m_parentFrame;
+        m_settings->rawRootFrame = m_parentFrame;
         PosePublisher::configurePublisher(settings);
     }
+}
+
+const std::string &CustomPosePublisher::name() const
+{
+    return m_name;
 }
 
 const std::string &CustomPosePublisher::relativeFrame() const
 {
     return m_parentFrame;
+}
+
+void CustomPosePublisher::setRelativePosition(const Eigen::Vector3f relativePosition)
+{
+    if (!configured())
+    {
+        return;
+    }
+
+    m_settings->relativePosition = relativePosition;
+}
+
+void CustomPosePublisher::setRelativeOrientation(const Eigen::Quaternionf &relativeOrientation)
+{
+    if (!configured())
+    {
+        return;
+    }
+
+    m_settings->relativeRotation = relativeOrientation.toRotationMatrix().eulerAngles(
+                static_cast<Eigen::Index>(m_settings->anglesOrder[0]),
+                static_cast<Eigen::Index>(m_settings->anglesOrder[1]),
+                static_cast<Eigen::Index>(m_settings->anglesOrder[2]));
 }
 
 bool CustomPosePublisher::configured() const
@@ -96,22 +125,13 @@ void CustomPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVeloci
 }
 
 
-bool CustomPosePublisherSettings::parseFromConfigurationFile(yarp::dev::IFrameTransform *publisher, const std::string &rootFrameName, const yarp::os::Bottle &inputGroup)
+bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bottle &inputGroup)
 {
-    if (!publisher)
-    {
-        yCError(OPENXRHEADSET) << "The tfPublisher is not valid.";
-        return false;
-    }
-
     if (inputGroup.isNull())
     {
         yCError(OPENXRHEADSET) << "The input group is not found in the configuration file.";
         return false;
     }
-
-    tfPublisher = publisher;
-    rootFrame = rootFrameName;
 
     name = inputGroup.check("name", yarp::os::Value("")).toString();
     if (name == "")

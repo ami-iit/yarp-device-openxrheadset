@@ -252,7 +252,7 @@ private:
     std::string      m_rootFrame;
     PolyDriver       m_driver;
 
-    yarp::sig::Matrix m_rawRootFrameTransform;
+    OpenXrInterface::Pose m_rootFrameRawHRootFrame;
 
     yarp::os::Port m_rpcPort;
 
