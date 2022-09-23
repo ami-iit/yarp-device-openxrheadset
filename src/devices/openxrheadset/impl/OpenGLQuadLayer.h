@@ -32,6 +32,7 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     IndexBuffer m_ib;
     Shader m_shader;
     Texture m_texture;
+    unsigned int m_texID{ 0 };
 
     float m_r = 0.0f;
     float m_g = 0.0f;
@@ -74,7 +75,7 @@ public:
 
     bool setRenderColor(float r, float g, float b, float alpha);
 
-    bool render();
+    unsigned int render();
 
     virtual void setPose(const Eigen::Vector3f& position,
                          const Eigen::Quaternionf &quaternion) override;
