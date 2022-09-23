@@ -1152,9 +1152,9 @@ void OpenXrInterface::render()
 #ifdef DEBUG_RENDERING
    
     glViewport(0, 0, ww / 2, wh);
-    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -2.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     m_pimpl->testLayerLeft->render();
-    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     m_pimpl->testLayerLeft->render();
 
 
@@ -1316,8 +1316,8 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     glfwGetWindowSize(m_pimpl->window, &ww, &wh);
     m_pimpl->testLayerLeft->setRenderAspectRatio(float(ww / 2) / wh);
     m_pimpl->testLayerRight->setRenderAspectRatio(float(ww / 2) / wh);
-    m_pimpl->testLayerLeft->setRenderColor(0.0, 1.0, 0.0, 0.4);
-    m_pimpl->testLayerRight->setRenderColor(0.0, 0.0, 1.0, 0.4);
+    m_pimpl->testLayerLeft->setRenderColor(1.0f, 0.0f, 0.0f, 0.4f);
+    m_pimpl->testLayerRight->setRenderColor(0.0f, 0.0f, 1.0f, 0.4f);
 
     m_pimpl->initialized = ok;
 
