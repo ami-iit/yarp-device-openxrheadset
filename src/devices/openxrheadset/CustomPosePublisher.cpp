@@ -51,10 +51,7 @@ void CustomPosePublisher::setRelativeOrientation(const Eigen::Quaternionf &relat
         return;
     }
 
-    m_settings->relativeRotation = relativeOrientation.toRotationMatrix().eulerAngles(
-                static_cast<Eigen::Index>(m_settings->anglesOrder[0]),
-                static_cast<Eigen::Index>(m_settings->anglesOrder[1]),
-                static_cast<Eigen::Index>(m_settings->anglesOrder[2]));
+    m_settings->relativeRotation = eulerAngles(m_settings->anglesOrder, relativeOrientation);
 }
 
 bool CustomPosePublisher::configured() const
@@ -98,11 +95,7 @@ void CustomPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVeloci
         }
     }
 
-    Eigen::Vector3f parentFrameEulerAngles =
-            input.pose.rotation.toRotationMatrix().eulerAngles(
-                static_cast<Eigen::Index>(m_settings->anglesOrder[0]),
-                static_cast<Eigen::Index>(m_settings->anglesOrder[1]),
-                static_cast<Eigen::Index>(m_settings->anglesOrder[2]));
+    Eigen::Vector3f parentFrameEulerAngles = eulerAngles(m_settings->anglesOrder, input.pose.rotation);
 
     Eigen::Matrix3f absoluteOrientation;
     absoluteOrientation.setIdentity();
@@ -155,20 +148,26 @@ bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bot
         return false;
     }
 
+    if (!EulerAngles::isParametrizationAvailable(parametrization))
+    {
+        yCError(OPENXRHEADSET) << "Failed to parse euler_angles parameter. The parametrization" << parametrization << "is not available.";
+        return false;
+    }
+
     for (size_t i = 0; i < 3; ++i)
     {
         switch (std::tolower(parametrization[i]))
         {
         case 'x':
-            anglesOrder[i] = RotationAxis::x;
+            anglesOrder[i] = RotationAxis::X;
             break;
 
         case 'y':
-            anglesOrder[i] = RotationAxis::y;
+            anglesOrder[i] = RotationAxis::Y;
             break;
 
         case 'z':
-            anglesOrder[i] = RotationAxis::z;
+            anglesOrder[i] = RotationAxis::Z;
             break;
 
         default:
@@ -212,7 +211,7 @@ bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bot
             {
                 yCError(OPENXRHEADSET) << "Failed to parse" << maskName
                                        << "at element" << i
-                                       << ". Only float numbers and the special carachter '*' are allowed";
+                                       << ". Only float numbers and the special carachter \"*\" are allowed";
                 return false;
             }
         }

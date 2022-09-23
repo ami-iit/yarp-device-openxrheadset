@@ -11,6 +11,7 @@
 
 #include <PosePublisher.h>
 #include <OpenXrInterface.h>
+#include <EulerAngles.h>
 #include <array>
 #include <string>
 #include <memory>
@@ -18,13 +19,6 @@
 
 struct CustomPosePublisherSettings : PosePublisherSettings
 {
-    enum class RotationAxis : Eigen::Index
-    {
-        x = 0,
-        y = 1,
-        z = 2
-    };
-
     std::string parentFrame;
     std::string name;
 
@@ -32,7 +26,7 @@ struct CustomPosePublisherSettings : PosePublisherSettings
     Eigen::Vector3f relativePosition;
 
     std::array<bool, 3> rotationMask = {true, true, true};
-    std::array<RotationAxis, 3> anglesOrder = {RotationAxis::y, RotationAxis::x, RotationAxis::z};
+    std::array<RotationAxis, 3> anglesOrder = {RotationAxis::Y, RotationAxis::X, RotationAxis::Z};
     Eigen::Vector3f relativeRotation;
 
     bool parseFromConfigurationFile(const yarp::os::Bottle& inputGroup);
