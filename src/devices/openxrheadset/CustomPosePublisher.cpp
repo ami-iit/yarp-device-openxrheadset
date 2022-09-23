@@ -198,12 +198,12 @@ bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bot
         for (size_t i = 0; i < 3; ++i)
         {
             yarp::os::Value& value = positionMaskList->get(i);
-            if (value.isFloat32())
+            if (value.isFloat32() || value.isFloat64())
             {
                 outputOffset[i] = value.asFloat32();
                 outputMask[i] = true;
             }
-            else if (value.isInt8() && value.asInt8() == '*')
+            else if (value.isString() && value.asString() == "*")
             {
                 outputOffset[i] = 0;
                 outputMask[i] = false;
