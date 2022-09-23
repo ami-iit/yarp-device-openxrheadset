@@ -38,11 +38,12 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     float m_g = 0.0f;
     float m_b = 0.0f;
     float m_alpha = 1.0f;
-    float m_increment = 0.05f;
+    //float m_increment = 0.05f;
 
     glm::vec3 m_modelTranslation = glm::vec3( 0.0f, 0.0f,-3.0f);
     glm::vec3 m_modelRotation    = glm::vec3( 0.0f, 0.0f, 0.0f);              // rotation angles: degrees
     glm::vec3 m_modelScale       = glm::vec3( 1.0f, 1.0f, 1.0f);
+    glm::vec3 m_offset           = glm::vec3( 0.0f, 0.0f, 0.0f);              // relative position from headset reference frame to each headset screen reference frame 
     float m_fov = 60.0f;                                                      // Field Of View
 
     float m_zNear = 0.1f;
@@ -65,17 +66,19 @@ public:
 
     bool initialize();
 
-    bool setRenderAspectRatio(float aspectRatio);
+    bool setAspectRatio(float aspectRatio);
 
-    bool setRenderFov(float fov);
+    bool setFov(float fov);
 
-    bool setRenderDepth(float zNear, float zFar);
+    bool setDepthLimits(float zNear, float zFar);
 
-    bool setRenderPose(glm::vec3 modelTranslation, glm::vec3 modelRotation, glm::vec3 modelScale);
+    void setScale(const Eigen::Vector3f &Scale);
 
-    bool setRenderColor(float r, float g, float b, float alpha);
+    bool setColor(float r, float g, float b, float alpha);
 
     unsigned int render();
+
+    void setOffset(const Eigen::Vector3f& offset);
 
     virtual void setPose(const Eigen::Vector3f& position,
                          const Eigen::Quaternionf &quaternion) override;

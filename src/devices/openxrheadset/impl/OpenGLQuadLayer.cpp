@@ -19,6 +19,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 
 bool OpenGLQuadLayer::initialize()
@@ -69,7 +70,7 @@ bool OpenGLQuadLayer::initialize()
     return true;
 }
 
-bool OpenGLQuadLayer::setRenderAspectRatio(float aspectRatio)
+bool OpenGLQuadLayer::setAspectRatio(float aspectRatio)
 {
     if (aspectRatio <= 0.4f || aspectRatio >= 2.4f)
         return false;
@@ -80,7 +81,7 @@ bool OpenGLQuadLayer::setRenderAspectRatio(float aspectRatio)
     }
 }
 
-bool OpenGLQuadLayer::setRenderFov(float fov)
+bool OpenGLQuadLayer::setFov(float fov)
 {
     if (fov <= 0.0f || fov >= 180.0f)
         return false;
@@ -91,7 +92,7 @@ bool OpenGLQuadLayer::setRenderFov(float fov)
     }
 }
 
-bool OpenGLQuadLayer::setRenderDepth(float zNear, float zFar)
+bool OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
 {
     if (zNear <= 0.0f || zNear >= 1000.0f || zFar <= 0.0f || zFar >= 1000.0f)
         return false;
@@ -103,15 +104,14 @@ bool OpenGLQuadLayer::setRenderDepth(float zNear, float zFar)
     }
 }
 
-bool OpenGLQuadLayer::setRenderPose(glm::vec3 modelTranslation, glm::vec3 modelRotation, glm::vec3 modelScale)
+void OpenGLQuadLayer::setScale(const Eigen::Vector3f &Scale)
 {
-    m_modelTranslation = modelTranslation;
-    m_modelRotation = modelRotation;
-    m_modelScale = modelScale;
-    return true;
+    m_modelScale.x = Scale(1);
+    m_modelScale.y = Scale(2);
+    m_modelScale.z = Scale(3);
 }
 
-bool OpenGLQuadLayer::setRenderColor(float r, float g, float b, float alpha)
+bool OpenGLQuadLayer::setColor(float r, float g, float b, float alpha)
 {
     if (r < 0.0f || r > 1.0f || g < 0.0f || g > 1.0f || b < 0.0f || b > 1.0f || alpha < 0.0f || alpha > 1.0f)
         return false;
@@ -140,8 +140,8 @@ unsigned int OpenGLQuadLayer::render()
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 proj = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
-        m_shader.Bind();                                                                                             // bind shader
-        m_shader.SetUniform4f("u_Color", m_r, m_g, m_b, m_alpha);                                                       // setup uniform
+        m_shader.Bind();                                                                                                  // bind shader
+        m_shader.SetUniform4f("u_Color", m_r, m_g, m_b, m_alpha);                                                         // setup uniform
         m_shader.SetUniformMat4f("u_M", model);
         m_shader.SetUniformMat4f("u_V", view);
         m_shader.SetUniformMat4f("u_P", proj);
@@ -149,14 +149,21 @@ unsigned int OpenGLQuadLayer::render()
         renderer.Draw(m_va, m_ib, m_shader);
     }
 
-    if (m_r >= 1.0f)
-        m_increment = -0.05f;
-    else if (m_r <= 0.0f)
-        m_increment = 0.05f;
-
-    m_r += m_increment;
+    //if (m_r >= 1.0f)
+    //    m_increment = -0.05f;
+    //else if (m_r <= 0.0f)
+    //    m_increment = 0.05f;
+    //
+    //m_r += m_increment;
     
     return m_texID;
+}
+
+void OpenGLQuadLayer::setOffset(const Eigen::Vector3f& offset)
+{
+    m_offset.x = offset(1);
+    m_offset.y = offset(2);
+    m_offset.z = offset(3);
 }
 
 void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)
@@ -167,12 +174,23 @@ void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quat
 
 void OpenGLQuadLayer::setPosition(const Eigen::Vector3f &position)
 {
-    //layer.pose.position = toXr(position);
+    m_modelTranslation.x = position(1) - m_offset.x;
+    m_modelTranslation.y = position(2) - m_offset.y;
+    m_modelTranslation.z = position(3) - m_offset.z;
 }
 
 void OpenGLQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
 {
-    //layer.pose.orientation = toXr(quaternion);
+    glm::fquat qInput(1.0, 0.0, 0.0, 0.0);
+    
+    qInput.w = quaternion.w();
+    qInput.x = quaternion.x();
+    qInput.y = quaternion.y();
+    qInput.z = quaternion.z();
+
+    glm::mat4 mInput = glm::mat4_cast(qInput);
+
+
 }
 
 void OpenGLQuadLayer::setDimensions(float widthInMeters, float heightInMeters)

@@ -1152,9 +1152,9 @@ void OpenXrInterface::render()
 #ifdef DEBUG_RENDERING
    
     glViewport(0, 0, ww / 2, wh);
-    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    //m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     m_pimpl->testLayerLeft->render();
-    m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    //m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     m_pimpl->testLayerLeft->render();
 
 
@@ -1182,7 +1182,7 @@ void OpenXrInterface::render()
 #ifdef DEBUG_RENDERING
 
     glViewport(ww / 2, 0, ww / 2, wh);
-    m_pimpl->testLayerRight->setRenderPose(glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    //m_pimpl->testLayerRight->setRenderPose(glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     m_pimpl->testLayerRight->render();
 
 #else
@@ -1314,10 +1314,10 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     m_pimpl->testLayerRight->initialize();
     GLint ww, wh;
     glfwGetWindowSize(m_pimpl->window, &ww, &wh);
-    m_pimpl->testLayerLeft->setRenderAspectRatio(float(ww / 2) / wh);
-    m_pimpl->testLayerRight->setRenderAspectRatio(float(ww / 2) / wh);
-    m_pimpl->testLayerLeft->setRenderColor(1.0f, 0.0f, 0.0f, 0.4f);
-    m_pimpl->testLayerRight->setRenderColor(0.0f, 0.0f, 1.0f, 0.4f);
+    m_pimpl->testLayerLeft->setAspectRatio(float(ww / 2) / wh);
+    m_pimpl->testLayerRight->setAspectRatio(float(ww / 2) / wh);
+    m_pimpl->testLayerLeft->setColor(1.0f, 0.0f, 0.0f, 0.4f);
+    m_pimpl->testLayerRight->setColor(0.0f, 0.0f, 1.0f, 0.4f);
 
     m_pimpl->initialized = ok;
 
