@@ -3,6 +3,7 @@
 #include "stb_image/stb_image.h"
 
 Texture::Texture()
+	: m_RendererID(0), m_LocalBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0)
 {
 	GLCall(glGenTextures(1, &m_RendererID));
 }
@@ -33,10 +34,12 @@ void Texture::setTextureFromPath(const std::string& path)
 		stbi_image_free(m_LocalBuffer);
 }
 
-void Texture::Bind(unsigned int slot) const
+unsigned int Texture::Bind(unsigned int slot) const
 {
 	GLCall(glActiveTexture(GL_TEXTURE0 + slot));					// selecting the first slot to be the active one (if you call bind after this line it will bind slot 1)
 	GLCall(glBindTexture(GL_TEXTURE_2D, m_RendererID));
+
+	return m_RendererID;
 }
 
 void Texture::Unbind() const

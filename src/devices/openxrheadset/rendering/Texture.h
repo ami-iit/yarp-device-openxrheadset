@@ -22,7 +22,7 @@ public:
 
 	void setTextureFromPath(const std::string& path);
 
-	void Bind(unsigned int slot = 0) const;			// usually you have 32 texture slots to bind muliple Textures
+	unsigned int Bind(unsigned int slot = 0) const;			// usually you have 32 texture slots to bind muliple Textures
 	void Unbind() const;
 
 	inline int GetWidth() const { return m_Width; }

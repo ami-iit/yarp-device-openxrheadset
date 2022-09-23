@@ -125,12 +125,12 @@ bool OpenGLQuadLayer::setRenderColor(float r, float g, float b, float alpha)
     }
 }
 
-bool OpenGLQuadLayer::render()
+unsigned int OpenGLQuadLayer::render()
 {
     Renderer renderer;
 
     {
-        m_texture.Bind();
+        m_texID = m_texture.Bind();
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), m_modelTranslation);
         model = glm::rotate(model, glm::radians(m_modelRotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -156,7 +156,7 @@ bool OpenGLQuadLayer::render()
 
     m_r += m_increment;
     
-    return true;
+    return m_texID;
 }
 
 void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)
