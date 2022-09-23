@@ -18,8 +18,6 @@ void CustomPosePublisher::configure(std::shared_ptr<CustomPosePublisherSettings>
         m_settings = settings;
         m_parentFrame = settings->parentFrame;
         m_name = settings->name;
-        //We publish the transform relative to the parent frame
-        m_settings->rawRootFrame = m_parentFrame;
         PosePublisher::configurePublisher(settings);
     }
 }
@@ -80,25 +78,21 @@ void CustomPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVeloci
     output.velocity.linearValid = false;
     output.velocity.angularValid = false;
 
-    Eigen::Quaternionf inverseRotation = input.pose.rotation.inverse();
-    Eigen::Vector3f inversePosition = -inverseRotation.toRotationMatrix() * input.pose.position;
+    Eigen::Vector3f relativePosition = input.pose.position + input.pose.rotation * m_settings->relativePosition;
 
     for (size_t i = 0; i < 3; ++i)
     {
         if (m_settings->positionMask[i])
         {
-            output.pose.position[i] = m_settings->relativePosition[i];
+            output.pose.position[i] = relativePosition[i];
         }
         else
         {
-            output.pose.position[i] = inversePosition[i];
+            output.pose.position[i] = 0.0;
         }
     }
 
     Eigen::Vector3f parentFrameEulerAngles = eulerAngles(m_settings->anglesOrder, input.pose.rotation);
-
-    Eigen::Matrix3f absoluteOrientation;
-    absoluteOrientation.setIdentity();
 
     for (size_t i = 0; i < 3; ++i)
     {
@@ -108,11 +102,9 @@ void CustomPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVeloci
             angle = parentFrameEulerAngles[i] + m_settings->relativeRotation[i];
 
         }
-        absoluteOrientation = absoluteOrientation * Eigen::AngleAxisf(angle,
-                                                                      Eigen::Vector3f::Unit(static_cast<Eigen::Index>(m_settings->anglesOrder[i])));
+        output.pose.rotation = output.pose.rotation * Eigen::AngleAxisf(angle,
+                                                                        Eigen::Vector3f::Unit(static_cast<Eigen::Index>(m_settings->anglesOrder[i])));
     }
-
-    output.pose.rotation = inverseRotation * Eigen::Quaternionf(absoluteOrientation);
 
     PosePublisher::updateInputPose(output);
 }

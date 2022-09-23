@@ -35,7 +35,7 @@ void PosesManager::initialize(const std::string &editedRootFrame, const std::vec
         m_customPoses.emplace_back();
         auto customOptions = std::make_shared<CustomPosePublisherSettings>(customPose);
         customOptions->tfPublisher = m_settings->tfPublisher;
-        customOptions->rawRootFrame = m_settings->rawRootFrame;
+        customOptions->rawRootFrame = editedRootFrame;
         m_customPoses.back().configure(customOptions);
     }
 
@@ -77,26 +77,26 @@ void PosesManager::publishFrames()
         {
             const auto& labelIt = m_labelsReverseMap.find(relativeFrame);
 
-            OpenXrInterface::NamedPoseVelocity poseRawRootToParent;
+            OpenXrInterface::NamedPoseVelocity rawRootToParentPose;
 
             if (labelIt != m_labelsReverseMap.end()) //The parent frame name is a label
             {
-                poseRawRootToParent = m_poses[labelIt->second].data();
+                rawRootToParentPose = m_poses[labelIt->second].data();
             }
             else
             {
-                poseRawRootToParent = m_poses[relativeFrame].data();
+                rawRootToParentPose = m_poses[relativeFrame].data();
             }
 
             //The pose of the parent frame is expressed with respect to the raw root, i.e. the frame wrt we recieve the poses from OpenXR.
             //The user is interested on the root_frame that can be aligned to headset via RPC call.
 
-            parentFramePose.name = poseRawRootToParent.name;
-            parentFramePose.pose.positionValid = poseRawRootToParent.pose.positionValid;
-            parentFramePose.pose.rotationValid = poseRawRootToParent.pose.rotationValid;
+            parentFramePose.name = rawRootToParentPose.name;
+            parentFramePose.pose.positionValid = rawRootToParentPose.pose.positionValid;
+            parentFramePose.pose.rotationValid = rawRootToParentPose.pose.rotationValid;
 
-            parentFramePose.pose.position = m_rootFrameRawRelativePoseInverse.position + m_rootFrameRawRelativePoseInverse.rotation * poseRawRootToParent.pose.position;
-            parentFramePose.pose.rotation = m_rootFrameRawRelativePoseInverse.rotation * poseRawRootToParent.pose.rotation;
+            parentFramePose.pose.position = m_rootFrameRawRelativePoseInverse.position + m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.position;
+            parentFramePose.pose.rotation = m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.rotation;
 
         }
 
