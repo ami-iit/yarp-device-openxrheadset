@@ -92,20 +92,23 @@ void CustomPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVeloci
         }
     }
 
-    Eigen::Vector3f parentFrameEulerAngles = eulerAngles(m_settings->anglesOrder, input.pose.rotation);
 
-    output.pose.rotation.setIdentity();
+    Eigen::Vector3f inverseParentFrameEulerAngles = eulerAngles(m_settings->anglesOrder, input.pose.rotation.inverse());
+
+    Eigen::Quaternionf relativeRotation;
+    relativeRotation.setIdentity();
     for (size_t i = 0; i < 3; ++i)
     {
-        float angle = 0;
+        float angle = inverseParentFrameEulerAngles[i];
         if (m_settings->rotationMask[i])
         {
-            angle = parentFrameEulerAngles[i] + m_settings->relativeRotation[i];
+            angle = m_settings->relativeRotation[i];
 
         }
-        output.pose.rotation = output.pose.rotation * Eigen::AngleAxisf(angle,
-                                                                        Eigen::Vector3f::Unit(static_cast<Eigen::Index>(m_settings->anglesOrder[i])));
+        relativeRotation = relativeRotation * Eigen::AngleAxisf(angle,
+                                                                Eigen::Vector3f::Unit(static_cast<Eigen::Index>(m_settings->anglesOrder[i])));
     }
+    output.pose.rotation = input.pose.rotation * relativeRotation;
 
     PosePublisher::updateInputPose(output);
 }
