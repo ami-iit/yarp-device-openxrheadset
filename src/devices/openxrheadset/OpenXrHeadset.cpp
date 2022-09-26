@@ -269,7 +269,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
     FilteredPosePublisherSettings posePublisherSettings;
     posePublisherSettings.tfPublisher = m_tfPublisher;
-    posePublisherSettings.rawRootFrame = m_rootFrameRaw;
+    posePublisherSettings.tfBaseFrame = m_rootFrameRaw;
     posePublisherSettings.period = getPeriod();
     posePublisherSettings.checks.maxDistance = cfg.check("pose_check_max_distance", yarp::os::Value(0.1)).asFloat64();
     posePublisherSettings.checks.maxAngularDistanceInRad = cfg.check("pose_check_max_angle_rad", yarp::os::Value(0.5)).asFloat64();

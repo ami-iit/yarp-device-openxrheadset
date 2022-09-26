@@ -127,7 +127,7 @@ void PosePublisher::publish()
         }
     }
 
-    if (!m_baseSettings->tfPublisher->setTransform(m_label, m_baseSettings->rawRootFrame, m_localPose))
+    if (!m_baseSettings->tfPublisher->setTransform(m_label, m_baseSettings->tfBaseFrame, m_localPose))
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
     }

@@ -17,9 +17,9 @@ void PosesManager::initialize(const std::string &editedRootFrame, const std::vec
 
     auto rootFramePublisherOptions = std::make_shared<CustomPosePublisherSettings>();
     rootFramePublisherOptions->tfPublisher = m_settings->tfPublisher;
-    rootFramePublisherOptions->rawRootFrame = m_settings->rawRootFrame;
+    rootFramePublisherOptions->tfBaseFrame = m_settings->tfBaseFrame;
     rootFramePublisherOptions->name = editedRootFrame;
-    rootFramePublisherOptions->parentFrame = m_settings->rawRootFrame;
+    rootFramePublisherOptions->parentFrame = m_settings->tfBaseFrame;
     rootFramePublisherOptions->relativePosition.setZero();
     rootFramePublisherOptions->relativeRotation.setZero();
     m_rootFramePublisher.configure(rootFramePublisherOptions);
@@ -35,11 +35,12 @@ void PosesManager::initialize(const std::string &editedRootFrame, const std::vec
         m_customPoses.emplace_back();
         auto customOptions = std::make_shared<CustomPosePublisherSettings>(customPose);
         customOptions->tfPublisher = m_settings->tfPublisher;
-        customOptions->rawRootFrame = editedRootFrame;
+        customOptions->tfBaseFrame = editedRootFrame;
         m_customPoses.back().configure(customOptions);
     }
 
     m_rootPose = OpenXrInterface::NamedPoseVelocity::Identity(editedRootFrame);
+    m_rootFrameRawRelativePoseInverse = OpenXrInterface::NamedPoseVelocity::Identity(editedRootFrame).pose;
 }
 
 std::vector<OpenXrInterface::NamedPoseVelocity> &PosesManager::inputs()

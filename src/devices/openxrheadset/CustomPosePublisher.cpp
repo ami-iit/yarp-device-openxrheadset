@@ -94,6 +94,7 @@ void CustomPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVeloci
 
     Eigen::Vector3f parentFrameEulerAngles = eulerAngles(m_settings->anglesOrder, input.pose.rotation);
 
+    output.pose.rotation.setIdentity();
     for (size_t i = 0; i < 3; ++i)
     {
         float angle = 0;

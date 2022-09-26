@@ -17,7 +17,7 @@
 struct PosePublisherSettings
 {
     yarp::dev::IFrameTransform* tfPublisher{nullptr};
-    std::string rawRootFrame;
+    std::string tfBaseFrame;
 };
 
 class PosePublisher
