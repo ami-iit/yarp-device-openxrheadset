@@ -22,10 +22,10 @@ struct PosePublisherSettings
 
 class PosePublisher
 {
-    std::string m_label;
+    std::string m_label, m_tfBaseFrame;
     OpenXrInterface::NamedPoseVelocity m_data, m_previouslyPublishedData;
     yarp::sig::Matrix m_localPose;
-    std::shared_ptr<PosePublisherSettings> m_baseSettings{nullptr};
+    yarp::dev::IFrameTransform* m_tfPublisher{nullptr};
     bool m_active{false};
     bool m_publishedOnce{false};
     double m_lastWarningTime{0.0};
@@ -50,6 +50,8 @@ public:
     void setLabel(const std::string& label);
 
     const std::string& label() const;
+
+    const std::string& tfBaseFrame() const;
 
     virtual bool configured() const;
 
