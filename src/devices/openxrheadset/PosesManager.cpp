@@ -37,6 +37,7 @@ void PosesManager::initialize(const std::string &editedRootFrame, const std::vec
         customOptions->tfPublisher = m_settings->tfPublisher;
         customOptions->tfBaseFrame = editedRootFrame;
         m_customPoses.back().configure(customOptions);
+        m_customPosesMap[customPose.name] = m_customPoses.size() - 1;
     }
 
     m_rootPose = OpenXrInterface::NamedPoseVelocity::Identity(editedRootFrame);
@@ -65,8 +66,9 @@ void PosesManager::publishFrames()
         publisher.updateInputPose(inputPose);
     }
 
-    for (auto& customPose : m_customPoses)
+    for (size_t i = 0; i < m_customPoses.size(); ++i)
     {
+        auto& customPose = m_customPoses[i];
         const std::string& relativeFrame = customPose.relativeFrame();
         OpenXrInterface::NamedPoseVelocity parentFramePose;
 
@@ -76,29 +78,51 @@ void PosesManager::publishFrames()
         }
         else
         {
-            const auto& labelIt = m_labelsReverseMap.find(relativeFrame);
+            auto labelIt = m_labelsReverseMap.find(relativeFrame);
+            auto posesIt = m_poses.find(relativeFrame);
+            auto customPoseIt = m_customPosesMap.find(relativeFrame);
 
-            OpenXrInterface::NamedPoseVelocity rawRootToParentPose;
-
-            if (labelIt != m_labelsReverseMap.end()) //The parent frame name is a label
+            if (labelIt != m_labelsReverseMap.end() || posesIt != m_poses.end())
             {
-                rawRootToParentPose = m_poses[labelIt->second].data();
+
+                OpenXrInterface::NamedPoseVelocity rawRootToParentPose;
+
+                if (labelIt != m_labelsReverseMap.end()) //The parent frame name is a label
+                {
+                    rawRootToParentPose = m_poses[labelIt->second].data();
+                }
+                else
+                {
+                    rawRootToParentPose = posesIt->second.data();
+                }
+
+                //The pose of the parent frame is expressed with respect to the raw root, i.e. the frame wrt we receive the poses from OpenXR.
+                //We publish the custom poses wrt the modified root, i.e. openxr_origin, thus we need to provide the parent frame wrt this other frame
+
+                parentFramePose.name = rawRootToParentPose.name;
+                parentFramePose.pose.positionValid = rawRootToParentPose.pose.positionValid;
+                parentFramePose.pose.rotationValid = rawRootToParentPose.pose.rotationValid;
+
+                parentFramePose.pose.position = m_rootFrameRawRelativePoseInverse.position + m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.position;
+                parentFramePose.pose.rotation = m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.rotation;
+            }
+            else if (customPoseIt != m_customPosesMap.end())
+            {
+                if (customPoseIt->second < i)
+                {
+                    parentFramePose = m_customPoses[customPoseIt->second].data();
+                }
+                else
+                {
+                    yCWarningThrottle(OPENXRHEADSET, 10) << "The custom pose" << customPose.name()
+                                                         << "requires" << relativeFrame << "that is not updated yet (custom poses are updated in order depending on the configuration file).";
+                }
             }
             else
             {
-                rawRootToParentPose = m_poses[relativeFrame].data();
+                yCWarningThrottle(OPENXRHEADSET, 10) << "The custom pose" << customPose.name()
+                                                     << "requires" << relativeFrame << "but it does not seem to be available.";
             }
-
-            //The pose of the parent frame is expressed with respect to the raw root, i.e. the frame wrt we recieve the poses from OpenXR.
-            //The user is interested on the root_frame that can be aligned to headset via RPC call.
-
-            parentFramePose.name = rawRootToParentPose.name;
-            parentFramePose.pose.positionValid = rawRootToParentPose.pose.positionValid;
-            parentFramePose.pose.rotationValid = rawRootToParentPose.pose.rotationValid;
-
-            parentFramePose.pose.position = m_rootFrameRawRelativePoseInverse.position + m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.position;
-            parentFramePose.pose.rotation = m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.rotation;
-
         }
 
         customPose.updateInputPose(parentFramePose);

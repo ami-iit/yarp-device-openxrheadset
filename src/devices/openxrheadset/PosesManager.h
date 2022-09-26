@@ -26,6 +26,8 @@ class PosesManager
 
     std::vector<CustomPosePublisher> m_customPoses;
 
+    std::unordered_map<std::string, size_t> m_customPosesMap;
+
     std::unordered_map<std::string, std::string> m_labelsReverseMap;
 
     OpenXrInterface::NamedPoseVelocity m_rootPose;
