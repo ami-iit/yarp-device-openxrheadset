@@ -34,6 +34,11 @@ void Texture::setTextureFromPath(const std::string& path)
 		stbi_image_free(m_LocalBuffer);
 }
 
+unsigned int Texture::GetTextureID() const
+{
+	return m_RendererID;
+}
+
 unsigned int Texture::Bind(unsigned int slot) const
 {
 	GLCall(glActiveTexture(GL_TEXTURE0 + slot));					// selecting the first slot to be the active one (if you call bind after this line it will bind slot 1)
