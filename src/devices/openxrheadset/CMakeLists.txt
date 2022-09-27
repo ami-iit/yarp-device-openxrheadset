@@ -56,6 +56,7 @@ set(rendering_SRCS
   rendering/Texture.cpp
   rendering/VertexArray.cpp
   rendering/VertexBuffer.cpp
+  rendering/VertexBufferLayout.cpp
   )
 
 set(rendering_HDRS
@@ -139,7 +140,7 @@ target_compile_features(yarp_openxrheadset PUBLIC cxx_std_20) #C++20 is used for
 
 if(BUILD_TESTING)
 
-    add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS} ${yarp_openxrheadset_HDRS} ${rendering_SRCS} ${rendering_HDRS}) 
+    add_executable(openxrheadset_test test/main.cpp ${yarp_openxrheadset_SRCS} ${yarp_openxrheadset_HDRS} ${rendering_SRCS} ${rendering_HDRS})
 
     target_link_libraries(openxrheadset_test
         PRIVATE

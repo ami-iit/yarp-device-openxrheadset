@@ -45,8 +45,8 @@ bool OpenGLQuadLayer::initialize()
     m_vb.setVertices(m_positions);
 
     VertexBufferLayout layout;
-    layout.Push<float>(3);                          // 3 floats for each vertex position
-    layout.Push<float>(2);                          // 2 floats for texture coordinates to be mapped on each vertex
+    layout.Push(3);                          // 3 floats for each vertex position
+    layout.Push(2);                          // 2 floats for texture coordinates to be mapped on each vertex
     m_va.AddBuffer(m_vb, layout);
 
     m_ib.setIndices(m_indices);
@@ -85,7 +85,7 @@ bool OpenGLQuadLayer::render(float aspectRatio)
     float z_near = 0.1f;
     float z_far = 100.0f;
 
-        
+
     {
         m_texture.Bind();
 
@@ -132,7 +132,7 @@ bool OpenGLQuadLayer::render(float aspectRatio)
         m_increment = 0.05f;
 
     m_r += m_increment;
-    
+
     return false;
 }
 
