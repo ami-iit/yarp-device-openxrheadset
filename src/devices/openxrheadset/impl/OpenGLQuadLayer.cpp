@@ -59,25 +59,25 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     m_shader.Bind();
     m_shader.SetUniform4f("u_Color", 0.0f, 1.0f, 0.0f, 1.0f);               // for debug purposes
 
-    m_userBuffer.Bind(GL_FRAMEBUFFER);
+//    m_userBuffer.Bind(GL_FRAMEBUFFER);
     m_userTexture.Bind();
     m_userTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
-    m_userTexture.Unbind();
-    m_userBuffer.Unbind();
+//    m_userTexture.Unbind();
+//    m_userBuffer.Unbind();
 
-    m_internalBuffer.Bind(GL_FRAMEBUFFER);
-    m_internalTexture.Bind();
-    m_userTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
+//    m_internalBuffer.Bind(GL_FRAMEBUFFER);
+//    m_internalTexture.Bind();
+//    m_internalTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
 
     //m_texture.Bind();                                                                   // default input is 0 (first slot)
-    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));			// MANDATORY
-    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));			// MANDATORY
-    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));		// MANDATORY - horizontal clamp
-    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));		// MANDATORY - vertical clamp
+//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));  // MANDATORY
+//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));  // MANDATORY
+//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));  // MANDATORY - horizontal clamp
+//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));  // MANDATORY - vertical clamp
     m_shader.SetUniform1i("u_Texture", 0); // the second argument must match the input of texture.Bind(input)
 
-    m_internalTexture.Unbind();
-    m_internalBuffer.Unbind();
+    m_userTexture.Unbind();
+//    m_internalBuffer.Unbind();
 
     /* unbinding everything */
     m_va.Unbind();
@@ -140,27 +140,29 @@ unsigned int OpenGLQuadLayer::render()
 {
     Renderer renderer;
 
-    {
-        m_texID = m_internalTexture.Bind();
 
-        glm::mat4 offsetPose = m_offsetTra * m_offsetRot;        
-        glm::mat4 modelPose = m_modelTra * m_modelRot;
-        glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
+    //        m_texID = m_internalTexture.Bind();
+    auto ID = m_userTexture.Bind();
 
-        glm::mat4 model = offsetPose * modelPose * sca;
-        glm::mat4 view = glm::mat4(1.0f);                                                                                 // set the camera view: not used
-        glm::mat4 proj = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
-        m_shader.Bind();                                                                                                  // bind shader
-        m_shader.SetUniform4f("u_Color", m_r, m_g, m_b, m_alpha);                                                         // setup uniform
-        m_shader.SetUniformMat4f("u_M", model);
-        m_shader.SetUniformMat4f("u_V", view);
-        m_shader.SetUniformMat4f("u_P", proj);
+    glm::mat4 offsetPose = m_offsetTra * m_offsetRot;
+    glm::mat4 modelPose = m_modelTra * m_modelRot;
+    glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
 
-        renderer.Draw(m_va, m_ib, m_shader);
-    }
-    
-    return m_texID;
+    glm::mat4 model = offsetPose * modelPose * sca;
+    glm::mat4 view = glm::mat4(1.0f);                                                                                 // set the camera view: not used
+    glm::mat4 proj = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
+
+    m_shader.Bind();                                                                                                  // bind shader
+    m_shader.SetUniform4f("u_Color", m_r, m_g, m_b, m_alpha);                                                         // setup uniform
+    m_shader.SetUniformMat4f("u_M", model);
+    m_shader.SetUniformMat4f("u_V", view);
+    m_shader.SetUniformMat4f("u_P", proj);
+
+    renderer.Draw(m_va, m_ib, m_shader);
+
+
+    return ID;
 }
 
 void OpenGLQuadLayer::setOffsetPose(const Eigen::Vector3f& offset, const Eigen::Quaternionf& offsetQuat)
@@ -171,9 +173,9 @@ void OpenGLQuadLayer::setOffsetPose(const Eigen::Vector3f& offset, const Eigen::
 
 void OpenGLQuadLayer::setOffsetPosition(const Eigen::Vector3f& offset)                                                    // the offset vector must represent the position of the headset frame wrt the Left or Right Screen Frame. Both the Screen Frames are right-handed, have the origin at the center of the screen, the x to the right and the y pointing up.
 {
-    m_offsetTra[3][0] = offset(1);
-    m_offsetTra[3][1] = offset(2);
-    m_offsetTra[3][2] = offset(3);
+    m_offsetTra[3][0] = offset(0);
+    m_offsetTra[3][1] = offset(1);
+    m_offsetTra[3][2] = offset(2);
 }
 
 void OpenGLQuadLayer::setOffsetQuaternion(const Eigen::Quaternionf& offsetQuat)
@@ -207,9 +209,9 @@ void OpenGLQuadLayer::setPosition(const Eigen::Vector3f &position)
 {
     m_modelTraEig = position;
 
-    m_modelTra[3][0] = position(1);
-    m_modelTra[3][1] = position(2);
-    m_modelTra[3][2] = position(3);
+    m_modelTra[3][0] = position(0);
+    m_modelTra[3][1] = position(1);
+    m_modelTra[3][2] = position(2);
 }
 
 void OpenGLQuadLayer::setQuaternion(const Eigen::Quaternionf &quaternion)
@@ -247,7 +249,7 @@ void OpenGLQuadLayer::useAlphaChannel(bool useAlphaChannel)
 
 bool OpenGLQuadLayer::getImage(uint32_t &glImage)
 {
-    m_texID = m_userTexture.GetTextureID();
+    glImage = m_userTexture.GetTextureID();
 
     return true;
 }
@@ -260,24 +262,22 @@ bool OpenGLQuadLayer::submitImage()
 bool OpenGLQuadLayer::submitImage(int32_t xOffset, int32_t yOffset, int32_t imageWidth, int32_t imageHeight)
 {
 
-    m_userBuffer.Bind(GL_READ_BUFFER);
-    m_userTexture.Bind();
-    
-    m_internalBuffer.Bind(GL_DRAW_FRAMEBUFFER);
-    m_internalTexture.Bind();
+//    m_userBuffer.Bind(GL_READ_BUFFER);
+//    m_userTexture.Bind();
 
-    //Copy from the read framebuffer to the draw framebuffer
-    glBlitFramebuffer(xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
-        0, 0, imageMaxWidth(), imageMaxHeight(),
-        GL_COLOR_BUFFER_BIT, GL_NEAREST); 
+//    m_internalBuffer.Bind(GL_DRAW_FRAMEBUFFER);
+//    m_internalTexture.Bind();
 
-//Resetting read and draw framebuffers
-    m_userBuffer.Unbind();
-    m_internalBuffer.Unbind();
+//    //Copy from the read framebuffer to the draw framebuffer
+//    glBlitFramebuffer(xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
+//        0, 0, imageMaxWidth(), imageMaxHeight(),
+//        GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
+////Resetting read and draw framebuffers
+//    m_userBuffer.Unbind();
+//    m_internalBuffer.Unbind();
 
-    return false;
-
+    return true;
 }
 
 int32_t OpenGLQuadLayer::imageMaxHeight() const

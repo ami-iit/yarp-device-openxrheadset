@@ -1151,7 +1151,7 @@ void OpenXrInterface::render()
     //Left Eye
 
 #ifdef DEBUG_RENDERING
-   
+
     //glViewport(0, 0, ww / 2, wh);
     ////m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     //m_pimpl->testLayerLeft->render();
@@ -1223,7 +1223,7 @@ void OpenXrInterface::render()
         swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
 
     // Replicate swapchain on screen
-    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId, 
+    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId,
                            ww / 2 + 1, 0, ww, wh,
                            0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -1475,6 +1475,8 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedOpenGLQuadLayer()
             m_pimpl->viewconfig_views[1].recommendedImageRectHeight));
 
     m_pimpl->openGLQuadLayers.push_back(newLayer);
+
+    return newLayer;
 }
 
 bool OpenXrInterface::isRunning() const

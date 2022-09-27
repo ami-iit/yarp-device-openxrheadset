@@ -35,10 +35,10 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     VertexBuffer m_vb;
     IndexBuffer m_ib;
     Shader m_shader;
-    Texture m_userTexture, m_internalTexture;
-    FrameBuffer m_userBuffer;
-    FrameBuffer m_internalBuffer;
-    unsigned int m_texID{ 0 };
+    Texture m_userTexture/*, m_internalTexture*/;
+//    FrameBuffer m_userBuffer;
+//    FrameBuffer m_internalBuffer;
+//    unsigned int m_texID{ 0 };
 
     float m_r = 0.0f;
     float m_g = 0.0f;
