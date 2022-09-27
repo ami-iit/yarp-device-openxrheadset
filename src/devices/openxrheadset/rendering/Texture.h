@@ -22,6 +22,8 @@ public:
 
 	void setTextureFromPath(const std::string& path);
 
+	void allocateTexture(int32_t imageMaxWidth, int32_t imageMaxHeight);
+
 	unsigned int GetTextureID() const;
 
 	unsigned int Bind(unsigned int slot = 0) const;			// usually you have 32 texture slots to bind muliple Textures

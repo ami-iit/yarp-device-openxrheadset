@@ -7,6 +7,7 @@
  */
 
 #include <impl/OpenXrInterfaceImpl.h>
+#include <Resources.h>
 
 #define DEBUG_RENDERING
 
@@ -1151,11 +1152,11 @@ void OpenXrInterface::render()
 
 #ifdef DEBUG_RENDERING
    
-    glViewport(0, 0, ww / 2, wh);
-    //m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    m_pimpl->testLayerLeft->render();
-    //m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    m_pimpl->testLayerLeft->render();
+    //glViewport(0, 0, ww / 2, wh);
+    ////m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    //m_pimpl->testLayerLeft->render();
+    ////m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    //m_pimpl->testLayerLeft->render();
 
 
 #else
@@ -1163,6 +1164,18 @@ void OpenXrInterface::render()
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
+
+    glViewport(0, 0, ww / 2, wh);
+
+    for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
+    {
+        if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
+        {
+            openGLLayer->setOffsetPosition({ 0.05f, 0.0f, 0.0f });
+            openGLLayer->setAspectRatio(ww / 2.0 / wh);
+            openGLLayer->render();
+        }
+    }
 
     // Replicate on VR
 
@@ -1181,15 +1194,27 @@ void OpenXrInterface::render()
 
 #ifdef DEBUG_RENDERING
 
-    glViewport(ww / 2, 0, ww / 2, wh);
-    //m_pimpl->testLayerRight->setRenderPose(glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    m_pimpl->testLayerRight->render();
+    //glViewport(ww / 2, 0, ww / 2, wh);
+    ////m_pimpl->testLayerRight->setRenderPose(glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    //m_pimpl->testLayerRight->render();
 
 #else
     //Clear the backgorund color
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
+
+    glViewport(ww / 2, 0, ww / 2, wh);
+
+    for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
+    {
+        if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
+        {
+            openGLLayer->setOffsetPosition({ -0.05f, 0.0f, 0.0f });
+            openGLLayer->setAspectRatio(ww / 2.0 / wh);
+            openGLLayer->render();
+        }
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[1].
@@ -1307,17 +1332,6 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrCompositionLayers();
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
-
-    m_pimpl->testLayerLeft = std::make_shared<OpenGLQuadLayer>();
-    m_pimpl->testLayerLeft->initialize();
-    m_pimpl->testLayerRight = std::make_shared<OpenGLQuadLayer>();
-    m_pimpl->testLayerRight->initialize();
-    GLint ww, wh;
-    glfwGetWindowSize(m_pimpl->window, &ww, &wh);
-    m_pimpl->testLayerLeft->setAspectRatio(float(ww / 2) / wh);
-    m_pimpl->testLayerRight->setAspectRatio(float(ww / 2) / wh);
-    m_pimpl->testLayerLeft->setColor(1.0f, 0.0f, 0.0f, 0.4f);
-    m_pimpl->testLayerRight->setColor(0.0f, 0.0f, 1.0f, 0.4f);
 
     m_pimpl->initialized = ok;
 
@@ -1444,6 +1458,23 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
     m_pimpl->headLockedQuadLayers.push_back(newLayer);
 
     return newLayer;
+}
+
+std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedOpenGLQuadLayer()
+{
+    if (!m_pimpl->initialized)
+    {
+        yCError(OPENXRHEADSET) << "The OpenXr interface has not been initialized.";
+        return nullptr;
+    }
+
+    std::shared_ptr<OpenGLQuadLayer> newLayer = std::make_shared<OpenGLQuadLayer>();
+
+    newLayer->initialize(std::min(m_pimpl->viewconfig_views[0].recommendedImageRectWidth,
+        m_pimpl->viewconfig_views[1].recommendedImageRectWidth), std::min(m_pimpl->viewconfig_views[0].recommendedImageRectHeight,
+            m_pimpl->viewconfig_views[1].recommendedImageRectHeight));
+
+    m_pimpl->openGLQuadLayers.push_back(newLayer);
 }
 
 bool OpenXrInterface::isRunning() const

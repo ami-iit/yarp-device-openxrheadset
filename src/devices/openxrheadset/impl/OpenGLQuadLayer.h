@@ -21,6 +21,7 @@
 #include <VertexArray.h>
 #include <Shader.h>
 #include <Texture.h>
+#include <FrameBuffer.h>
 
 
 class OpenGLQuadLayer : public IOpenXrQuadLayer
@@ -34,7 +35,9 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     VertexBuffer m_vb;
     IndexBuffer m_ib;
     Shader m_shader;
-    Texture m_texture;
+    Texture m_userTexture, m_internalTexture;
+    FrameBuffer m_userBuffer;
+    FrameBuffer m_internalBuffer;
     unsigned int m_texID{ 0 };
 
     float m_r = 0.0f;
@@ -88,6 +91,10 @@ public:
     void setOffsetPosition(const Eigen::Vector3f& offset);
 
     void setOffsetQuaternion(const Eigen::Quaternionf& offsetQuat);
+
+    Texture& getUserTexture();
+
+    const  IOpenXrQuadLayer::Visibility& visibility() const;
 
     virtual void setPose(const Eigen::Vector3f& position,
                          const Eigen::Quaternionf &quaternion) override;
