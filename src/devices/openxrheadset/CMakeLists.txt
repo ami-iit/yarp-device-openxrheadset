@@ -54,6 +54,7 @@ set(rendering_SRCS
   rendering/Texture.cpp
   rendering/VertexArray.cpp
   rendering/VertexBuffer.cpp
+  rendering/FrameBuffer.cpp
   )
 
 set(rendering_HDRS
@@ -64,6 +65,7 @@ set(rendering_HDRS
   rendering/VertexArray.h
   rendering/VertexBuffer.h
   rendering/VertexBufferLayout.h
+  rendering/FrameBuffer.h
   )
 
 set(yarp_openxrheadset_driver_SRCS

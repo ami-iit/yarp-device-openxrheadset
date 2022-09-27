@@ -59,19 +59,31 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     m_shader.Bind();
     m_shader.SetUniform4f("u_Color", 0.0f, 1.0f, 0.0f, 1.0f);               // for debug purposes
 
-    m_texture.Bind();                                                                   // default input is 0 (first slot)
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));			// MANDATORY
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));			// MANDATORY
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));		// MANDATORY - horizontal clamp
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));		// MANDATORY - vertical clamp
-    m_shader.SetUniform1i("u_Texture", 0);                                              // the second argument must match the input of texture.Bind(input)
+    m_userBuffer.Bind(GL_FRAMEBUFFER);
+    m_userTexture.Bind();
+    m_userTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
+    m_userTexture.Unbind();
+    m_userBuffer.Unbind();
+
+    m_internalBuffer.Bind(GL_FRAMEBUFFER);
+    m_internalTexture.Bind();
+    m_userTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
+
+    //m_texture.Bind();                                                                   // default input is 0 (first slot)
+    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));			// MANDATORY
+    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));			// MANDATORY
+    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));		// MANDATORY - horizontal clamp
+    //GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));		// MANDATORY - vertical clamp
+    m_shader.SetUniform1i("u_Texture", 0); // the second argument must match the input of texture.Bind(input)
+
+    m_internalTexture.Unbind();
+    m_internalBuffer.Unbind();
 
     /* unbinding everything */
     m_va.Unbind();
     m_vb.Unbind();
     m_ib.Unbind();
     m_shader.Unbind();
-    m_texture.Unbind();
 
     return true;
 }
@@ -129,7 +141,7 @@ unsigned int OpenGLQuadLayer::render()
     Renderer renderer;
 
     {
-        m_texID = m_texture.Bind();
+        m_texID = m_internalTexture.Bind();
 
         glm::mat4 offsetPose = m_offsetTra * m_offsetRot;        
         glm::mat4 modelPose = m_modelTra * m_modelRot;
@@ -173,6 +185,16 @@ void OpenGLQuadLayer::setOffsetQuaternion(const Eigen::Quaternionf& offsetQuat)
     qIn.z = offsetQuat.z();
 
     m_offsetRot = glm::mat4_cast(qIn);
+}
+
+Texture& OpenGLQuadLayer::getUserTexture()
+{
+    return m_userTexture;
+}
+
+const  IOpenXrQuadLayer::Visibility& OpenGLQuadLayer::visibility() const
+{
+    return m_visibility;
 }
 
 void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)
@@ -225,7 +247,7 @@ void OpenGLQuadLayer::useAlphaChannel(bool useAlphaChannel)
 
 bool OpenGLQuadLayer::getImage(uint32_t &glImage)
 {
-    m_texID = m_texture.GetTextureID();
+    m_texID = m_userTexture.GetTextureID();
 
     return true;
 }
@@ -237,6 +259,21 @@ bool OpenGLQuadLayer::submitImage()
 
 bool OpenGLQuadLayer::submitImage(int32_t xOffset, int32_t yOffset, int32_t imageWidth, int32_t imageHeight)
 {
+
+    m_userBuffer.Bind(GL_READ_BUFFER);
+    m_userTexture.Bind();
+    
+    m_internalBuffer.Bind(GL_DRAW_FRAMEBUFFER);
+    m_internalTexture.Bind();
+
+    //Copy from the read framebuffer to the draw framebuffer
+    glBlitFramebuffer(xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
+        0, 0, imageMaxWidth(), imageMaxHeight(),
+        GL_COLOR_BUFFER_BIT, GL_NEAREST); 
+
+//Resetting read and draw framebuffers
+    m_userBuffer.Unbind();
+    m_internalBuffer.Unbind();
 
 
     return false;

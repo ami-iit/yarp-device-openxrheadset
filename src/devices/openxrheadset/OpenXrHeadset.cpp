@@ -331,8 +331,8 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             return false;
         }
 
-        m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
-        m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+        m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+        m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
 
         if (!m_eyesManager.initialize(m_tfPublisher, m_headFrame))
         {

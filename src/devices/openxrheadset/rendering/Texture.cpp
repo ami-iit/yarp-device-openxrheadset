@@ -34,6 +34,12 @@ void Texture::setTextureFromPath(const std::string& path)
 		stbi_image_free(m_LocalBuffer);
 }
 
+void Texture::allocateTexture(int32_t imageMaxWidth, int32_t imageMaxHeight)
+{
+	//Bind();
+	//glTextureStorage2D(m_RendererID, 1, GL_RGBA8, imageMaxWidth, imageMaxHeight);
+}
+
 unsigned int Texture::GetTextureID() const
 {
 	return m_RendererID;
