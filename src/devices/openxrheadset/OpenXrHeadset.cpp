@@ -845,3 +845,21 @@ bool yarp::dev::OpenXrHeadset::alignRootFrameToHeadset()
 
     return true;
 }
+
+bool yarp::dev::OpenXrHeadset::setCustomPoseRelativePosition(const std::string &customFrameName, const double x, const double y, const double z)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_posesManager.setCustomPoseRelativePosition(customFrameName, {static_cast<float>(x),
+                                                                           static_cast<float>(y),
+                                                                           static_cast<float>(z)});
+}
+
+bool yarp::dev::OpenXrHeadset::setCustomPoseRelativeOrientation(const std::string &customFrameName, const double angle1, const double angle2, const double angle3)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_posesManager.setCustomPoseRelativeOrientation(customFrameName, {static_cast<float>(angle1),
+                                                                              static_cast<float>(angle2),
+                                                                              static_cast<float>(angle3)});
+}

@@ -153,3 +153,45 @@ void PosesManager::setTransformFromRawToRootFrame(const OpenXrInterface::Pose &r
     m_rootFrameRawRelativePoseInverse.rotation = relativePose.rotation.inverse();
     m_rootFrameRawRelativePoseInverse.position = -(m_rootFrameRawRelativePoseInverse.rotation * relativePose.position);
 }
+
+bool PosesManager::setCustomPoseRelativePosition(const std::string &customFrameName, const Eigen::Vector3f &relativePosition)
+{
+    auto customFrameIt = m_customPosesMap.find(customFrameName);
+
+    if (customFrameIt == m_customPosesMap.end())
+    {
+        yCError(OPENXRHEADSET) << "The frame" << customFrameName << "does not exist.";
+        return false;
+    }
+
+    m_customPoses[customFrameIt->second].setRelativePosition(relativePosition);
+    return true;
+}
+
+bool PosesManager::setCustomPoseRelativeOrientation(const std::string &customFrameName, const Eigen::Quaternionf &relativeOrientation)
+{
+    auto customFrameIt = m_customPosesMap.find(customFrameName);
+
+    if (customFrameIt == m_customPosesMap.end())
+    {
+        yCError(OPENXRHEADSET) << "The frame" << customFrameName << "does not exist.";
+        return false;
+    }
+
+    m_customPoses[customFrameIt->second].setRelativeOrientation(relativeOrientation);
+    return true;
+}
+
+bool PosesManager::setCustomPoseRelativeOrientation(const std::string &customFrameName, const Eigen::Vector3f &relativeOrientationEulerAngles)
+{
+    auto customFrameIt = m_customPosesMap.find(customFrameName);
+
+    if (customFrameIt == m_customPosesMap.end())
+    {
+        yCError(OPENXRHEADSET) << "The frame" << customFrameName << "does not exist.";
+        return false;
+    }
+
+    m_customPoses[customFrameIt->second].setRelativeOrientation(relativeOrientationEulerAngles);
+    return true;
+}

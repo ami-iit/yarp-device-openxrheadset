@@ -124,4 +124,25 @@ service OpenXrHeadsetCommands
      * @return True if successfull. False otherwise, e.g. if the current headset pose is not valid
      */
      bool alignRootFrameToHeadset();
+
+    /**
+     * Set the position offset of a custom pose
+     * @param customFrameName The name of the pose to edit
+     * @param x The x coordinate of the relative position (with respect the parent frame)
+     * @param y The y coordinate of the relative position (with respect the parent frame)
+     * @param z The z coordinate of the relative position (with respect the parent frame)
+     * @return True if successfull, false if the pose is not found
+     */
+     bool setCustomPoseRelativePosition(1:string customFrameName, 2:double x, 3:double y, 4:double z);
+
+    /**
+     * Set the rotation offset of a custom pose
+     * The order depends on the chosen euler angles in the configuration file.
+     * @param customFrameName The name of the pose to edit
+     * @param angle1 The first angle offset (with respect the parent frame).
+     * @param angle2 The second angle offset (with respect the parent frame).
+     * @param angle3 The third angle offset (with respect the parent frame).
+     * @return True if successfull, false if the pose is not found
+     */
+     bool setCustomPoseRelativeOrientation(1:string customFrameName, 2:double angle1, 3:double angle2, 4:double angle3);
 }

@@ -52,6 +52,16 @@ void CustomPosePublisher::setRelativeOrientation(const Eigen::Quaternionf &relat
     m_settings->relativeRotation = eulerAngles(m_settings->anglesOrder, relativeOrientation);
 }
 
+void CustomPosePublisher::setRelativeOrientation(const Eigen::Vector3f &relativeOrientationEulerAngles)
+{
+    if (!configured())
+    {
+        return;
+    }
+
+    m_settings->relativeRotation = relativeOrientationEulerAngles;
+}
+
 bool CustomPosePublisher::configured() const
 {
     return m_settings != nullptr && !m_settings->name.empty() && PosePublisher::configured();

@@ -200,6 +200,27 @@ public:
      */
     virtual bool alignRootFrameToHeadset() override;
 
+    /**
+     * Set the position offset of a custom frame
+     * @param customFrameName The name of the frame to edit
+     * @param x The x coordinate of the relative position (with respect the parent frame)
+     * @param y The y coordinate of the relative position (with respect the parent frame)
+     * @param z The z coordinate of the relative position (with respect the parent frame)
+     * @return True if successfull, false if the frame is not found
+     */
+    virtual bool setCustomPoseRelativePosition(const std::string& customFrameName, const double x, const double y, const double z) override;
+
+    /**
+     * Set the rotation offset of a custom frame
+     * The order depends on the chosen euler angles in the configuration file.
+     * @param customFrameName The name of the frame to edit
+     * @param angle1 The first angle offset (with respect the parent frame).
+     * @param angle2 The second angle offset (with respect the parent frame).
+     * @param angle3 The third angle offset (with respect the parent frame).
+     * @return True if successfull, false if the frame is not found
+     */
+    virtual bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const double angle1, const double angle2, const double angle3) override;
+
 private:
 
     struct GuiParam

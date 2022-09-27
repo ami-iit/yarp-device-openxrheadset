@@ -51,6 +51,8 @@ public:
 
     void setRelativeOrientation(const Eigen::Quaternionf& relativeOrientation);
 
+    void setRelativeOrientation(const Eigen::Vector3f& relativeOrientationEulerAngles);
+
     virtual bool configured() const override;
 
     virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input) override;

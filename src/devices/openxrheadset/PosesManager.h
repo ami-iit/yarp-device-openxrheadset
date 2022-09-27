@@ -55,6 +55,12 @@ public:
 
     void setTransformFromRawToRootFrame(const OpenXrInterface::Pose& relativePose);
 
+    bool setCustomPoseRelativePosition(const std::string& customFrameName, const Eigen::Vector3f& relativePosition);
+
+    bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const Eigen::Quaternionf& relativeOrientation);
+
+    bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const Eigen::Vector3f& relativeOrientationEulerAngles);
+
 };
 
 
