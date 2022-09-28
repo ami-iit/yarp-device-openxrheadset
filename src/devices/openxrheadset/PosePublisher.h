@@ -16,65 +16,51 @@
 
 struct PosePublisherSettings
 {
-    yarp::dev::IFrameTransform* tfPublisher;
-    std::string rootFrame;
-    double period{0.01};
-
-    struct ValidityChecks
-    {
-        double maxDistance{0.1};
-        double maxAngularDistanceInRad{0.5};
-        double lastDataExpirationTime{5.0};
-        double maxConvergenceTime{3.0};
-        double convergenceRatio{0.05};
-    };
-
-    ValidityChecks checks;
+    yarp::dev::IFrameTransform* tfPublisher{nullptr};
+    std::string tfBaseFrame;
 };
 
 class PosePublisher
 {
-
-    std::string m_label;
+    std::string m_label, m_tfBaseFrame;
+    OpenXrInterface::NamedPoseVelocity m_data, m_previouslyPublishedData;
+    yarp::sig::Matrix m_localPose;
+    yarp::dev::IFrameTransform* m_tfPublisher{nullptr};
+    bool m_active{false};
+    bool m_publishedOnce{false};
     double m_lastWarningTime{0.0};
     size_t m_warningCount{0};
-    bool m_publishedOnce{false};
-    yarp::sig::Matrix m_localPose;
-    bool m_active{false};
-    OpenXrInterface::NamedPoseVelocity m_data;
-    OpenXrInterface::NamedPoseVelocity m_lastValidData;
-    std::shared_ptr<PosePublisherSettings> m_settings{nullptr};
-    double m_lastValidDataTime;
-    bool m_convergingToJump{false};
-
-    bool positionJumped();
-
-    bool rotationJumped();
-
-    void filterJumps();
 
     void resetWarnings();
 
-    void resetLastValidData();
+    bool usePreviousPose() const;
 
-    void publishOldTransform();
+    bool canPublish() const;
 
-    void publishNewTransform();
+protected:
 
-    void deactivate();
+    virtual void deactivate();
 
 public:
+
     PosePublisher();
+
+    void configurePublisher(std::shared_ptr<PosePublisherSettings> settings);
 
     void setLabel(const std::string& label);
 
-    void configure(std::shared_ptr<PosePublisherSettings> settings);
+    const std::string& label() const;
 
-    bool configured() const;
+    const std::string& tfBaseFrame() const;
 
-    void update(const OpenXrInterface::NamedPoseVelocity& input);
+    virtual bool configured() const;
+
+    virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input);
+
+    OpenXrInterface::NamedPoseVelocity data() const;
 
     void publish();
+
 };
 
 #endif // YARP_DEV_POSEPUBLISHER_H

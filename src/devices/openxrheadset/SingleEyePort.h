@@ -9,11 +9,8 @@
 #ifndef YARP_DEV_EYEPORT_H
 #define YARP_DEV_EYEPORT_H
 
-#include <yarp/dev/IFrameTransform.h>
 #include <yarp/sig/Image.h>
-#include <yarp/sig/Matrix.h>
 #include <yarp/sig/Vector.h>
-#include <yarp/os/Stamp.h>
 #include <yarp/os/BufferedPort.h>
 #include <OpenXrInterface.h>
 #include <ImagePortToQuadLayer.h>
@@ -23,10 +20,6 @@
 
 class SingleEyePort
 {
-    yarp::sig::Matrix m_localPose;
-    yarp::dev::IFrameTransform* m_tfPublisher{nullptr};
-    std::string m_tfFrame;
-    std::string m_rootFrame;
     float m_azimuthOffset {0.0};
     float m_elevationOffset {0.0};
     Eigen::Quaternionf m_desiredRotation;
@@ -41,8 +34,7 @@ class SingleEyePort
 
 public:
 
-    bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& anglesPortName,
-              yarp::dev::IFrameTransform* tfPublisher, const std::string& tfFrame, const std::string& rootFrame);
+    bool open(std::shared_ptr<IOpenXrQuadLayer> quadLayer, const std::string& anglesPortName);
 
     bool openImagePort(const std::string& imagePortName);
 
@@ -69,8 +61,6 @@ public:
     bool update();
 
     bool update(const yarp::sig::ImageOf<yarp::sig::PixelRgb>& img, GLint startX, GLint startY, GLint endX, GLint endY);
-
-    void publishEyeTransform();
 
     bool active() const;
 

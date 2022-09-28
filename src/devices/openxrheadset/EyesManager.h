@@ -24,8 +24,6 @@ public:
         std::shared_ptr<IOpenXrQuadLayer> leftEyeQuadLayer;
         std::shared_ptr<IOpenXrQuadLayer> rightEyeQuadLayer;
         std::string portPrefix;
-        std::string leftEyeFrame;
-        std::string rightEyeFrame;
         double leftAzimuthOffset{0.0};
         double leftElevationOffset{0.0};
         double rightAzimuthOffset{0.0};
@@ -39,13 +37,11 @@ public:
 
     Options& options();
 
-    bool initialize(yarp::dev::IFrameTransform *tfPublisher, const std::string& headFrame);
+    bool initialize();
 
     void close();
 
     bool update();
-
-    void publishEyesTransforms();
 
     std::vector<double> getLeftImageDimensions();
 

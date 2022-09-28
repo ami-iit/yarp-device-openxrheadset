@@ -30,6 +30,7 @@ set(yarp_openxrheadset_SRCS
   impl/OpenXrInterfaceImpl.cpp
   LabelPortToQuadLayer.cpp
   SlideManager.cpp
+  EulerAngles.cpp
 )
 
 set(yarp_openxrheadset_HDRS
@@ -43,6 +44,7 @@ set(yarp_openxrheadset_HDRS
   impl/OpenXrQuadLayer.h
   impl/OpenXrInterfaceImpl.h
   SlideManager.h
+  EulerAngles.h
   )
 
 set(yarp_openxrheadset_driver_SRCS
@@ -50,9 +52,10 @@ set(yarp_openxrheadset_driver_SRCS
     OpenXrYarpUtilities.cpp
     SingleEyePort.cpp
     EyesManager.cpp
-    AdditionalPosesPublisher.cpp
-    FramePorts.cpp
+    PosesManager.cpp
     PosePublisher.cpp
+    CustomPosePublisher.cpp
+    FilteredPosePublisher.cpp
 )
 
 set(yarp_openxrheadset_driver_HDRS
@@ -60,9 +63,10 @@ set(yarp_openxrheadset_driver_HDRS
     OpenXrYarpUtilities.h
     SingleEyePort.h
     EyesManager.h
-    AdditionalPosesPublisher.h
-    FramePorts.h
+    PosesManager.h
     PosePublisher.h
+    CustomPosePublisher.h
+    FilteredPosePublisher.h
 )
 
 set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)

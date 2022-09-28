@@ -1558,9 +1558,10 @@ void OpenXrInterface::getThumbsticks(std::vector<Eigen::Vector2f> &thumbsticks) 
     }
 }
 
-void OpenXrInterface::getAdditionalPoses(std::vector<NamedPoseVelocity> &additionalPoses) const
+void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPoses) const
 {
     size_t numberOfPoses = 0;
+    numberOfPoses += 3; //This is because the head and the hands are added manually
     for (size_t topLevelIndex = 0; topLevelIndex <  m_pimpl->top_level_paths.size(); ++topLevelIndex)
     {
         if (topLevelIndex < 2) //Left and right hand are already considered with leftHandPose() and rightHandPose()
@@ -1579,6 +1580,24 @@ void OpenXrInterface::getAdditionalPoses(std::vector<NamedPoseVelocity> &additio
     additionalPoses.resize(numberOfPoses);
 
     size_t poseIndex = 0;
+
+    auto& head = additionalPoses[poseIndex];
+    head.name = "openxr_head";
+    head.pose = headPose();
+    head.velocity = headVelocity();
+    poseIndex++;
+
+    auto& left_arm = additionalPoses[poseIndex];
+    left_arm.name = "openxr_left_hand";
+    left_arm.pose = leftHandPose();
+    left_arm.velocity = leftHandVelocity();
+    poseIndex++;
+
+    auto& right_arm = additionalPoses[poseIndex];
+    right_arm.name = "openxr_right_hand";
+    right_arm.pose = rightHandPose();
+    right_arm.velocity = rightHandVelocity();
+    poseIndex++;
 
     for (size_t topLevelIndex = 0; topLevelIndex <  m_pimpl->top_level_paths.size(); ++topLevelIndex)
     {
@@ -1671,4 +1690,20 @@ void OpenXrInterface::close()
     yCInfo(OPENXRHEADSET) << "Closed";
 
     m_pimpl->closed = true;
+}
+
+OpenXrInterface::NamedPoseVelocity OpenXrInterface::NamedPoseVelocity::Identity(const std::string &name)
+{
+    OpenXrInterface::NamedPoseVelocity output;
+    output.name = name;
+    output.pose.positionValid = true;
+    output.pose.position.setZero();
+    output.pose.rotationValid = true;
+    output.pose.rotation.setIdentity();
+    output.velocity.linearValid = true;
+    output.velocity.linear.setZero();
+    output.velocity.angularValid = true;
+    output.velocity.angular.setZero();
+
+    return output;
 }

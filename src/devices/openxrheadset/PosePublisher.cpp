@@ -11,168 +11,25 @@
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
 
-bool PosePublisher::positionJumped()
-{
-    if (!m_lastValidData.pose.positionValid || !m_data.pose.positionValid)
-    {
-        return false; //Also the last "valid" pose is not valid, or the input is already not valid
-    }
-
-    if (!m_lastValidData.velocity.linearValid)
-    {
-        yCWarning(OPENXRHEADSET) << "The last valid pose of" << m_label << "has non-valid linear velocity. Assuming there are jumps.";
-        return true;
-    }
-
-    Eigen::Vector3f expectedPosition = m_lastValidData.pose.position + m_settings->period * m_lastValidData.velocity.linear;
-
-    return (expectedPosition - m_data.pose.position).norm() > m_settings->checks.maxDistance;
-}
-
-bool PosePublisher::rotationJumped()
-{
-    if (!m_lastValidData.pose.rotationValid || !m_data.pose.rotationValid)
-    {
-        return false; //Also the last "valid" pose is not valid, or the input is already not valid
-    }
-
-    if (!m_lastValidData.velocity.angularValid)
-    {
-        yCWarning(OPENXRHEADSET) << "The last valid pose of" << m_label << "has non-valid angular velocity. Assuming there are jumps.";
-        return true;
-    }
-
-    double angularVelocity = m_lastValidData.velocity.angular.norm();
-    Eigen::Vector3f angularAxis = Eigen::Vector3f::UnitX();
-
-    if (angularVelocity > 1e-15)
-    {
-        angularAxis = m_lastValidData.velocity.angular.normalized();
-    }
-
-    Eigen::Quaternionf expectedRotationDifference;
-    expectedRotationDifference = Eigen::AngleAxisf(m_settings->period * angularVelocity, angularAxis);
-
-    Eigen::Quaternionf actualRotationDifference = m_data.pose.rotation * m_lastValidData.pose.rotation.inverse();
-
-    return std::abs(actualRotationDifference.angularDistance(expectedRotationDifference)) > m_settings->checks.maxAngularDistanceInRad;
-}
-
-void PosePublisher::filterJumps()
-{
-    bool positionHasJumped = positionJumped();
-    bool rotationHasJumped = rotationJumped();
-
-    double interpolationFactor = 0.0;
-
-    if (!positionHasJumped && !rotationHasJumped)
-    {
-        m_lastValidDataTime = yarp::os::Time::now();
-        m_convergingToJump = false;
-    }
-    else
-    {
-        if ((yarp::os::Time::now() - m_lastValidDataTime) > (m_settings->checks.lastDataExpirationTime))
-        {
-            if (!m_convergingToJump) //Print the warning only once
-            {
-                yCWarning(OPENXRHEADSET) << m_label << "last valid data has expired. The pose will converge to the measured one.";
-            }
-            m_convergingToJump = true;
-            interpolationFactor = m_settings->checks.convergenceRatio;
-        }
-    }
-
-    if (positionHasJumped)
-    {
-        yCWarning(OPENXRHEADSET) << m_label << "position had a jump.";
-        m_data.pose.position = (1 - interpolationFactor) * m_lastValidData.pose.position + interpolationFactor * m_data.pose.position;
-    }
-
-    if (rotationHasJumped)
-    {
-        yCWarning(OPENXRHEADSET) << m_label << "rotation had a jump.";
-        m_data.pose.rotation = m_lastValidData.pose.rotation.slerp(interpolationFactor, m_data.pose.rotation);
-    }
-
-    m_lastValidData = m_data;
-
-    if ((yarp::os::Time::now() - m_lastValidDataTime) > (m_settings->checks.lastDataExpirationTime + m_settings->checks.maxConvergenceTime))
-    {
-        yCWarning(OPENXRHEADSET) << m_label << "last valid convergence has expired. The pose will be aligned to the measured one.";
-        resetLastValidData();
-    }
-}
-
 void PosePublisher::resetWarnings()
 {
     m_lastWarningTime = 0.0;
     m_warningCount = 0;
 }
 
-void PosePublisher::resetLastValidData()
+bool PosePublisher::usePreviousPose() const
 {
-    //Invalidate previous pose
-    m_lastValidData.pose.positionValid = false;
-    m_lastValidData.pose.rotationValid = false;
-
-    m_convergingToJump = false;
+    return !m_data.pose.positionValid || !m_data.pose.rotationValid;
 }
 
-void PosePublisher::publishOldTransform()
+bool PosePublisher::canPublish() const
 {
-    if (!m_publishedOnce)
-    {
-        return;
-    }
-
-    //Publish old pose
-    if (!m_settings->tfPublisher->setTransform(m_label, m_settings->rootFrame, m_localPose))
-    {
-        yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
-    }
-
-    if (m_warningCount == 0 || yarp::os::Time::now() - m_lastWarningTime > 5.0)
-    {
-        yCWarning(OPENXRHEADSET) << m_label << " is not valid. Publishing its last known pose.";
-        m_lastWarningTime = yarp::os::Time::now();
-        m_warningCount++;
-    }
-
-    if (m_warningCount > 6)
-    {
-        yCWarning(OPENXRHEADSET) << m_label << " was not valid for 30s. Deactivated.";
-        deactivate();
-    }
-}
-
-void PosePublisher::publishNewTransform()
-{
-    if (!m_publishedOnce)
-    {
-        if (m_label.empty())
-        {
-            m_label = m_data.name;
-        }
-        m_publishedOnce = true;
-    }
-
-    poseToYarpMatrix(m_data.pose, m_localPose);
-
-    if (!m_settings->tfPublisher->setTransform(m_label, m_settings->rootFrame, m_localPose))
-    {
-        yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
-    }
-
-    m_data.pose.positionValid = false; //We invalidate the data after use. This is to detect if some pose do not get updated.
-    m_data.pose.rotationValid = false;
+    return configured() && m_active && (m_publishedOnce || !usePreviousPose());
 }
 
 void PosePublisher::deactivate()
 {
     resetWarnings();
-    resetLastValidData();
-
     m_active = false;
 }
 
@@ -182,22 +39,36 @@ PosePublisher::PosePublisher()
     m_localPose.eye();
 }
 
+void PosePublisher::configurePublisher(std::shared_ptr<PosePublisherSettings> settings)
+{
+    if (!settings)
+        return;
+
+    m_tfBaseFrame = settings->tfBaseFrame;
+    m_tfPublisher = settings->tfPublisher;
+}
+
 void PosePublisher::setLabel(const std::string &label)
 {
     m_label = label;
 }
 
-void PosePublisher::configure(std::shared_ptr<PosePublisherSettings> settings)
+const std::string &PosePublisher::label() const
 {
-    m_settings = settings;
+    return m_label;
+}
+
+const std::string &PosePublisher::tfBaseFrame() const
+{
+    return m_tfBaseFrame;
 }
 
 bool PosePublisher::configured() const
 {
-    return m_settings != nullptr;
+    return m_tfPublisher != nullptr;
 }
 
-void PosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
+void PosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVelocity &input)
 {
     if (!configured())
     {
@@ -210,24 +81,63 @@ void PosePublisher::update(const OpenXrInterface::NamedPoseVelocity &input)
     m_active = !wasActive || inputValid; //We are active if: - it is the first time we update, - we were active the step before, - we received a valid input
 }
 
+OpenXrInterface::NamedPoseVelocity PosePublisher::data() const
+{
+    if (!canPublish())
+    {
+        return OpenXrInterface::NamedPoseVelocity();
+    }
+
+    if (usePreviousPose())
+    {
+        return m_previouslyPublishedData;
+    }
+
+    return m_data;
+}
+
 void PosePublisher::publish()
 {
-    if (!configured() || !m_active)
+    if (!canPublish())
     {
         return;
     }
 
-    bool inputValid = m_data.pose.positionValid && m_data.pose.rotationValid;
-
-    if (!inputValid)
+    if (!m_publishedOnce)
     {
-        publishOldTransform();
-        return;
+        if (m_label.empty())
+        {
+            m_label = m_data.name;
+        }
     }
 
-    filterJumps();
+    if (!usePreviousPose())
+    {
+        poseToYarpMatrix(m_data.pose, m_localPose);
+        m_publishedOnce = true;
+        m_previouslyPublishedData = m_data;
+        m_data.pose.positionValid = false; //We invalidate the data after use. This is to detect if some pose do not get updated.
+        m_data.pose.rotationValid = false;
+    }
+    else
+    {
+        if (m_warningCount == 0 || yarp::os::Time::now() - m_lastWarningTime > 5.0)
+        {
+            yCWarning(OPENXRHEADSET) << m_label << " is not valid. Publishing its last known pose.";
+            m_lastWarningTime = yarp::os::Time::now();
+            m_warningCount++;
+        }
 
-    resetWarnings();
+        if (m_warningCount > 6)
+        {
+            yCWarning(OPENXRHEADSET) << m_label << " was not valid for 30s. Deactivated.";
+            deactivate();
+            return;
+        }
+    }
 
-    publishNewTransform();
+    if (!m_tfPublisher->setTransform(m_label, m_tfBaseFrame, m_localPose))
+    {
+        yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
+    }
 }

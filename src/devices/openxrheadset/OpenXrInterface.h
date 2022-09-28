@@ -139,6 +139,8 @@ public:
         std::string name;
         Pose pose;
         Velocity velocity;
+
+        static NamedPoseVelocity Identity(const std::string& name);
     };
 
     OpenXrInterface();
@@ -185,7 +187,7 @@ public:
 
     void getThumbsticks(std::vector<Eigen::Vector2f>& thumbsticks) const;
 
-    void getAdditionalPoses(std::vector<NamedPoseVelocity> &additionalPoses) const;
+    void getAllPoses(std::vector<NamedPoseVelocity> &additionalPoses) const;
 
     int64_t currentNanosecondsSinceEpoch() const;
 

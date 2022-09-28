@@ -21,6 +21,8 @@ void poseToYarpMatrix(const Eigen::Vector3f& inputPosition, const Eigen::Quatern
 
 void poseToYarpMatrix(const OpenXrInterface::Pose& input, yarp::sig::Matrix& output);
 
+OpenXrInterface::Pose yarpMatrixToPose(const yarp::sig::Matrix& input);
+
 void writeVec3OnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port, const Eigen::Vector3f& vec3, yarp::os::Stamp& stamp);
 
 void writeQuaternionOnPort(yarp::os::BufferedPort<yarp::os::Bottle>*const & port,
