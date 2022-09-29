@@ -13,14 +13,7 @@
 
 #include <Resources.h>
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <string>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
-
 
 bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 {
@@ -83,36 +76,30 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 
 bool OpenGLQuadLayer::setAspectRatio(float aspectRatio)
 {
-    if (aspectRatio <= 0.4f || aspectRatio >= 2.4f)
+    if (aspectRatio <= 0.0f)
         return false;
-    else
-    {
-        m_aspectRatio = aspectRatio;
-        return true;
-    }
+
+    m_aspectRatio = aspectRatio;
+    return true;
 }
 
 bool OpenGLQuadLayer::setFov(float fov)
 {
     if (fov <= 0.0f || fov >= 180.0f)
         return false;
-    else
-    {
-        m_fov = fov;
-        return true;
-    }
+
+    m_fov = fov;
+    return true;
 }
 
 bool OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
 {
     if (zNear <= 0.0f || zNear >= 1000.0f || zFar <= 0.0f || zFar >= 1000.0f)
         return false;
-    else
-    {
-        m_zNear = zNear;
-        m_zFar = zFar;
-        return true;
-    }
+
+    m_zNear = zNear;
+    m_zFar = zFar;
+    return true;
 }
 
 unsigned int OpenGLQuadLayer::render()
@@ -128,7 +115,7 @@ unsigned int OpenGLQuadLayer::render()
 
     glm::mat4 model = offsetPose * modelPose * sca;
     glm::mat4 view = glm::mat4(1.0f);                                                                                 // set the camera view: not used
-    glm::mat4 proj = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
+    glm::mat4 proj = glm::perspective(m_fov, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
     m_shader.Bind();                                                                                                  // bind shader
     m_shader.SetUniformMat4f("u_M", model);

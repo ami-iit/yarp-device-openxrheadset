@@ -24,6 +24,7 @@
 #include <cstdarg>
 #include <atomic>
 #include <unordered_map>
+#include <cmath>
 
 #include <yarp/os/LogStream.h>
 

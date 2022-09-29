@@ -50,7 +50,7 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
 
     glm::vec3 m_modelScale{1.0f, 1.0f, 1.0f};
 
-    float m_fov = 60.0f;                                                      // Field Of View
+    float m_fov = glm::degrees(60.0f);                                                      // Field Of View
     float m_zNear = 0.1f;
     float m_zFar = 100.0f;
     float m_aspectRatio = 1.0f;
