@@ -1161,14 +1161,19 @@ void OpenXrInterface::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
 
+    Eigen::Matrix4f leftEyePose = toEigen(m_pimpl->view_space_location.pose).inverse() * toEigen(m_pimpl->views[0].pose);
+
 
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
         if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
         {
             openGLLayer->setFov(std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
-            openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[0].pose.position));
-            openGLLayer->setOffsetQuaternion(toEigen(m_pimpl->views[0].pose.orientation));
+            if (!openGLLayer->offsetIsSet())
+            {
+                openGLLayer->setOffsetPosition(leftEyePose.block<3,1>(0, 3));
+                yCInfo(OPENXRHEADSET) << "Setting left image offset:" << leftEyePose.block<3,1>(0, 3)(0) << leftEyePose.block<3,1>(0, 3)(1) << leftEyePose.block<3,1>(0, 3)(2);
+            }
             openGLLayer->setAspectRatio(m_pimpl->projection_view_swapchain_create_info[0].width / m_pimpl->projection_view_swapchain_create_info[0].height);
             openGLLayer->render();
         }
@@ -1200,13 +1205,18 @@ void OpenXrInterface::render()
 
     glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
 
+    Eigen::Matrix4f rightEyePose = toEigen(m_pimpl->view_space_location.pose).inverse() * toEigen(m_pimpl->views[1].pose);
+
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
         if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
         {
             openGLLayer->setFov(std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
-            openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[1].pose.position));
-            openGLLayer->setOffsetQuaternion(toEigen(m_pimpl->views[1].pose.orientation));
+            if (!openGLLayer->offsetIsSet())
+            {
+                openGLLayer->setOffsetPosition(rightEyePose.block<3,1>(0, 3));
+                yCInfo(OPENXRHEADSET) << "Setting right image offset:" << rightEyePose.block<3,1>(0, 3)(0) << rightEyePose.block<3,1>(0, 3)(1) << rightEyePose.block<3,1>(0, 3)(2);
+            }
             openGLLayer->setAspectRatio(m_pimpl->projection_view_swapchain_create_info[1].width / m_pimpl->projection_view_swapchain_create_info[1].height);
             openGLLayer->render();
         }

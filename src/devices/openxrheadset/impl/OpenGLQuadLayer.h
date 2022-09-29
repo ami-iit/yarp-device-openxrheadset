@@ -41,7 +41,7 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     bool m_useAlpha{true};
 
     glm::mat4 m_offsetTra = glm::mat4(1.0f);                                  // position of the Headset Frame WRT the Left or Right Screen Frame
-    glm::mat4 m_offsetRot = glm::mat4(1.0f);                                  // rotation of the Headset Frame WRT both the Screen Frames
+    bool m_offsetIsSet{false};
 
     Eigen::Vector3f m_modelTraEig {0.0f, 0.0f, 0.0f};
     Eigen::Quaternionf m_modelRotEig {1.0f, 0.0f, 0.0f, 0.0f};
@@ -79,11 +79,9 @@ public:
 
     unsigned int render();
 
-    void setOffsetPose(const Eigen::Vector3f& offset, const Eigen::Quaternionf& offsetQuat);
-
     void setOffsetPosition(const Eigen::Vector3f& offset);
 
-    void setOffsetQuaternion(const Eigen::Quaternionf& offsetQuat);
+    bool offsetIsSet() const;
 
     Texture& getUserTexture();
 

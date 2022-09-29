@@ -108,12 +108,10 @@ unsigned int OpenGLQuadLayer::render()
 
     auto ID = m_internalTexture.Bind();
 
-
-    glm::mat4 offsetPose = m_offsetTra * m_offsetRot;
     glm::mat4 modelPose = m_modelTra * m_modelRot;
     glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
 
-    glm::mat4 model = glm::inverse(offsetPose) * modelPose * sca;
+    glm::mat4 model = m_offsetTra * modelPose * sca;
     glm::mat4 proj = glm::perspective(m_fov, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
     m_shader.Bind();                                                                                                  // bind shader
@@ -127,29 +125,18 @@ unsigned int OpenGLQuadLayer::render()
     return ID;
 }
 
-void OpenGLQuadLayer::setOffsetPose(const Eigen::Vector3f& offset, const Eigen::Quaternionf& offsetQuat)
-{
-    setOffsetPosition(offset);
-    setOffsetQuaternion(offsetQuat);
-}
-
-void OpenGLQuadLayer::setOffsetPosition(const Eigen::Vector3f& offset)                                                    // the offset vector must represent the position of the headset frame wrt the Left or Right Screen Frame. Both the Screen Frames are right-handed, have the origin at the center of the screen, the x to the right and the y pointing up.
+void OpenGLQuadLayer::setOffsetPosition(const Eigen::Vector3f& offset) // the offset vector must represent the position of the screen wrt the headset. Both the Screen Frames are right-handed, have the origin at the center of the screen, the x to the right and the y pointing up.
 {
     //The sintax for glm::mat4 is [col][row]
-    m_offsetTra[3][0] = offset(0);
-    m_offsetTra[3][1] = offset(1);
-    m_offsetTra[3][2] = offset(2);
+    m_offsetTra[3][0] = -offset(0);
+    m_offsetTra[3][1] = -offset(1);
+    m_offsetTra[3][2] = -offset(2);
+    m_offsetIsSet = true;
 }
 
-void OpenGLQuadLayer::setOffsetQuaternion(const Eigen::Quaternionf& offsetQuat)
+bool OpenGLQuadLayer::offsetIsSet() const
 {
-    glm::fquat qIn(1.0, 0.0, 0.0, 0.0);
-    qIn.w = offsetQuat.w();
-    qIn.x = offsetQuat.x();
-    qIn.y = offsetQuat.y();
-    qIn.z = offsetQuat.z();
-
-    m_offsetRot = glm::mat4_cast(qIn);
+    return m_offsetIsSet;
 }
 
 Texture& OpenGLQuadLayer::getUserTexture()
