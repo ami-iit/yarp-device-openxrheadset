@@ -1141,11 +1141,6 @@ void OpenXrInterface::render()
 
     GLint ww, wh;
     glfwGetWindowSize(m_pimpl->window, &ww, &wh);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glClearColor(0, 0, 0, 0);
-    //Clear the backgorund color
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //Left Eye
 
@@ -1156,35 +1151,38 @@ void OpenXrInterface::render()
     glClearColor(0, 0, 0, 0);
 #endif
 
-    //Clear the backgorund color
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glViewport(0, 0, ww / 2, wh);
-
-    for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
-    {
-        if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
-        {
-            openGLLayer->setOffsetPosition({ 0.05f, 0.0f, 0.0f });
-            openGLLayer->setAspectRatio(ww / 2.0 / wh);
-            openGLLayer->render();
-        }
-    }
-
-    // Replicate on VR
-
     glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
         swapchain_images[m_pimpl->projection_view_swapchains[0].acquired_index].image, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
         swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
 
-    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId, 0, 0, ww / 2, wh,
+    //Clear the backgorund color
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
+
+
+    for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
+    {
+        if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
+        {
+            openGLLayer->setOffsetPosition({ 0.05f, 0.0f, 0.0f });
+            openGLLayer->setAspectRatio(m_pimpl->projection_view_swapchain_create_info[0].width / m_pimpl->projection_view_swapchain_create_info[0].height);
+            openGLLayer->render();
+        }
+    }
+
+    glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
                            0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
+                           0, 0, ww / 2, wh,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //Right Eye
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[1].
+        swapchain_images[m_pimpl->projection_view_swapchains[1].acquired_index].image, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[1].
+        swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
 
 #ifdef DEBUG_RENDERING
     //Set blue color
@@ -1198,28 +1196,22 @@ void OpenXrInterface::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
 
-    glViewport(ww / 2, 0, ww / 2, wh);
+    glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
 
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
         if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
         {
             openGLLayer->setOffsetPosition({ -0.05f, 0.0f, 0.0f });
-            openGLLayer->setAspectRatio(ww / 2.0 / wh);
+            openGLLayer->setAspectRatio(m_pimpl->projection_view_swapchain_create_info[1].width / m_pimpl->projection_view_swapchain_create_info[1].height);
             openGLLayer->render();
         }
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[1].
-        swapchain_images[m_pimpl->projection_view_swapchains[1].acquired_index].image, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[1].
-        swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
-
     // Replicate swapchain on screen
-    glBlitNamedFramebuffer(0, m_pimpl->glFrameBufferId,
-                           ww / 2 + 1, 0, ww, wh,
+    glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
                            0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
+                           ww / 2 + 1, 0, ww, wh,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //------------------------------
@@ -1464,9 +1456,8 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedOpenGLQuadLayer()
 
     std::shared_ptr<OpenGLQuadLayer> newLayer = std::make_shared<OpenGLQuadLayer>();
 
-    newLayer->initialize(std::min(m_pimpl->viewconfig_views[0].recommendedImageRectWidth,
-        m_pimpl->viewconfig_views[1].recommendedImageRectWidth), std::min(m_pimpl->viewconfig_views[0].recommendedImageRectHeight,
-            m_pimpl->viewconfig_views[1].recommendedImageRectHeight));
+    newLayer->initialize(std::min(m_pimpl->viewconfig_views[0].recommendedImageRectWidth, m_pimpl->viewconfig_views[1].recommendedImageRectWidth),
+                         std::min(m_pimpl->viewconfig_views[0].recommendedImageRectHeight, m_pimpl->viewconfig_views[1].recommendedImageRectHeight));
 
     m_pimpl->openGLQuadLayers.push_back(newLayer);
 
