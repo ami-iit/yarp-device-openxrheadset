@@ -7,9 +7,8 @@
  */
 
 #include <impl/OpenXrInterfaceImpl.h>
-#include <Resources.h>
 
-#define DEBUG_RENDERING
+//#define DEBUG_RENDERING
 
 
 bool OpenXrInterface::checkExtensions()
@@ -1151,19 +1150,14 @@ void OpenXrInterface::render()
     //Left Eye
 
 #ifdef DEBUG_RENDERING
-
-    //glViewport(0, 0, ww / 2, wh);
-    ////m_pimpl->testLayerLeft->setRenderPose(glm::vec3(-0.3f, 0.0f, -3.0f), glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    //m_pimpl->testLayerLeft->render();
-    ////m_pimpl->testLayerLeft->setRenderPose(glm::vec3(0.3f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    //m_pimpl->testLayerLeft->render();
-
-
+    //Set green color
+    glClearColor(0, 1, 0, 1);
 #else
     glClearColor(0, 0, 0, 0);
+#endif
+
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-#endif
 
     glViewport(0, 0, ww / 2, wh);
 
@@ -1193,11 +1187,11 @@ void OpenXrInterface::render()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 #ifdef DEBUG_RENDERING
-
-    //glViewport(ww / 2, 0, ww / 2, wh);
-    ////m_pimpl->testLayerRight->setRenderPose(glm::vec3(0.0f, 0.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    //m_pimpl->testLayerRight->render();
-
+    //Set blue color
+    glClearColor(0, 0, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //Restore default clear
+    glClearColor(0, 0, 0, 0);
 #else
     //Clear the backgorund color
     glClearColor(0, 0, 0, 0);
