@@ -122,6 +122,18 @@ public:
     virtual std::vector<double> getRightImageAnglesOffsets() override;
 
     /**
+     * Get the left image rotation around its center
+     * @return The left image rotation in radians, positive anticlockwise
+     */
+    virtual double getLeftImageRotation() override;
+
+    /**
+     * Get the right image rotation around its center
+     * @return The right image rotation in radians, positive anticlockwise
+     */
+    virtual double getRightImageRotation() override;
+
+    /**
      * Set the left image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
      * @param azimuth The azimuth angle offset in radians (positive anticlockwise)
      * @param elevation The elevation angle offset in radians (positive upwards)
@@ -136,6 +148,20 @@ public:
      * @return True if successfull
      */
     virtual bool setRightImageAnglesOffsets(const double azimuth, const double elevation) override;
+
+    /**
+     * Set the left image rotation around its center.
+     * @param angle The rotation angle in radians (positive anticlockwise)
+     * @return True if successfull
+     */
+    virtual bool setLeftImageRotation(const double angle) override;
+
+    /**
+     * Set the right image rotation around its center.
+     * @param angle The rotation angle in radians (positive anticlockwise)
+     * @return True if successfull
+     */
+    virtual bool setRightImageRotation(const double angle) override;
 
     /**
      * Check if the left eye is visualizing images.

@@ -221,10 +221,12 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_rootFrameRaw = m_rootFrame + "_raw";
     m_eyesManager.options().leftAzimuthOffset = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().leftElevationOffset = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyesManager.options().leftImageRotation = cfg.check("left_image_rotation", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().eyeZPosition = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
     m_eyesManager.options().interCameraDistance = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
     m_eyesManager.options().rightAzimuthOffset = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
+    m_eyesManager.options().rightImageRotation = cfg.check("right_image_rotation", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().splitEyes = cfg.check("split_eye_ports", yarp::os::Value(true)).asBool();
     m_eyesManager.options().portPrefix = m_prefix;
 
@@ -737,6 +739,18 @@ std::vector<double> yarp::dev::OpenXrHeadset::getRightImageAnglesOffsets()
     return m_eyesManager.getRightImageAnglesOffsets();
 }
 
+double yarp::dev::OpenXrHeadset::getLeftImageRotation()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_eyesManager.getLeftImageRotation();
+}
+
+double yarp::dev::OpenXrHeadset::getRightImageRotation()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_eyesManager.getRightImageRotation();
+}
+
 bool yarp::dev::OpenXrHeadset::setLeftImageAnglesOffsets(const double azimuth, const double elevation)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -749,6 +763,18 @@ bool yarp::dev::OpenXrHeadset::setRightImageAnglesOffsets(const double azimuth, 
     std::lock_guard<std::mutex> lock(m_mutex);
 
     return m_eyesManager.setRightImageAnglesOffsets(azimuth, elevation);
+}
+
+bool yarp::dev::OpenXrHeadset::setLeftImageRotation(const double angle)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_eyesManager.setLeftImageRotation(angle);
+}
+
+bool yarp::dev::OpenXrHeadset::setRightImageRotation(const double angle)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_eyesManager.setRightImageRotation(angle);
 }
 
 bool yarp::dev::OpenXrHeadset::isLeftEyeActive()

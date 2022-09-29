@@ -47,6 +47,18 @@ service OpenXrHeadsetCommands
     list<double> getRightImageAnglesOffsets();
 
     /**
+     * Get the left image rotation around its center
+     * @return The left image rotation in radians, positive anticlockwise
+     */
+    double getLeftImageRotation();
+
+    /**
+     * Get the right image rotation around its center
+     * @return The right image rotation in radians, positive anticlockwise
+     */
+    double getRightImageRotation();
+
+    /**
      * Set the left image azimuth (positive anticlockwise) and elevation (positive upwards) offsets in radians
      * @param azimuth The azimuth angle offset in radians (positive anticlockwise)
      * @param elevation The elevation angle offset in radians (positive upwards)
@@ -61,6 +73,20 @@ service OpenXrHeadsetCommands
      * @return True if successfull
      */
     bool setRightImageAnglesOffsets(1:double azimuth, 2:double elevation);
+
+    /**
+     * Set the left image rotation around its center.
+     * @param angle The rotation angle in radians (positive anticlockwise)
+     * @return True if successfull
+     */
+    bool setLeftImageRotation(1:double angle);
+
+    /**
+     * Set the right image rotation around its center.
+     * @param angle The rotation angle in radians (positive anticlockwise)
+     * @return True if successfull
+     */
+    bool setRightImageRotation(1:double angle);
 
     /**
      * Check if the left eye is visualizing images.

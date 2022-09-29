@@ -31,6 +31,7 @@ bool EyesManager::initialize()
     m_leftEye.setEyePosition(Eigen::Vector3f(-m_options.interCameraDistance / 2.0, 0.0, 0.0));
     m_leftEye.setEyeRotationOffset(m_options.leftAzimuthOffset, m_options.leftElevationOffset);
     m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
+    m_leftEye.setImageRotation(m_options.leftImageRotation);
 
     if (!m_rightEye.open(m_options.rightEyeQuadLayer,
                          m_options.portPrefix + "/eyeAngles/right:i")) {
@@ -41,6 +42,7 @@ bool EyesManager::initialize()
     m_rightEye.setEyePosition(Eigen::Vector3f(m_options.interCameraDistance / 2.0, 0.0, 0.0));
     m_rightEye.setEyeRotationOffset(m_options.rightAzimuthOffset, m_options.rightElevationOffset);
     m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
+    m_rightEye.setImageRotation(m_options.rightImageRotation);
 
     if (m_options.splitEyes)
     {
@@ -152,6 +154,16 @@ std::vector<double> EyesManager::getRightImageAnglesOffsets()
     return output;
 }
 
+double EyesManager::getLeftImageRotation()
+{
+    return m_options.leftImageRotation;
+}
+
+double EyesManager::getRightImageRotation()
+{
+    return m_options.rightImageRotation;
+}
+
 bool EyesManager::setLeftImageAnglesOffsets(const double azimuth, const double elevation)
 {
     m_leftEye.setEyeRotationOffset(azimuth, elevation);
@@ -162,6 +174,22 @@ bool EyesManager::setLeftImageAnglesOffsets(const double azimuth, const double e
 bool EyesManager::setRightImageAnglesOffsets(const double azimuth, const double elevation)
 {
     m_rightEye.setEyeRotationOffset(azimuth, elevation);
+
+    return true;
+}
+
+bool EyesManager::setLeftImageRotation(double ccwRotationInRad)
+{
+    m_options.leftImageRotation = ccwRotationInRad;
+    m_leftEye.setImageRotation(ccwRotationInRad);
+
+    return true;
+}
+
+bool EyesManager::setRightImageRotation(double ccwRotationInRad)
+{
+    m_options.rightImageRotation = ccwRotationInRad;
+    m_rightEye.setImageRotation(ccwRotationInRad);
 
     return true;
 }

@@ -24,6 +24,7 @@ class SingleEyePort
     float m_elevationOffset {0.0};
     Eigen::Quaternionf m_desiredRotation;
     Eigen::Quaternionf m_rotationOffset;
+    Eigen::Quaternionf m_imageRotation;
     Eigen::Vector3f m_eyePosition;
     Eigen::Vector3f m_eyeRelativeImagePosition;
     ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgb>> m_layer;
@@ -45,6 +46,8 @@ public:
     void setEyeRotationOffset(double azimuth, double elevation);
 
     void setEyeRotation(double azimuth, double elevation);
+
+    void setImageRotation(double ccwRotationInRad);
 
     double azimuthOffset() const;
 

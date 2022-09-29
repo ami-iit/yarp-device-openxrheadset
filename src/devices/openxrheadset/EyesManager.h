@@ -26,8 +26,10 @@ public:
         std::string portPrefix;
         double leftAzimuthOffset{0.0};
         double leftElevationOffset{0.0};
+        double leftImageRotation{0.0};
         double rightAzimuthOffset{0.0};
         double rightElevationOffset{0.0};
+        double rightImageRotation{0.0};
         double eyeZPosition{-1.0};
         double interCameraDistance{0.07};
         bool splitEyes{true};
@@ -51,9 +53,17 @@ public:
 
     std::vector<double> getRightImageAnglesOffsets();
 
+    double getLeftImageRotation();
+
+    double getRightImageRotation();
+
     bool setLeftImageAnglesOffsets(const double azimuth, const double elevation);
 
     bool setRightImageAnglesOffsets(const double azimuth, const double elevation);
+
+    bool setLeftImageRotation(double ccwRotationInRad);
+
+    bool setRightImageRotation(double ccwRotationInRad);
 
     bool isLeftEyeActive();
 
