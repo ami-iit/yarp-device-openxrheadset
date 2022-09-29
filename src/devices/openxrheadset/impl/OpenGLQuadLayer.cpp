@@ -57,7 +57,6 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 
     m_shader.initialize(resourcesPath() + "/shaders/Basic.shader");
     m_shader.Bind();
-    m_shader.SetUniform4f("u_Color", 0.0f, 1.0f, 0.0f, 1.0f);               // for debug purposes
 
 //    m_userBuffer.Bind(GL_FRAMEBUFFER);
     m_userTexture.Bind();
@@ -122,20 +121,6 @@ bool OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
     }
 }
 
-bool OpenGLQuadLayer::setColor(float r, float g, float b, float alpha)
-{
-    if (r < 0.0f || r > 1.0f || g < 0.0f || g > 1.0f || b < 0.0f || b > 1.0f || alpha < 0.0f || alpha > 1.0f)
-        return false;
-    else
-    {
-        m_r = r;
-        m_g = g;
-        m_b = b;
-        m_alpha = alpha;
-        return true;
-    }
-}
-
 unsigned int OpenGLQuadLayer::render()
 {
     Renderer renderer;
@@ -154,7 +139,6 @@ unsigned int OpenGLQuadLayer::render()
     glm::mat4 proj = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
     m_shader.Bind();                                                                                                  // bind shader
-    m_shader.SetUniform4f("u_Color", m_r, m_g, m_b, m_alpha);                                                         // setup uniform
     m_shader.SetUniformMat4f("u_M", model);
     m_shader.SetUniformMat4f("u_V", view);
     m_shader.SetUniformMat4f("u_P", proj);
@@ -173,6 +157,7 @@ void OpenGLQuadLayer::setOffsetPose(const Eigen::Vector3f& offset, const Eigen::
 
 void OpenGLQuadLayer::setOffsetPosition(const Eigen::Vector3f& offset)                                                    // the offset vector must represent the position of the headset frame wrt the Left or Right Screen Frame. Both the Screen Frames are right-handed, have the origin at the center of the screen, the x to the right and the y pointing up.
 {
+    //The sintax for glm::mat4 is [col][row]
     m_offsetTra[3][0] = offset(0);
     m_offsetTra[3][1] = offset(1);
     m_offsetTra[3][2] = offset(2);
@@ -208,7 +193,7 @@ void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quat
 void OpenGLQuadLayer::setPosition(const Eigen::Vector3f &position)
 {
     m_modelTraEig = position;
-
+    //The sintax for glm::mat4 is [col][row]
     m_modelTra[3][0] = position(0);
     m_modelTra[3][1] = position(1);
     m_modelTra[3][2] = position(2);

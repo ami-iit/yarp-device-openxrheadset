@@ -40,20 +40,15 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
 //    FrameBuffer m_internalBuffer;
 //    unsigned int m_texID{ 0 };
 
-    float m_r = 0.0f;
-    float m_g = 0.0f;
-    float m_b = 0.0f;
-    float m_alpha = 1.0f;
-
     glm::mat4 m_offsetTra = glm::mat4(1.0f);                                  // position of the Headset Frame WRT the Left or Right Screen Frame
     glm::mat4 m_offsetRot = glm::mat4(1.0f);                                  // rotation of the Headset Frame WRT both the Screen Frames
 
-    Eigen::Vector3f m_modelTraEig = Eigen::Vector3f(0.0f, 0.0f, 0.0f);
-    Eigen::Quaternionf m_modelRotEig = Eigen::Quaternionf(1.0f, 0.0f, 0.0f, 0.0f);
+    Eigen::Vector3f m_modelTraEig {0.0f, 0.0f, 0.0f};
+    Eigen::Quaternionf m_modelRotEig {1.0f, 0.0f, 0.0f, 0.0f};
     glm::mat4 m_modelTra = glm::mat4(1.0f);
     glm::mat4 m_modelRot = glm::mat4(1.0f);
 
-    glm::vec3 m_modelScale = glm::vec3( 1.0f, 1.0f, 1.0f);
+    glm::vec3 m_modelScale{1.0f, 1.0f, 1.0f};
 
     float m_fov = 60.0f;                                                      // Field Of View
     float m_zNear = 0.1f;
@@ -81,8 +76,6 @@ public:
     bool setFov(float fov);
 
     bool setDepthLimits(float zNear, float zFar);
-
-    bool setColor(float r, float g, float b, float alpha);
 
     unsigned int render();
 
