@@ -1167,7 +1167,8 @@ void OpenXrInterface::render()
         if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
         {
             openGLLayer->setFov(std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
-            openGLLayer->setOffsetPosition({ 0.05f, 0.0f, 0.0f });
+            openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[0].pose.position));
+            openGLLayer->setOffsetQuaternion(toEigen(m_pimpl->views[0].pose.orientation));
             openGLLayer->setAspectRatio(m_pimpl->projection_view_swapchain_create_info[0].width / m_pimpl->projection_view_swapchain_create_info[0].height);
             openGLLayer->render();
         }
@@ -1204,7 +1205,8 @@ void OpenXrInterface::render()
         if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
         {
             openGLLayer->setFov(std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
-            openGLLayer->setOffsetPosition({ -0.05f, 0.0f, 0.0f });
+            openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[1].pose.position));
+            openGLLayer->setOffsetQuaternion(toEigen(m_pimpl->views[1].pose.orientation));
             openGLLayer->setAspectRatio(m_pimpl->projection_view_swapchain_create_info[1].width / m_pimpl->projection_view_swapchain_create_info[1].height);
             openGLLayer->render();
         }
