@@ -5,17 +5,17 @@
 class IndexBuffer
 {
 private:
-	unsigned int m_RendererID{ 0 };
-	std::vector<unsigned int> m_data;
+    unsigned int m_RendererID{ 0 };
+    std::vector<unsigned int> m_data;
 
 public:
-	IndexBuffer();
-	~IndexBuffer();
+    IndexBuffer();
+    ~IndexBuffer();
 
-	void setIndices(const std::vector<unsigned int>& data);
+    void setIndices(const std::vector<unsigned int>& data);
 
-	void Bind() const;
-	void Unbind() const;
+    void Bind() const;
+    void Unbind() const;
 
-	unsigned int GetCount() const;
+    unsigned int GetCount() const;
 };

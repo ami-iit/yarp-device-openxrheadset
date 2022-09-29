@@ -2,7 +2,7 @@
 
 FrameBuffer::FrameBuffer()
 {
-	glGenFramebuffers(1, &(m_bufferId));
+    glGenFramebuffers(1, &(m_bufferId));
 }
 
 FrameBuffer::~FrameBuffer()

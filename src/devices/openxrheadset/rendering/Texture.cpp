@@ -1,6 +1,6 @@
 #include "Texture.h"
 
-#include "stb_image/stb_image.h"
+#include <stb_image.h>
 
 Texture::Texture()
     : m_RendererID(0), m_LocalBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0)
@@ -22,15 +22,15 @@ void Texture::setTextureFromPath(const std::string& path)
 
     GLCall(glBindTexture(GL_TEXTURE_2D, m_RendererID));
 
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));			// MANDATORY
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));			// MANDATORY
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));		// MANDATORY - horizontal clamp
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));		// MANDATORY - vertical clamp
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));            // MANDATORY
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));            // MANDATORY
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));        // MANDATORY - horizontal clamp
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));        // MANDATORY - vertical clamp
 
     GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_Width, m_Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_LocalBuffer));
     GLCall(glBindTexture(GL_TEXTURE_2D, 0));
 
-    if (m_LocalBuffer)			// if the buffer contains data
+    if (m_LocalBuffer)            // if the buffer contains data
         stbi_image_free(m_LocalBuffer);
 }
 
@@ -49,7 +49,7 @@ unsigned int Texture::GetTextureID() const
 
 unsigned int Texture::Bind(unsigned int slot) const
 {
-    GLCall(glActiveTexture(GL_TEXTURE0 + slot));					// selecting the first slot to be the active one (if you call bind after this line it will bind slot 1)
+    GLCall(glActiveTexture(GL_TEXTURE0 + slot));                    // selecting the first slot to be the active one (if you call bind after this line it will bind slot 1)
     GLCall(glBindTexture(GL_TEXTURE_2D, m_RendererID));
 
     return m_RendererID;

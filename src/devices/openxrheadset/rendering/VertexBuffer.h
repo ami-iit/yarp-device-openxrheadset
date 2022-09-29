@@ -5,23 +5,23 @@
 class VertexBuffer
 {
 private:
-	unsigned int m_RendererID{ 0 };
-	std::vector<float> m_positions;
+    unsigned int m_RendererID{ 0 };
+    std::vector<float> m_positions;
 
 public:
 
-	VertexBuffer();
+    VertexBuffer();
 
-	VertexBuffer(const VertexBuffer&) = delete;
-	VertexBuffer(VertexBuffer&&) = delete;
+    VertexBuffer(const VertexBuffer&) = delete;
+    VertexBuffer(VertexBuffer&&) = delete;
 
-	VertexBuffer& operator=(const VertexBuffer&) = delete;
-	VertexBuffer& operator=(VertexBuffer&&) = delete;
+    VertexBuffer& operator=(const VertexBuffer&) = delete;
+    VertexBuffer& operator=(VertexBuffer&&) = delete;
 
-	~VertexBuffer();
+    ~VertexBuffer();
 
-	void setVertices(const std::vector<float>& positions);
+    void setVertices(const std::vector<float>& positions);
 
-	void Bind() const;
-	void Unbind() const;
+    void Bind() const;
+    void Unbind() const;
 };

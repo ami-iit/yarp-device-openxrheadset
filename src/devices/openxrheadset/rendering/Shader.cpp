@@ -8,7 +8,7 @@
 #include "Renderer.h"
 
 Shader::Shader()
-	: m_RendererID(0)
+    : m_RendererID(0)
 
 {
 

@@ -11,7 +11,6 @@
 
 #define GL_GLEXT_PROTOTYPES
 #define GL3_PROTOTYPES
-#define NOMINMAX //On windows this avoids issues when using min and max
 
 #include <GL/glew.h>
 #include <GL/gl.h>
