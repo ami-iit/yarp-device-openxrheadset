@@ -55,6 +55,13 @@ unsigned int Texture::Bind(unsigned int slot) const
     return m_RendererID;
 }
 
+unsigned int Texture::BindToFrameBuffer(FrameBuffer &frameBuffer, unsigned int slot)
+{
+    frameBuffer.Bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bind(slot), slot);
+    return m_RendererID;
+}
+
 void Texture::Unbind() const
 {
     GLCall(glBindTexture(GL_TEXTURE_2D, 0));

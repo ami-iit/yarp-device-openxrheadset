@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Renderer.h"
+#include <Renderer.h>
+#include <FrameBuffer.h>
 
 class Texture
 {
@@ -27,6 +28,7 @@ public:
     unsigned int GetTextureID() const;
 
     unsigned int Bind(unsigned int slot = 0) const;            // usually you have 32 texture slots to bind muliple Textures
+    unsigned int BindToFrameBuffer(FrameBuffer& frameBuffer, unsigned int slot = 0);
     void Unbind() const;
 
     inline int GetWidth() const { return m_Width; }

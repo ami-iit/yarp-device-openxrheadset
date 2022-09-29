@@ -15,13 +15,17 @@ FrameBuffer::~FrameBuffer()
     }
 }
 
-void FrameBuffer::Bind(GLenum target)
+void FrameBuffer::Bind()
 {
-    m_target = target;
-    glBindFramebuffer(target, m_bufferId);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_bufferId);
 }
 
 void FrameBuffer::Unbind()
 {
-    glBindFramebuffer(m_target, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+GLuint FrameBuffer::ID()
+{
+    return m_bufferId;
 }

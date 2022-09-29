@@ -58,15 +58,13 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     m_shader.initialize(resourcesPath() + "/shaders/Basic.shader");
     m_shader.Bind();
 
-//    m_userBuffer.Bind(GL_FRAMEBUFFER);
-    m_userTexture.Bind();
+    m_userTexture.BindToFrameBuffer(m_userBuffer);
     m_userTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
-//    m_userTexture.Unbind();
-//    m_userBuffer.Unbind();
+    m_userTexture.Unbind();
+    m_userBuffer.Unbind();
 
-//    m_internalBuffer.Bind(GL_FRAMEBUFFER);
-//    m_internalTexture.Bind();
-//    m_internalTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
+    m_internalTexture.BindToFrameBuffer(m_internalBuffer);
+    m_internalTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
 
     //m_texture.Bind();                                                                   // default input is 0 (first slot)
 //    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));  // MANDATORY
@@ -75,8 +73,8 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 //    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));  // MANDATORY - vertical clamp
     m_shader.SetUniform1i("u_Texture", 0); // the second argument must match the input of texture.Bind(input)
 
-    m_userTexture.Unbind();
-//    m_internalBuffer.Unbind();
+    m_internalTexture.Unbind();
+    m_internalBuffer.Unbind();
 
     /* unbinding everything */
     m_va.Unbind();
@@ -125,9 +123,7 @@ unsigned int OpenGLQuadLayer::render()
 {
     Renderer renderer;
 
-
-    //        m_texID = m_internalTexture.Bind();
-    auto ID = m_userTexture.Bind();
+    auto ID = m_internalTexture.Bind();
 
 
     glm::mat4 offsetPose = m_offsetTra * m_offsetRot;
@@ -247,20 +243,17 @@ bool OpenGLQuadLayer::submitImage()
 bool OpenGLQuadLayer::submitImage(int32_t xOffset, int32_t yOffset, int32_t imageWidth, int32_t imageHeight)
 {
 
-//    m_userBuffer.Bind(GL_READ_BUFFER);
-//    m_userTexture.Bind();
+    m_userTexture.BindToFrameBuffer(m_userBuffer);
+    m_internalTexture.BindToFrameBuffer(m_internalBuffer);
 
-//    m_internalBuffer.Bind(GL_DRAW_FRAMEBUFFER);
-//    m_internalTexture.Bind();
+    //Copy from the read framebuffer to the draw framebuffer
+    glBlitNamedFramebuffer(m_userBuffer.ID(), m_internalBuffer.ID(), xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
+        0, 0, imageMaxWidth(), imageMaxHeight(),
+        GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-//    //Copy from the read framebuffer to the draw framebuffer
-//    glBlitFramebuffer(xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
-//        0, 0, imageMaxWidth(), imageMaxHeight(),
-//        GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-////Resetting read and draw framebuffers
-//    m_userBuffer.Unbind();
-//    m_internalBuffer.Unbind();
+//Resetting read and draw framebuffers
+    m_userBuffer.Unbind();
+    m_internalBuffer.Unbind();
 
     return true;
 }
