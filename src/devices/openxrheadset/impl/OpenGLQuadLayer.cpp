@@ -66,12 +66,8 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     m_internalTexture.BindToFrameBuffer(m_internalBuffer);
     m_internalTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
 
-    //m_texture.Bind();                                                                   // default input is 0 (first slot)
-//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));  // MANDATORY
-//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));  // MANDATORY
-//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));  // MANDATORY - horizontal clamp
-//    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));  // MANDATORY - vertical clamp
     m_shader.SetUniform1i("u_Texture", 0); // the second argument must match the input of texture.Bind(input)
+    m_shader.SetUniform1i("u_UseAlpha", m_useAlpha);
 
     m_internalTexture.Unbind();
     m_internalBuffer.Unbind();
@@ -138,6 +134,7 @@ unsigned int OpenGLQuadLayer::render()
     m_shader.SetUniformMat4f("u_M", model);
     m_shader.SetUniformMat4f("u_V", view);
     m_shader.SetUniformMat4f("u_P", proj);
+    m_shader.SetUniform1i("u_UseAlpha", m_useAlpha);
 
     renderer.Draw(m_va, m_ib, m_shader);
 
@@ -220,12 +217,7 @@ void OpenGLQuadLayer::setVisibility(const IOpenXrQuadLayer::Visibility &visibili
 
 void OpenGLQuadLayer::useAlphaChannel(bool useAlphaChannel)
 {
-    //layer.layerFlags = 0;
-
-    //if (useAlphaChannel)
-    //{
-    //    layer.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT | XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT;
-    //}
+    m_useAlpha = useAlphaChannel;
 }
 
 bool OpenGLQuadLayer::getImage(uint32_t &glImage)

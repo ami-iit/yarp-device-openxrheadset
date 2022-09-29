@@ -38,7 +38,7 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     Texture m_userTexture, m_internalTexture;
     FrameBuffer m_userBuffer;
     FrameBuffer m_internalBuffer;
-//    unsigned int m_texID{ 0 };
+    bool m_useAlpha{true};
 
     glm::mat4 m_offsetTra = glm::mat4(1.0f);                                  // position of the Headset Frame WRT the Left or Right Screen Frame
     glm::mat4 m_offsetRot = glm::mat4(1.0f);                                  // rotation of the Headset Frame WRT both the Screen Frames
