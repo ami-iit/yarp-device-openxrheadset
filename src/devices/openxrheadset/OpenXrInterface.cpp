@@ -522,7 +522,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         .type = XR_TYPE_COMPOSITION_LAYER_PROJECTION,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->view_space,
+        .space = m_pimpl->play_space,
         .viewCount = static_cast<uint32_t>(m_pimpl->projection_views.size()),
         .views = m_pimpl->projection_views.data(),
     };
@@ -882,7 +882,7 @@ void OpenXrInterface::updateXrSpaces()
                                          .viewConfigurationType =
                                              XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
                                          .displayTime = m_pimpl->frame_state.predictedDisplayTime,
-                                         .space = m_pimpl->view_space};
+                                         .space = m_pimpl->play_space};
 
 
     uint32_t output_viewCount = m_pimpl->views.size();
