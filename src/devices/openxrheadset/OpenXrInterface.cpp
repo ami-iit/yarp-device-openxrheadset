@@ -522,7 +522,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         .type = XR_TYPE_COMPOSITION_LAYER_PROJECTION,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->play_space,
+        .space = m_pimpl->view_space,
         .viewCount = static_cast<uint32_t>(m_pimpl->projection_views.size()),
         .views = m_pimpl->projection_views.data(),
     };
@@ -894,9 +894,12 @@ void OpenXrInterface::updateXrSpaces()
         return;
     }
 
+    XrPosef identity_pose = { .orientation = {.x = 0, .y = 0, .z = 0, .w = 1.0},
+                            .position = {.x = 0, .y = 0, .z = 0} };
+
     for (size_t i = 0; i < m_pimpl->views.size(); ++i)
     {
-        m_pimpl->projection_views[i].pose = m_pimpl->views[i].pose;
+        m_pimpl->projection_views[i].pose = identity_pose;
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
