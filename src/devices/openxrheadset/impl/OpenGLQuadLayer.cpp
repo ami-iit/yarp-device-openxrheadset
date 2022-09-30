@@ -104,8 +104,8 @@ unsigned int OpenGLQuadLayer::render()
     glm::mat4 modelPose = m_modelTra * m_modelRot;
     glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
 
-    glm::mat4 model = modelPose * sca;
-    glm::mat4 proj = m_offsetTra * glm::perspective(m_fovY, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
+    glm::mat4 model = m_offsetTra * modelPose * sca;
+    glm::mat4 proj = glm::perspective(m_fovY, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
     m_shader.Bind();                                                                                                  // bind shader
     m_shader.SetUniformMat4f("u_M", model);
