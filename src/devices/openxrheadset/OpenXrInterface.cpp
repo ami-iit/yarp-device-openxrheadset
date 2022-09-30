@@ -1166,7 +1166,7 @@ void OpenXrInterface::render()
 
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
-        if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
+        if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFov(std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
             if (!openGLLayer->offsetIsSet())
@@ -1209,7 +1209,7 @@ void OpenXrInterface::render()
 
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
-        if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES)
+        if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFov(std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
             if (!openGLLayer->offsetIsSet())

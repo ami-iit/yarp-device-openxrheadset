@@ -149,6 +149,11 @@ const  IOpenXrQuadLayer::Visibility& OpenGLQuadLayer::visibility() const
     return m_visibility;
 }
 
+bool OpenGLQuadLayer::shouldRender() const
+{
+    return m_isEnabled && m_isReleased;
+}
+
 void OpenGLQuadLayer::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &quaternion)
 {
     setPosition(position);
@@ -219,6 +224,8 @@ bool OpenGLQuadLayer::submitImage(int32_t xOffset, int32_t yOffset, int32_t imag
     m_userBuffer.Unbind();
     m_internalBuffer.Unbind();
 
+    m_isReleased = true;
+
     return true;
 }
 
@@ -254,7 +261,7 @@ Eigen::Quaternionf OpenGLQuadLayer::layerQuaternion() const
 
 void OpenGLQuadLayer::setEnabled(bool enabled)
 {
-    //this->isEnabled = enabled;
+    m_isEnabled = enabled;
 }
 
 OpenGLQuadLayer::OpenGLQuadLayer()

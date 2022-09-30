@@ -39,6 +39,8 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     FrameBuffer m_userBuffer;
     FrameBuffer m_internalBuffer;
     bool m_useAlpha{true};
+    bool m_isEnabled{true};
+    bool m_isReleased{false};
 
     glm::mat4 m_offsetTra = glm::mat4(1.0f);                                  // position of the Headset Frame WRT the Left or Right Screen Frame
     bool m_offsetIsSet{false};
@@ -50,7 +52,7 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
 
     glm::vec3 m_modelScale{1.0f, 1.0f, 1.0f};
 
-    float m_fov = glm::degrees(60.0f);                                                      // Field Of View
+    float m_fov = glm::radians(60.0f);                                                      // Field Of View
     float m_zNear = 0.1f;
     float m_zFar = 100.0f;
     float m_aspectRatio = 1.0f;
@@ -86,6 +88,8 @@ public:
     Texture& getUserTexture();
 
     const  IOpenXrQuadLayer::Visibility& visibility() const;
+
+    bool shouldRender() const;
 
     virtual void setPose(const Eigen::Vector3f& position,
                          const Eigen::Quaternionf &quaternion) override;

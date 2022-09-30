@@ -226,7 +226,7 @@ double EyesManager::getInterCameraDistance()
 
 bool EyesManager::setInterCameraDistance(const double distance)
 {
-    m_options.interCameraDistance = std::abs(distance);
+    m_options.interCameraDistance = distance;
     m_leftEye.setEyePosition(Eigen::Vector3f(-m_options.interCameraDistance / 2.0, 0.0, 0.0));
     m_rightEye.setEyePosition(Eigen::Vector3f(m_options.interCameraDistance / 2.0, 0.0, 0.0));
 
