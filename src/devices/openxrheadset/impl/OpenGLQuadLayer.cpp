@@ -82,7 +82,7 @@ void OpenGLQuadLayer::setFOVs(float fovX, float fovY)
         return;
 
     m_fovY = fovY;
-    m_aspectRatio = std::tan(fovX/2) / tan_fovY_2;
+    m_aspectRatio = std::tan(fovX/2) / tan_fovY_2; //See https://en.wikipedia.org/wiki/Field_of_view_in_video_games
 }
 
 bool OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
