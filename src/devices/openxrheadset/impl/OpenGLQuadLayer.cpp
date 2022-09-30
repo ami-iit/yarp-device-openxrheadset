@@ -74,22 +74,15 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     return true;
 }
 
-bool OpenGLQuadLayer::setAspectRatio(float aspectRatio)
+void OpenGLQuadLayer::setFOVs(float fovX, float fovY)
 {
-    if (aspectRatio <= 0.0f)
-        return false;
+    float tan_fovY_2 = std::tan(fovY/2);
 
-    m_aspectRatio = aspectRatio;
-    return true;
-}
+    if (std::abs(tan_fovY_2) < 1e-15)
+        return;
 
-bool OpenGLQuadLayer::setFov(float fov)
-{
-    if (fov <= 0.0f || fov >= 180.0f)
-        return false;
-
-    m_fov = fov;
-    return true;
+    m_fovY = fovY;
+    m_aspectRatio = std::tan(fovX/2) / tan_fovY_2;
 }
 
 bool OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
