@@ -12,6 +12,7 @@
 #include <OpenGLConfig.h>
 #include <string>
 #include <unordered_map>
+#include <istream>
 
 struct ShaderProgramSource
 {
@@ -37,7 +38,9 @@ public:
     Shader& operator=(Shader&&) = delete;
 
 
-    void initialize(const std::string& shaderPath);
+    void initializeFromPath(const std::string& shaderPath);
+
+    void initializeFromString(const std::string& shaderValue);
 
     void bind() const;                    // it would be "use program" for shaders, but let's use "bind" for consistency
     void unbind() const;
@@ -49,7 +52,7 @@ public:
     void setUniformMat4f(const std::string& name, const glm::mat4& matrix);
 
 private:
-    ShaderProgramSource parseShader(const std::string& filepath);
+    ShaderProgramSource parseShader(std::istream &stream);
     unsigned int compileShader(unsigned int type, const std::string& source);
     unsigned int createShader(const std::string& vertexShader, const std::string& fragmentShader);
     int getUniformLocation(const std::string& name);

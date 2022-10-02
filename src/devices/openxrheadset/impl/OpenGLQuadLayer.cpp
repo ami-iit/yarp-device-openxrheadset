@@ -10,9 +10,7 @@
 #include <impl/OpenGLQuadLayer.h>
 #include <OpenXrHeadsetLogComponent.h>
 #include <OpenXrEigenConversions.h>
-
-#include <Resources.h>
-
+#include <QuadLayerShader.h>
 #include <string>
 
 bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
@@ -48,7 +46,7 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 
     m_ib.setIndices(m_indices);
 
-    m_shader.initialize(resourcesPath() + "/shaders/Basic.shader");
+    m_shader.initializeFromString(QuadLayerShader::Content());
     m_shader.bind();
 
     m_userTexture.bindToFrameBuffer(m_userBuffer);

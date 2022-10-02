@@ -6,11 +6,12 @@
  * BSD-2-Clause license. See the accompanying LICENSE file for details.
  */
 
-#include <iostream>
-#include <fstream>                                                                  // to be able to provide the shaders as a file
+#include <fstream> // to be able to provide the shaders as a file
 #include <string>
 #include <sstream>
 #include <Shader.h>
+#include <yarp/os/LogStream.h>
+#include <OpenXrHeadsetLogComponent.h>
 
 Shader::Shader()
     : m_rendererID(0)
@@ -24,17 +25,24 @@ Shader::~Shader()
     glDeleteProgram(m_rendererID);
 }
 
-void Shader::initialize(const std::string& shaderPath)
+void Shader::initializeFromPath(const std::string &shaderPath)
 {
-    ShaderProgramSource source = parseShader(shaderPath);
+    std::ifstream shaderFile(shaderPath);
+    ShaderProgramSource source = parseShader(shaderFile);
     m_rendererID = createShader(source.vertexSource, source.fragmentSource);
     m_initialized = true;
 }
 
-ShaderProgramSource Shader::parseShader(const std::string& filepath)
+void Shader::initializeFromString(const std::string &shaderValue)
 {
-    std::ifstream stream(filepath);
+    std::stringstream shaderStream(shaderValue);
+    ShaderProgramSource source = parseShader(shaderStream);
+    m_rendererID = createShader(source.vertexSource, source.fragmentSource);
+    m_initialized = true;
+}
 
+ShaderProgramSource Shader::parseShader(std::istream& stream)
+{
     enum class ShaderType
     {
         NONE = -1, VERTEX = 0, FRAGMENT = 1
@@ -43,7 +51,7 @@ ShaderProgramSource Shader::parseShader(const std::string& filepath)
     std::string line;
     std::stringstream ss[2];
     ShaderType type = ShaderType::NONE;
-    while (getline(stream, line))
+    while (getline(stream, line, '\n'))
     {
         if (line.find("#shader") != std::string::npos)
         {
@@ -78,8 +86,8 @@ unsigned int Shader::compileShader(unsigned int type, const std::string& source)
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char* message = (char*)alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
-        std::cout << message << std::endl;
+        yCError(OPENXRHEADSET) << "Failed to compile" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << "shader!";
+        yCError(OPENXRHEADSET) << message;
         glDeleteShader(id);
         return 0;
     }
@@ -143,7 +151,7 @@ int Shader::getUniformLocation(const std::string& name)
 
     int location = glGetUniformLocation(m_rendererID, name.c_str());
     if (location == -1)
-        std::cout << "Warning: uniform '" << name << "' doesn't exist!" << std::endl;
+        yCWarning(OPENXRHEADSET) << "Uniform '" << name << "'doesn't exist!";
 
     m_uniformLocationCache[name] = location;
     return location;
