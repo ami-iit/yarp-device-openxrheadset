@@ -1,35 +1,37 @@
-#include "Shader.h"
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
 
 #include <iostream>
 #include <fstream>                                                                  // to be able to provide the shaders as a file
 #include <string>
 #include <sstream>
-
-#include "Renderer.h"
+#include <Shader.h>
 
 Shader::Shader()
-    : m_RendererID(0)
-
-{
-
-}
+    : m_rendererID(0)
+{ }
 
 Shader::~Shader()
 {
     if (!m_initialized)
         return;
 
-    GLCall(glDeleteProgram(m_RendererID));
+    glDeleteProgram(m_rendererID);
 }
 
 void Shader::initialize(const std::string& shaderPath)
 {
-    ShaderProgramSource source = ParseShader(shaderPath);
-    m_RendererID = CreateShader(source.VertexSource, source.FragmentSource);
+    ShaderProgramSource source = parseShader(shaderPath);
+    m_rendererID = createShader(source.vertexSource, source.fragmentSource);
     m_initialized = true;
 }
 
-ShaderProgramSource Shader::ParseShader(const std::string& filepath)
+ShaderProgramSource Shader::parseShader(const std::string& filepath)
 {
     std::ifstream stream(filepath);
 
@@ -43,7 +45,7 @@ ShaderProgramSource Shader::ParseShader(const std::string& filepath)
     ShaderType type = ShaderType::NONE;
     while (getline(stream, line))
     {
-        if (line.find("#shader") != std::string::npos)                             // npos means that has not found the string
+        if (line.find("#shader") != std::string::npos)
         {
             if (line.find("vertex") != std::string::npos)
                 type = ShaderType::VERTEX;
@@ -52,7 +54,7 @@ ShaderProgramSource Shader::ParseShader(const std::string& filepath)
         }
         else
         {
-            ss[(int)type] << line << '\n';                                          // using the type as an index into the array (very smart)
+            ss[(int)type] << line << '\n';
         }
     }
 
@@ -60,7 +62,7 @@ ShaderProgramSource Shader::ParseShader(const std::string& filepath)
 }
 
 
-unsigned int Shader::CompileShader(unsigned int type, const std::string& source)         // string& --> passing the item by reference
+unsigned int Shader::compileShader(unsigned int type, const std::string& source)         // string& --> passing the item by reference
 {
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();                            // OpenGL is expecting a Raw String, not a std::string. This line returns a pointer to the beginning of our data
@@ -85,64 +87,64 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
     return id;
 }
 
-unsigned int Shader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader)         //shaders can be provided to OpenGL as strings (most basic approach)
+unsigned int Shader::createShader(const std::string& vertexShader, const std::string& fragmentShader)         //shaders can be provided to OpenGL as strings (most basic approach)
 {
     /* inside this scope, the code needed to compile the 2 shaders */
-    GLCall(unsigned int program = glCreateProgram());
-    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+    unsigned int program = glCreateProgram();
+    unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
+    unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
 
-    GLCall(glAttachShader(program, vs));
-    GLCall(glAttachShader(program, fs));
-    GLCall(glLinkProgram(program));
-    GLCall(glValidateProgram(program));
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
+    glLinkProgram(program);
+    glValidateProgram(program);
 
-    GLCall(glDeleteShader(vs));
-    GLCall(glDeleteShader(fs));
+    glDeleteShader(vs);
+    glDeleteShader(fs);
 
     return program;
 }
 
 
-void Shader::Bind() const
+void Shader::bind() const
 {
-    GLCall(glUseProgram(m_RendererID));
+    glUseProgram(m_rendererID);
 }
 
-void Shader::Unbind() const
+void Shader::unbind() const
 {
-    GLCall(glUseProgram(0));
+    glUseProgram(0);
 }
 
-void Shader::SetUniform1i(const std::string& name, int value)
+void Shader::setUniform1i(const std::string& name, int value)
 {
-    GLCall(glUniform1i(GetUniformLocation(name), value));
+    glUniform1i(getUniformLocation(name), value);
 }
 
-void Shader::SetUniform1f(const std::string& name, float value)
+void Shader::setUniform1f(const std::string& name, float value)
 {
-    GLCall(glUniform1f(GetUniformLocation(name), value));
+    glUniform1f(getUniformLocation(name), value);
 }
 
-void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
+void Shader::setUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
 {
-    GLCall(glUniform4f(GetUniformLocation(name), v0, v1, v2, v3));
+    glUniform4f(getUniformLocation(name), v0, v1, v2, v3);
 }
 
-void Shader::SetUniformMat4f(const std::string& name, const glm::mat4& matrix)
+void Shader::setUniformMat4f(const std::string& name, const glm::mat4& matrix)
 {
-    GLCall(glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
+    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &matrix[0][0]);
 }
 
-int Shader::GetUniformLocation(const std::string& name)
+int Shader::getUniformLocation(const std::string& name)
 {
-    if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
-        return m_UniformLocationCache[name];
-    
-    GLCall(int location = glGetUniformLocation(m_RendererID, name.c_str()));
+    if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end())
+        return m_uniformLocationCache[name];
+
+    int location = glGetUniformLocation(m_rendererID, name.c_str());
     if (location == -1)
         std::cout << "Warning: uniform '" << name << "' doesn't exist!" << std::endl;
-    
-    m_UniformLocationCache[name] = location;
+
+    m_uniformLocationCache[name] = location;
     return location;
 }

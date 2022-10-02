@@ -1,11 +1,20 @@
-#pragma once
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
+
+#ifndef YARP_DEV_VERTEXBUFFER_H
+#define YARP_DEV_VERTEXBUFFER_H
 
 #include <vector>
 
 class VertexBuffer
 {
 private:
-    unsigned int m_RendererID{ 0 };
+    unsigned int m_rendererID{ 0 };
     std::vector<float> m_positions;
 
 public:
@@ -22,6 +31,8 @@ public:
 
     void setVertices(const std::vector<float>& positions);
 
-    void Bind() const;
-    void Unbind() const;
+    void bind() const;
+    void unbind() const;
 };
+
+#endif //YARP_DEV_VERTEXBUFFER_H

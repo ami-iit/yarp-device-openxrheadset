@@ -1,4 +1,13 @@
-#pragma once
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
+
+#ifndef YARP_DEV_INDEXBUFFER_H
+#define YARP_DEV_INDEXBUFFER_H
 
 #include <vector>
 
@@ -14,8 +23,10 @@ public:
 
     void setIndices(const std::vector<unsigned int>& data);
 
-    void Bind() const;
-    void Unbind() const;
+    void bind() const;
+    void unbind() const;
 
-    unsigned int GetCount() const;
+    unsigned int getCount() const;
 };
+
+#endif //YARP_DEV_INDEXBUFFER_H

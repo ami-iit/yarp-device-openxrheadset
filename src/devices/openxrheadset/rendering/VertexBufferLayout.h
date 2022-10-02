@@ -1,8 +1,16 @@
-#pragma once
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
 
+#ifndef YARP_DEV_VERTEXBUFFERLAYOUT_H
+#define YARP_DEV_VERTEXBUFFERLAYOUT_H
+
+#include <OpenGLConfig.h>
 #include <vector>
-#include <GL/glew.h>
-#include "Renderer.h"
 #include <cassert>
 
 struct VertexBufferElement
@@ -28,13 +36,36 @@ struct VertexBufferElement
 class VertexBufferLayout
 {
 private:
-    std::vector<VertexBufferElement> m_Elements;
-    unsigned int m_Stride;
+    std::vector<VertexBufferElement> m_elements;
+    unsigned int m_stride{0};
 public:
-    VertexBufferLayout();
 
-    void Push(unsigned int count);
+    template <typename T>
+    inline void push(unsigned int count) = delete;
 
-    const std::vector<VertexBufferElement> GetElements() const;
-    unsigned int GetStride() const;
+    const std::vector<VertexBufferElement> getElements() const;
+    unsigned int getStride() const;
 };
+
+template<>
+inline void VertexBufferLayout::push<float>(unsigned int count)
+{
+    m_elements.push_back({ GL_FLOAT, count, GL_FALSE });
+    m_stride += count * VertexBufferElement::GetSizeOfType(GL_FLOAT); // size of the thing that we are pushing back (4 bytes)
+};
+
+template<>
+inline void VertexBufferLayout::push<unsigned int>(unsigned int count)
+{
+    m_elements.push_back({ GL_UNSIGNED_INT, count, GL_FALSE });
+    m_stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_INT); // size of the thing that we are pushing back
+}
+
+template<>
+inline void VertexBufferLayout::push<unsigned char>(unsigned int count)
+{
+    m_elements.push_back({ GL_UNSIGNED_BYTE, count, GL_TRUE });
+    m_stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_BYTE); // size of the thing that we are pushing back
+}
+
+#endif //YARP_DEV_VERTEXBUFFERLAYOUT_H

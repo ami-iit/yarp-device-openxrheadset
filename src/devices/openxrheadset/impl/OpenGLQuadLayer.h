@@ -75,9 +75,9 @@ public:
 
     void setFOVs(float fovX, float fovY);
 
-    bool setDepthLimits(float zNear, float zFar);
+    void setDepthLimits(float zNear, float zFar);
 
-    unsigned int render();
+    void render();
 
     void setOffsetPosition(const Eigen::Vector3f& offset);
 

@@ -1,33 +1,24 @@
-#include "Renderer.h"
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
 
+#include <Renderer.h>
 #include <iostream>
 
-void GLClearError()
+void Renderer::clear() const
 {
-    while (glGetError() != GL_NO_ERROR);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 }
 
-bool GLLogCall(const char* function, const char* file, int line)                                                           // name of the function that we are trying to call, cpp file that is causing the error, line of the code
+void Renderer::draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const
 {
-    while (GLenum error = glGetError())
-    {
-        std::cout << "[OpenGL Error] (" << error << "): " << function << " " << file << ":" << line << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
-void Renderer::Clear() const
-{
-    GLCall(glClear(GL_COLOR_BUFFER_BIT));
-    GLCall(glClear(GL_DEPTH_BUFFER_BIT));
-}
-
-void Renderer::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const
-{
-    shader.Bind();                                                                                                         // bind shader
-    va.Bind();
-    ib.Bind();
-    GLCall(glDrawElements(GL_TRIANGLES, ib.GetCount(), GL_UNSIGNED_INT, nullptr));                                         // Used with an index buffer. Without index buffer you may use "glDrawArrays". They both draw what has been previously binded through glBindBuffer. We are drawing six indices for a square. GLCall checks for errors on its line.
+    shader.bind();
+    va.bind();
+    ib.bind();
+    glDrawElements(GL_TRIANGLES, ib.getCount(), GL_UNSIGNED_INT, nullptr);
 }

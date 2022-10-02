@@ -1,20 +1,20 @@
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
+
+
 #include <VertexBufferLayout.h>
 
-
-VertexBufferLayout::VertexBufferLayout()
-    : m_Stride(0) {}
-
-void VertexBufferLayout::Push(unsigned int count)
+const std::vector<VertexBufferElement> VertexBufferLayout::getElements() const
 {
-    m_Elements.push_back({ GL_FLOAT, count, GL_FALSE });
-    m_Stride += count * VertexBufferElement::GetSizeOfType(GL_FLOAT);   // size of the thing that we are pushing back (4 bytes)
+    return m_elements;
 }
 
-const std::vector<VertexBufferElement> VertexBufferLayout::GetElements() const
+unsigned int VertexBufferLayout::getStride() const
 {
-    return m_Elements;
-}
-
-unsigned int VertexBufferLayout::GetStride() const {
-    return m_Stride;
+    return m_stride;
 }

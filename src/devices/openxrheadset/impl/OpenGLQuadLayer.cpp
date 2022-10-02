@@ -22,54 +22,54 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 
     m_positions = {
         // vertex coords         // texture coords
-        -0.5f, -0.5f, 0.0, 1.0f, 0.0f, 0.0f, // 0 (the first 3 numbers of the row are the vertex coordinates, the second 2 numbers are the texture coordinate for that vertex (the bottom left corner of the rectangle is also the bottom left corner of the picture))
+        -0.5f, -0.5f, 0.0, 1.0f, 0.0f, 0.0f, // 0 (the first 4 numbers of the row are the vertex coordinates, the second 2 numbers are the texture coordinate for that vertex (the bottom left corner of the rectangle is also the bottom left corner of the picture))
          0.5f, -0.5f, 0.0, 1.0f, 1.0f, 0.0f, // 1
          0.5f,  0.5f, 0.0, 1.0f, 1.0f, 1.0f, // 2
         -0.5f,  0.5f, 0.0, 1.0f, 0.0f, 1.0f  // 3
     };
 
-    m_indices = {                                                                         // creating an index buffer to save GPU memory
+    m_indices = { // creating an index buffer to save GPU memory
         0, 1, 2,
         2, 3, 0
     };
 
-    GLCall(glEnable(GL_DEPTH_TEST));
-    GLCall(glDepthFunc(GL_LEQUAL));
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 
-    GLCall(glEnable(GL_BLEND));
-    GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));                          // src (output color of the fragment shader) and dest (color already in the buffer) factors respectively (sfactor, dfactor)
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // src (output color of the fragment shader) and dest (color already in the buffer) factors respectively (sfactor, dfactor)
 
     m_vb.setVertices(m_positions);
 
     VertexBufferLayout layout;
-    layout.Push(4);                          // 3 floats for each vertex position
-    layout.Push(2);                          // 2 floats for texture coordinates to be mapped on each vertex
-    m_va.AddBuffer(m_vb, layout);
+    layout.push<float>(4); // 4 floats for each vertex position
+    layout.push<float>(2); // 2 floats for texture coordinates to be mapped on each vertex
+    m_va.addBuffer(m_vb, layout);
 
     m_ib.setIndices(m_indices);
 
     m_shader.initialize(resourcesPath() + "/shaders/Basic.shader");
-    m_shader.Bind();
+    m_shader.bind();
 
-    m_userTexture.BindToFrameBuffer(m_userBuffer);
+    m_userTexture.bindToFrameBuffer(m_userBuffer);
     m_userTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
-    m_userTexture.Unbind();
-    m_userBuffer.Unbind();
+    m_userTexture.unbind();
+    m_userBuffer.unbind();
 
-    m_internalTexture.BindToFrameBuffer(m_internalBuffer);
+    m_internalTexture.bindToFrameBuffer(m_internalBuffer);
     m_internalTexture.allocateTexture(imageMaxWidth, imageMaxHeight);
 
-    m_shader.SetUniform1i("u_Texture", 0); // the second argument must match the input of texture.Bind(input)
-    m_shader.SetUniform1i("u_UseAlpha", m_useAlpha);
+    m_shader.setUniform1i("u_Texture", 0); // the second argument must match the input of texture.Bind(input)
+    m_shader.setUniform1i("u_UseAlpha", m_useAlpha);
 
-    m_internalTexture.Unbind();
-    m_internalBuffer.Unbind();
+    m_internalTexture.unbind();
+    m_internalBuffer.unbind();
 
     /* unbinding everything */
-    m_va.Unbind();
-    m_vb.Unbind();
-    m_ib.Unbind();
-    m_shader.Unbind();
+    m_va.unbind();
+    m_vb.unbind();
+    m_ib.unbind();
+    m_shader.unbind();
 
     return true;
 }
@@ -85,21 +85,17 @@ void OpenGLQuadLayer::setFOVs(float fovX, float fovY)
     m_aspectRatio = std::tan(fovX/2) / tan_fovY_2; //See https://en.wikipedia.org/wiki/Field_of_view_in_video_games
 }
 
-bool OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
+void OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
 {
-    if (zNear <= 0.0f || zNear >= 1000.0f || zFar <= 0.0f || zFar >= 1000.0f)
-        return false;
-
     m_zNear = zNear;
     m_zFar = zFar;
-    return true;
 }
 
-unsigned int OpenGLQuadLayer::render()
+void OpenGLQuadLayer::render()
 {
     Renderer renderer;
 
-    auto ID = m_internalTexture.Bind();
+    m_internalTexture.bind();
 
     glm::mat4 modelPose = m_modelTra * m_modelRot;
     glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
@@ -107,15 +103,12 @@ unsigned int OpenGLQuadLayer::render()
     glm::mat4 model = m_offsetTra * modelPose * sca;
     glm::mat4 proj = glm::perspective(m_fovY, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
-    m_shader.Bind();                                                                                                  // bind shader
-    m_shader.SetUniformMat4f("u_M", model);
-    m_shader.SetUniformMat4f("u_P", proj);
-    m_shader.SetUniform1i("u_UseAlpha", m_useAlpha);
+    m_shader.bind();                                                                                                  // bind shader
+    m_shader.setUniformMat4f("u_M", model);
+    m_shader.setUniformMat4f("u_P", proj);
+    m_shader.setUniform1i("u_UseAlpha", m_useAlpha);
 
-    renderer.Draw(m_va, m_ib, m_shader);
-
-
-    return ID;
+    renderer.draw(m_va, m_ib, m_shader);
 }
 
 void OpenGLQuadLayer::setOffsetPosition(const Eigen::Vector3f& offset) // the offset vector must represent the position of the screen wrt the headset. Both the Screen Frames are right-handed, have the origin at the center of the screen, the x to the right and the y pointing up.
@@ -192,7 +185,7 @@ void OpenGLQuadLayer::useAlphaChannel(bool useAlphaChannel)
 
 bool OpenGLQuadLayer::getImage(uint32_t &glImage)
 {
-    glImage = m_userTexture.GetTextureID();
+    glImage = m_userTexture.getTextureID();
 
     return true;
 }
@@ -205,17 +198,17 @@ bool OpenGLQuadLayer::submitImage()
 bool OpenGLQuadLayer::submitImage(int32_t xOffset, int32_t yOffset, int32_t imageWidth, int32_t imageHeight)
 {
 
-    m_userTexture.BindToFrameBuffer(m_userBuffer);
-    m_internalTexture.BindToFrameBuffer(m_internalBuffer);
+    m_userTexture.bindToFrameBuffer(m_userBuffer);
+    m_internalTexture.bindToFrameBuffer(m_internalBuffer);
 
     //Copy from the read framebuffer to the draw framebuffer
-    glBlitNamedFramebuffer(m_userBuffer.ID(), m_internalBuffer.ID(), xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
+    glBlitNamedFramebuffer(m_userBuffer.id(), m_internalBuffer.id(), xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
         0, 0, imageMaxWidth(), imageMaxHeight(),
         GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 //Resetting read and draw framebuffers
-    m_userBuffer.Unbind();
-    m_internalBuffer.Unbind();
+    m_userBuffer.unbind();
+    m_internalBuffer.unbind();
 
     m_isReleased = true;
 

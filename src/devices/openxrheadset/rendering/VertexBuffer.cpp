@@ -1,32 +1,38 @@
-#include "VertexBuffer.h"
+/*
+ * Copyright (C) 2022 Istituto Italiano di Tecnologia (IIT)
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms of the
+ * BSD-2-Clause license. See the accompanying LICENSE file for details.
+ */
 
-#include "Renderer.h"
+#include <OpenGLConfig.h>
+#include <VertexBuffer.h>
 
 VertexBuffer::VertexBuffer()
 {
-    GLCall(glGenBuffers(1, &m_RendererID));
+    glGenBuffers(1, &m_rendererID);
 }
 
 VertexBuffer::~VertexBuffer()
 {
-    GLCall(glDeleteBuffers(1, &m_RendererID));
+    glDeleteBuffers(1, &m_rendererID);
 }
 
 void VertexBuffer::setVertices(const std::vector<float>& positions)
 {
     m_positions = positions;
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID));
-    GLCall(glBufferData(GL_ARRAY_BUFFER, m_positions.size() * sizeof(float), m_positions.data(), GL_STATIC_DRAW));
+    glBindBuffer(GL_ARRAY_BUFFER, m_rendererID);
+    glBufferData(GL_ARRAY_BUFFER, m_positions.size() * sizeof(float), m_positions.data(), GL_STATIC_DRAW);
 }
 
-void VertexBuffer::Bind() const
+void VertexBuffer::bind() const
 {
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID));
+    glBindBuffer(GL_ARRAY_BUFFER, m_rendererID);
 
 }
 
-void VertexBuffer::Unbind() const
+void VertexBuffer::unbind() const
 {
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
-
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
