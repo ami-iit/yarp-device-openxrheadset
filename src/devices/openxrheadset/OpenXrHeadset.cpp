@@ -831,6 +831,19 @@ std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
     return m_eyesManager.getRightImageControlPortName();
 }
 
+bool yarp::dev::OpenXrHeadset::setGUIEnabled(const int32_t GUIIndex, const bool enabled)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (GUIIndex >= m_huds.size())
+    {
+        return false;
+    }
+
+    m_huds[GUIIndex].layer.setEnabled(enabled);
+
+    return true;
+}
+
 bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const bool enabled)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
