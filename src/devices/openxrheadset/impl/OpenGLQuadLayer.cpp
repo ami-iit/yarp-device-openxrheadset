@@ -101,9 +101,10 @@ void OpenGLQuadLayer::render()
     glm::mat4 model = m_offsetTra * modelPose * sca;
     glm::mat4 proj = glm::perspective(m_fovY, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
+    glm::mat4 layerTransform = proj * model;
+
     m_shader.bind();                                                                                                  // bind shader
-    m_shader.setUniformMat4f("u_M", model);
-    m_shader.setUniformMat4f("u_P", proj);
+    m_shader.setUniformMat4f("u_H", layerTransform);
     m_shader.setUniform1i("u_UseAlpha", m_useAlpha);
 
     renderer.draw(m_va, m_ib, m_shader);
