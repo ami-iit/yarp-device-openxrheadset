@@ -882,7 +882,7 @@ void OpenXrInterface::updateXrSpaces()
                                          .viewConfigurationType =
                                              XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
                                          .displayTime = m_pimpl->frame_state.predictedDisplayTime,
-                                         .space = m_pimpl->play_space};
+                                         .space = m_pimpl->view_space};
 
 
     uint32_t output_viewCount = m_pimpl->views.size();
@@ -890,8 +890,7 @@ void OpenXrInterface::updateXrSpaces()
                                     m_pimpl->views.size(), &output_viewCount, m_pimpl->views.data());
     if (!m_pimpl->checkXrOutput(result, "Failed to locate the views!"))
     {
-        m_pimpl->closing = true;
-        return;
+        m_pimpl->view_state.viewStateFlags = 0; //Set to zero all the valid/tracked flags
     }
 
     XrPosef identity_pose = { .orientation = {.x = 0, .y = 0, .z = 0, .w = 1.0},
@@ -908,8 +907,8 @@ void OpenXrInterface::updateXrSpaces()
 
     if (!m_pimpl->checkXrOutput(result, "Failed to locate the head space!"))
     {
-        m_pimpl->closing = true;
-        return;
+        m_pimpl->view_space_location.locationFlags = 0;
+        m_pimpl->view_space_velocity.velocityFlags = 0;
     }
 
 }
@@ -1164,9 +1163,7 @@ void OpenXrInterface::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
 
-    Eigen::Matrix4f leftEyePose = toEigen(m_pimpl->view_space_location.pose).inverse() * toEigen(m_pimpl->views[0].pose);
-
-
+    bool viewIsValid = m_pimpl->view_state.viewStateFlags & XR_VIEW_STATE_POSITION_VALID_BIT;
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
@@ -1174,7 +1171,14 @@ void OpenXrInterface::render()
             openGLLayer->setFOVs(std::abs(m_pimpl->views[0].fov.angleLeft) + std::abs(m_pimpl->views[0].fov.angleDown), std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
             if (!openGLLayer->offsetIsSet())
             {
-                openGLLayer->setOffsetPosition(leftEyePose.block<3,1>(0, 3));
+                if (viewIsValid)
+                {
+                    openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[0].pose.position));
+                }
+                else
+                {
+                    yCWarning(OPENXRHEADSET) << "Avoided to updated the offset for one layer of the left eye because the view position is not tracked.";
+                }
             }
             openGLLayer->render();
         }
@@ -1206,16 +1210,18 @@ void OpenXrInterface::render()
 
     glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height);
 
-    Eigen::Matrix4f rightEyePose = toEigen(m_pimpl->view_space_location.pose).inverse() * toEigen(m_pimpl->views[1].pose);
-
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFOVs(std::abs(m_pimpl->views[1].fov.angleLeft) + std::abs(m_pimpl->views[1].fov.angleDown), std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
-            if (!openGLLayer->offsetIsSet())
+            if (viewIsValid)
             {
-                openGLLayer->setOffsetPosition(rightEyePose.block<3,1>(0, 3));
+                openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[1].pose.position));
+            }
+            else
+            {
+                yCWarning(OPENXRHEADSET) << "Avoided to updated the offset for one layer of the right eye because the view position is not tracked.";
             }
             openGLLayer->render();
         }
