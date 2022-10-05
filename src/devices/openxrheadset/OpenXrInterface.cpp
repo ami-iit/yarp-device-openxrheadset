@@ -314,9 +314,9 @@ bool OpenXrInterface::prepareGL()
     }
     glfwSetErrorCallback(&OpenXrInterface::Implementation::glfwErrorCallback);
 
-#ifndef DEBUG_RENDERING
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-#endif
+//#ifndef DEBUG_RENDERING
+//    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+//#endif
     glfwWindowHint(GLFW_DEPTH_BITS, 16);
     m_pimpl->window = glfwCreateWindow(m_pimpl->windowSize[0], m_pimpl->windowSize[1], "YARP OpenXr Device Window", nullptr, nullptr);
     if (!m_pimpl->window) {

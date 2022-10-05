@@ -337,7 +337,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (GuiParam& gui : m_huds)
         {
-            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
+            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedOpenGLQuadLayer(), gui.portName)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
                 return false;
             }
@@ -348,7 +348,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (LabelLayer& label : m_labels)
         {
-            label.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+            label.options.quadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
 
             if (!label.layer.initialize(label.options)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
@@ -361,7 +361,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (SlideLayer& slide : m_slides)
         {
-            slide.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+            slide.options.quadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
             if (!slide.layer.initialize(slide.options)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << slide.options.portName << "slide.";
                 return false;
