@@ -1169,7 +1169,7 @@ void OpenXrInterface::render()
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFOVs(std::abs(m_pimpl->views[0].fov.angleLeft) + std::abs(m_pimpl->views[0].fov.angleDown), std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
-            if (!openGLLayer->offsetIsSet())
+            if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES || !openGLLayer->offsetIsSet())
             {
                 if (viewIsValid)
                 {
@@ -1215,13 +1215,16 @@ void OpenXrInterface::render()
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFOVs(std::abs(m_pimpl->views[1].fov.angleLeft) + std::abs(m_pimpl->views[1].fov.angleDown), std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
-            if (viewIsValid)
+            if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES || !openGLLayer->offsetIsSet())
             {
-                openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[1].pose.position));
-            }
-            else
-            {
-                yCWarning(OPENXRHEADSET) << "Avoided to updated the offset for one layer of the right eye because the view position is not tracked.";
+                if (viewIsValid)
+                {
+                    openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[1].pose.position));
+                }
+                else
+                {
+                    yCWarning(OPENXRHEADSET) << "Avoided to updated the offset for one layer of the right eye because the view position is not tracked.";
+                }
             }
             openGLLayer->render();
         }
