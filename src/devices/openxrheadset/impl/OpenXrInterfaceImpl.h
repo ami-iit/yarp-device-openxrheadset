@@ -13,6 +13,7 @@
 #include <OpenXrHeadsetLogComponent.h>
 #include <OpenXrInterface.h>
 #include <impl/OpenXrQuadLayer.h>
+#include <impl/OpenGLQuadLayer.h>
 #include <OpenXrEigenConversions.h>
 
 
@@ -23,6 +24,7 @@
 #include <cstdarg>
 #include <atomic>
 #include <unordered_map>
+#include <cmath>
 
 #include <yarp/os/LogStream.h>
 
@@ -310,6 +312,8 @@ public:
 
     // Set of head-locked quad layers added
     std::vector<std::shared_ptr<OpenXrQuadLayer>> headLockedQuadLayers;
+
+    std::vector <std::shared_ptr<OpenGLQuadLayer>> openGLQuadLayers;
 
     // Location of the head with respect to the play_space
     XrSpaceLocation view_space_location;

@@ -138,12 +138,20 @@ service OpenXrHeadsetCommands
     string getRightImageControlPortName();
 
    /**
-    * Set a label visible or not
-    * @param labelIndex The label index to change state
+    * Set a GUI visible or not
+    * @param GUIIndex The GUI index to change state
     * @param enabled The state to set
     * @return True if successfull, false if the index is out of bounds
     */
-    bool setLabelEnabled(1:i32 labelIndex, 2:bool enabled);
+    bool setGUIEnabled(1:i32 GUIIndex, 2:bool enabled);
+
+    /**
+     * Set a label visible or not
+     * @param labelIndex The label index to change state
+     * @param enabled The state to set
+     * @return True if successfull, false if the index is out of bounds
+     */
+     bool setLabelEnabled(1:i32 labelIndex, 2:bool enabled);
 
     /**
      * Align the root frame to the current headset position and angle around gravity

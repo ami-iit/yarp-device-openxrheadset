@@ -522,7 +522,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         .type = XR_TYPE_COMPOSITION_LAYER_PROJECTION,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->play_space,
+        .space = m_pimpl->view_space,
         .viewCount = static_cast<uint32_t>(m_pimpl->projection_views.size()),
         .views = m_pimpl->projection_views.data(),
     };
@@ -894,9 +894,12 @@ void OpenXrInterface::updateXrSpaces()
         return;
     }
 
+    XrPosef identity_pose = { .orientation = {.x = 0, .y = 0, .z = 0, .w = 1.0},
+                            .position = {.x = 0, .y = 0, .z = 0} };
+
     for (size_t i = 0; i < m_pimpl->views.size(); ++i)
     {
-        m_pimpl->projection_views[i].pose = m_pimpl->views[i].pose;
+        m_pimpl->projection_views[i].pose = identity_pose;
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
@@ -1143,11 +1146,6 @@ void OpenXrInterface::render()
     glfwGetWindowSize(m_pimpl->window, &ww, &wh);
 
     //Left Eye
-    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
-            swapchain_images[m_pimpl->projection_view_swapchains[0].acquired_index].image, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
-            swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
 
 #ifdef DEBUG_RENDERING
     //Set green color
@@ -1156,22 +1154,43 @@ void OpenXrInterface::render()
     glClearColor(0, 0, 0, 0);
 #endif
 
+    glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[0].
+        swapchain_images[m_pimpl->projection_view_swapchains[0].acquired_index].image, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[0].
+        swapchain_images[m_pimpl->projection_view_depth_swapchains[0].acquired_index].image, 0);
+
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
 
-    // Replicate swapchain on screen
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    Eigen::Matrix4f leftEyePose = toEigen(m_pimpl->view_space_location.pose).inverse() * toEigen(m_pimpl->views[0].pose);
 
 
-    glBlitFramebuffer(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
-                      0, 0, ww/2, wh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
+    {
+        if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
+        {
+            openGLLayer->setFOVs(std::abs(m_pimpl->views[0].fov.angleLeft) + std::abs(m_pimpl->views[0].fov.angleDown), std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
+            if (!openGLLayer->offsetIsSet())
+            {
+                openGLLayer->setOffsetPosition(leftEyePose.block<3,1>(0, 3));
+            }
+            openGLLayer->render();
+        }
+    }
+
+    glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
+                           0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
+                           0, 0, ww / 2, wh,
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //Right Eye
     glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pimpl->projection_view_swapchains[1].
-            swapchain_images[m_pimpl->projection_view_swapchains[1].acquired_index].image, 0);
+        swapchain_images[m_pimpl->projection_view_swapchains[1].acquired_index].image, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_pimpl->projection_view_depth_swapchains[1].
-            swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
+        swapchain_images[m_pimpl->projection_view_depth_swapchains[1].acquired_index].image, 0);
 
 #ifdef DEBUG_RENDERING
     //Set blue color
@@ -1185,13 +1204,30 @@ void OpenXrInterface::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
 
+    glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height);
+
+    Eigen::Matrix4f rightEyePose = toEigen(m_pimpl->view_space_location.pose).inverse() * toEigen(m_pimpl->views[1].pose);
+
+    for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
+    {
+        if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
+        {
+            openGLLayer->setFOVs(std::abs(m_pimpl->views[1].fov.angleLeft) + std::abs(m_pimpl->views[1].fov.angleDown), std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
+            if (!openGLLayer->offsetIsSet())
+            {
+                openGLLayer->setOffsetPosition(rightEyePose.block<3,1>(0, 3));
+            }
+            openGLLayer->render();
+        }
+    }
+
     // Replicate swapchain on screen
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
-                      ww/2 + 1, 0, ww, wh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
+                           0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
+                           ww / 2 + 1, 0, ww, wh,
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //------------------------------
-
     glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
@@ -1419,6 +1455,24 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
         return nullptr;
 
     m_pimpl->headLockedQuadLayers.push_back(newLayer);
+
+    return newLayer;
+}
+
+std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedOpenGLQuadLayer()
+{
+    if (!m_pimpl->initialized)
+    {
+        yCError(OPENXRHEADSET) << "The OpenXr interface has not been initialized.";
+        return nullptr;
+    }
+
+    std::shared_ptr<OpenGLQuadLayer> newLayer = std::make_shared<OpenGLQuadLayer>();
+
+    newLayer->initialize(std::min(m_pimpl->viewconfig_views[0].recommendedImageRectWidth, m_pimpl->viewconfig_views[1].recommendedImageRectWidth),
+                         std::min(m_pimpl->viewconfig_views[0].recommendedImageRectHeight, m_pimpl->viewconfig_views[1].recommendedImageRectHeight));
+
+    m_pimpl->openGLQuadLayers.push_back(newLayer);
 
     return newLayer;
 }

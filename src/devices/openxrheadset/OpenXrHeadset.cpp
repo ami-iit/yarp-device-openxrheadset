@@ -327,8 +327,8 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             return false;
         }
 
-        m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
-        m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+        m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+        m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
 
         if (!m_eyesManager.initialize())
         {
@@ -829,6 +829,19 @@ std::string yarp::dev::OpenXrHeadset::getRightImageControlPortName()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_eyesManager.getRightImageControlPortName();
+}
+
+bool yarp::dev::OpenXrHeadset::setGUIEnabled(const int32_t GUIIndex, const bool enabled)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (GUIIndex >= m_huds.size())
+    {
+        return false;
+    }
+
+    m_huds[GUIIndex].layer.setEnabled(enabled);
+
+    return true;
 }
 
 bool yarp::dev::OpenXrHeadset::setLabelEnabled(const int32_t labelIndex, const bool enabled)
