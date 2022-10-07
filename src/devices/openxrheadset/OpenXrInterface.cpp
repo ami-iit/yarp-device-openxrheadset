@@ -1168,7 +1168,7 @@ void OpenXrInterface::render()
     {
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
-            openGLLayer->setFOVs(std::abs(m_pimpl->views[0].fov.angleLeft) + std::abs(m_pimpl->views[0].fov.angleDown), std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
+            openGLLayer->setFOVs(std::abs(m_pimpl->views[0].fov.angleLeft) + std::abs(m_pimpl->views[0].fov.angleRight), std::abs(m_pimpl->views[0].fov.angleUp) + std::abs(m_pimpl->views[0].fov.angleDown));
             if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES || !openGLLayer->offsetIsSet())
             {
                 if (viewIsValid)
@@ -1214,7 +1214,7 @@ void OpenXrInterface::render()
     {
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
-            openGLLayer->setFOVs(std::abs(m_pimpl->views[1].fov.angleLeft) + std::abs(m_pimpl->views[1].fov.angleDown), std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
+            openGLLayer->setFOVs(std::abs(m_pimpl->views[1].fov.angleLeft) + std::abs(m_pimpl->views[1].fov.angleRight), std::abs(m_pimpl->views[1].fov.angleUp) + std::abs(m_pimpl->views[1].fov.angleDown));
             if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES || !openGLLayer->offsetIsSet())
             {
                 if (viewIsValid)
