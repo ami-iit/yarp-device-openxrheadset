@@ -717,8 +717,6 @@ bool OpenXrInterface::prepareGlFramebuffer()
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    glEnable(GL_DEPTH_TEST);
-
     return true;
 
 }
@@ -1093,6 +1091,8 @@ void OpenXrInterface::forceTrackersInteractionProfile()
 
 void OpenXrInterface::render()
 {
+    glEnable(GL_DEPTH_TEST);
+
     for (size_t i = 0; i < m_pimpl->projection_view_swapchains.size(); ++i)
     {
         // Acquire swapchain images
@@ -1233,7 +1233,7 @@ void OpenXrInterface::render()
     // Replicate swapchain on screen
     glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
                            0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
-                           ww / 2 + 1, 0, ww, wh,
+                           ww / 2 , 0, ww, wh,
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     //------------------------------
@@ -1267,6 +1267,7 @@ void OpenXrInterface::render()
     }
 
     glfwSwapBuffers(m_pimpl->window);
+    glDisable(GL_DEPTH_TEST);
 
 }
 
