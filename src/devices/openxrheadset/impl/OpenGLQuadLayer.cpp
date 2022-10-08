@@ -91,6 +91,12 @@ void OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
 
 void OpenGLQuadLayer::render()
 {
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // src (output color of the fragment shader) and dest (color already in the buffer) factors respectively (sfactor, dfactor)
+
     Renderer renderer;
 
     m_internalTexture.bind();
@@ -108,6 +114,10 @@ void OpenGLQuadLayer::render()
     m_shader.setUniform1i("u_UseAlpha", m_useAlpha);
 
     renderer.draw(m_va, m_ib, m_shader);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+
 }
 
 void OpenGLQuadLayer::setOffsetPosition(const Eigen::Vector3f& offset) // the offset vector must represent the position of the screen wrt the headset. Both the Screen Frames are right-handed, have the origin at the center of the screen, the x to the right and the y pointing up.
