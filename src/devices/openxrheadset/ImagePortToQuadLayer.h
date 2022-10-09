@@ -33,10 +33,13 @@ class ImagePortToQuadLayer
     GLint m_pixelFormat;
     size_t m_previousWidth{ 0 };
     size_t m_previousHeight{ 0 };
+    float m_initialLayerWidth{0.0};
+    float m_initialLayerHeight{0.0};
     Eigen::Vector3f m_newImageDesiredPosition;
     Eigen::Quaternionf m_newImageDesiredQuaternion;
     std::thread::id m_initThreadID;
     bool m_active{false};
+    bool m_dimensionsSetOnce{false};
 
 public:
 
@@ -112,6 +115,9 @@ public:
 
         m_newImageDesiredPosition = m_quadLayer->layerPosition();
         m_newImageDesiredQuaternion = m_quadLayer->layerQuaternion();
+
+        m_initialLayerWidth = m_quadLayer->layerWidth();
+        m_initialLayerHeight = m_quadLayer->layerHeight();
 
         m_portPtr = std::make_unique<yarp::os::BufferedPort<ImageType>>();
 
@@ -206,8 +212,8 @@ public:
 
         //Adjust the aspect ratio
         float aspectRatio = std::abs(endX - startX)/ (float) std::max(1, std::abs(endY - startY));
-        float newWidth = m_quadLayer->layerWidth();
-        float newHeight = m_quadLayer->layerHeight();
+        float newWidth = m_initialLayerWidth;
+        float newHeight = m_initialLayerHeight;
 
         if (aspectRatio >= 1)
         {
@@ -329,6 +335,13 @@ public:
         {
             yCError(OPENXRHEADSET) << "The initialization phase did not complete correctly.";
             return;
+        }
+
+        if (!m_dimensionsSetOnce)
+        {
+            m_dimensionsSetOnce = true;
+            m_initialLayerWidth = widthInMeters;
+            m_initialLayerHeight = heightInMeters;
         }
 
         m_quadLayer->setDimensions(widthInMeters, heightInMeters);
