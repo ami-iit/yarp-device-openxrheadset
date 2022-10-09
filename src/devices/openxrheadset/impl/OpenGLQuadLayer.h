@@ -45,7 +45,7 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     glm::mat4 m_offsetTra = glm::mat4(1.0f);                                  // position of the Headset Frame WRT the Left or Right Screen Frame
     bool m_offsetIsSet{false};
 
-    Eigen::Vector3f m_modelTraEig {0.0f, 0.0f, 0.0f};
+    Eigen::Vector3f m_modelTraEig {0.0f, 0.0f, -1.0f};
     Eigen::Quaternionf m_modelRotEig {1.0f, 0.0f, 0.0f, 0.0f};
     glm::mat4 m_modelTra = glm::mat4(1.0f);
     glm::mat4 m_modelRot = glm::mat4(1.0f);

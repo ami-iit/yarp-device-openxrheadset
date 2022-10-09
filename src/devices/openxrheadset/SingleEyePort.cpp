@@ -181,6 +181,17 @@ void SingleEyePort::setImageRotation(double ccwRotationInRad)
     m_layer.setQuaternion(eyeRotation * m_imageRotation);
 }
 
+void SingleEyePort::setImageDimensions(float widthInMeters, float heightInMeters)
+{
+    if (!m_initialized)
+    {
+        yCError(OPENXRHEADSET) << "Eye port not initialized.";
+        return;
+    }
+
+    m_layer.setDimensions(widthInMeters, heightInMeters);
+}
+
 double SingleEyePort::azimuthOffset() const
 {
     return m_azimuthOffset;

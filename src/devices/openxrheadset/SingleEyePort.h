@@ -49,6 +49,8 @@ public:
 
     void setImageRotation(double ccwRotationInRad);
 
+    void setImageDimensions(float widthInMeters, float heightInMeters);
+
     double azimuthOffset() const;
 
     double elevationOffset() const;
