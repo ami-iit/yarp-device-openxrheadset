@@ -14,7 +14,6 @@
 #include <unordered_set>
 #include <algorithm>
 
-
 bool SlideManager::initialize(const Options &options)
 {
 
@@ -87,6 +86,8 @@ bool SlideManager::initialize(const Options &options)
     }
 
     m_options = options;
+    m_inputPosition.setZero();
+    m_inputRotation.setIdentity();
 
     return true;
 }
@@ -117,22 +118,67 @@ bool SlideManager::updateTexture()
     if (received)
     {
         inputString = bottle->get(0).toString();
-    }
-    else
-    {
-        return true;
+        if (!setImage(inputString))
+        {
+            return false;
+        }
+
+        m_layer.setPosition(m_inputPosition);
+        m_layer.setQuaternion(m_inputRotation);
+
+        if (bottle->size() > 1)
+        {
+            auto positionInput = bottle->get(1);
+            yarp::os::Bottle* positionList = positionInput.asList();
+
+            if (!positionInput.isList() || !positionList || positionList->size() != 3)
+            {
+                yCError(OPENXRHEADSET) << "The second input of the bottle is supposed to be a list of three elements indicating the desired position offset.";
+                return false;
+            }
+
+
+            Eigen::Vector3f positionDelta;
+            positionDelta(0) = positionList->get(0).asFloat32();
+            positionDelta(1) = positionList->get(1).asFloat32();
+            positionDelta(2) = positionList->get(2).asFloat32();
+
+            m_layer.setPosition(m_inputPosition + positionDelta);
+        }
+
+        if (bottle->size() > 2)
+        {
+            auto rotationInput = bottle->get(2);
+            yarp::os::Bottle* rotationList = rotationInput.asList();
+
+            if (!rotationInput.isList() || !rotationList || rotationList->size() != 3)
+            {
+                yCError(OPENXRHEADSET) << "The second input of the bottle is supposed to be a list of three elements indicating the desired rotation offset (rotations around X, Y and Z axis respectively).";
+                return false;
+            }
+
+            Eigen::Quaternionf rotationDelta;
+            rotationDelta = Eigen::AngleAxisf(rotationList->get(0).asFloat32(), Eigen::Vector3f::UnitX());
+            rotationDelta = rotationDelta * Eigen::AngleAxisf(rotationList->get(1).asFloat32(), Eigen::Vector3f::UnitY());
+            rotationDelta = rotationDelta * Eigen::AngleAxisf(rotationList->get(2).asFloat32(), Eigen::Vector3f::UnitZ());
+
+            m_layer.setQuaternion(m_inputRotation * rotationDelta);
+        }
     }
 
-    return setImage(inputString);
+    return true;
 }
 
 void SlideManager::setPose(const Eigen::Vector3f &position, const Eigen::Quaternionf &rotation)
 {
+    m_inputPosition = position;
+    m_inputRotation = rotation;
     m_layer.setPose(position, rotation);
 }
 
 void SlideManager::setPosition(const Eigen::Vector3f &position)
 {
+    m_inputPosition = position;
     m_layer.setPosition(position);
 }
 
@@ -143,6 +189,7 @@ Eigen::Vector3f SlideManager::layerPosition() const
 
 void SlideManager::setQuaternion(const Eigen::Quaternionf &quaternion)
 {
+    m_inputRotation = quaternion;
     m_layer.setQuaternion(quaternion);
 }
 
