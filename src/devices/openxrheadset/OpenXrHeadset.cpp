@@ -438,28 +438,24 @@ void yarp::dev::OpenXrHeadset::run()
     {
         if (!m_eyesManager.update()) {
             yCError(OPENXRHEADSET) << "Failed to update eyes.";
-            return;
         }
 
         for (GuiParam& gui : m_huds)
         {
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
-                return;
             }
         }
         for (LabelLayer& label : m_labels)
         {
             if (!label.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "label.";
-                return;
             }
         }
         for (SlideLayer& slide : m_slides)
         {
             if (!slide.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << slide.options.portName << "slide.";
-                return;
             }
         }
         m_openXrInterface.draw();
