@@ -33,13 +33,30 @@ class ImagePortToQuadLayer
     GLint m_pixelFormat;
     size_t m_previousWidth{ 0 };
     size_t m_previousHeight{ 0 };
-    float m_initialLayerWidth{0.0};
-    float m_initialLayerHeight{0.0};
+    float m_desiredLayerWidth{0.0};
+    float m_desiredLayerHeight{0.0};
+    float m_aspectRatio{-1.0};
     Eigen::Vector3f m_newImageDesiredPosition;
     Eigen::Quaternionf m_newImageDesiredQuaternion;
     std::thread::id m_initThreadID;
     bool m_active{false};
-    bool m_dimensionsSetOnce{false};
+
+    void setAdjustedDimensions()
+    {
+        float newWidth = m_desiredLayerWidth;
+        float newHeight = m_desiredLayerHeight;
+
+        if (m_aspectRatio >= 1.0)
+        {
+            newHeight = newWidth / m_aspectRatio;
+        }
+        else if (m_aspectRatio >= 0.0)
+        {
+            newWidth = newHeight * m_aspectRatio;
+        }
+
+        m_quadLayer->setDimensions(newWidth, newHeight);
+    }
 
 public:
 
@@ -116,8 +133,8 @@ public:
         m_newImageDesiredPosition = m_quadLayer->layerPosition();
         m_newImageDesiredQuaternion = m_quadLayer->layerQuaternion();
 
-        m_initialLayerWidth = m_quadLayer->layerWidth();
-        m_initialLayerHeight = m_quadLayer->layerHeight();
+        m_desiredLayerWidth = m_quadLayer->layerWidth();
+        m_desiredLayerHeight = m_quadLayer->layerHeight();
 
         m_portPtr = std::make_unique<yarp::os::BufferedPort<ImageType>>();
 
@@ -211,20 +228,9 @@ public:
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         //Adjust the aspect ratio
-        float aspectRatio = std::abs(endX - startX)/ (float) std::max(1, std::abs(endY - startY));
-        float newWidth = m_initialLayerWidth;
-        float newHeight = m_initialLayerHeight;
+        m_aspectRatio = std::abs(endX - startX)/ (float) std::max(1, std::abs(endY - startY));
+        setAdjustedDimensions();
 
-        if (aspectRatio >= 1)
-        {
-            newHeight = newWidth / aspectRatio;
-        }
-        else
-        {
-            newWidth = newHeight * aspectRatio;
-        }
-
-        m_quadLayer->setDimensions(newWidth, newHeight);
         m_quadLayer->setPose(m_newImageDesiredPosition, m_newImageDesiredQuaternion);
 
         if (!m_quadLayer->submitImage())
@@ -337,14 +343,9 @@ public:
             return;
         }
 
-        if (!m_dimensionsSetOnce)
-        {
-            m_dimensionsSetOnce = true;
-            m_initialLayerWidth = widthInMeters;
-            m_initialLayerHeight = heightInMeters;
-        }
-
-        m_quadLayer->setDimensions(widthInMeters, heightInMeters);
+        m_desiredLayerWidth = widthInMeters;
+        m_desiredLayerHeight = heightInMeters;
+        setAdjustedDimensions();
     }
 
     void setVisibility(const IOpenXrQuadLayer::Visibility& visibility)
