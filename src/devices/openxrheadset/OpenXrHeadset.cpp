@@ -95,6 +95,32 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                     }
                 }
 
+                std::string visibilityString = guip.check("visibility", yarp::os::Value("both")).asString();
+                IOpenXrQuadLayer::Visibility visibility;
+                std::transform(visibilityString.begin(), visibilityString.end(), visibilityString.begin(), ::tolower);
+                if (visibilityString == "left")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::LEFT_EYE;
+                }
+                else if (visibilityString == "right")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::RIGHT_EYE;
+                }
+                else if (visibilityString == "both")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::BOTH_EYES;
+                }
+                else if (visibilityString == "none")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::NONE;
+                }
+                else
+                {
+                    yCError(OPENXRHEADSET) << "Unrecognized visibility."
+                                           << "Allowed entries: \"left\", \"right\", \"both\", \"none\".";
+                    return false;
+                }
+
                 m_huds.emplace_back();
 
                 m_huds.back().width = guip.find("width").asFloat64();
@@ -103,7 +129,8 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 m_huds.back().y       = guip.find("y").asFloat64();
                 m_huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                m_huds.back().portName = m_prefix + "/" + groupName;
+                m_huds.back().portName = m_prefix + "/" + guip.check("port_id", yarp::os::Value(groupName)).toString();
+                m_huds.back().visibility = visibility;
             }
         }
 
@@ -148,7 +175,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 label.z       = -std::max(0.01, std::abs(labelGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
 
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                std::string portName = m_prefix + "/" + groupName;
+                std::string portName = m_prefix + "/" + labelGroup.check("port_id", yarp::os::Value(groupName)).toString();
 
                 if (!label.options.parseFromConfigurationFile(portName, labelGroup))
                 {
@@ -199,7 +226,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 slide.z       = -std::max(0.01, std::abs(slideGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
 
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                std::string portName = m_prefix + "/" + groupName;
+                std::string portName = m_prefix + "/" + slideGroup.check("port_id", yarp::os::Value(groupName)).toString();
 
                 if (!slide.options.parseFromConfigurationFile(portName, slideGroup))
                 {
@@ -341,7 +368,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
                 yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
                 return false;
             }
-            gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            gui.layer.setVisibility(gui.visibility);
             gui.layer.setDimensions(gui.width, gui.height);
             gui.layer.setPosition({gui.x, gui.y, gui.z});
         }
