@@ -75,6 +75,7 @@ public:
         }
 
         m_portPtr->close();
+        m_quadLayer = nullptr;
     }
 
     bool initialize(std::shared_ptr<IOpenXrQuadLayer> quadLayer)

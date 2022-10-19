@@ -32,7 +32,7 @@ int main()
     }
 
     for (size_t eye = 0; eye < 2; ++eye) {
-        if (!displayPorts[eye].initialize(openXrInterface.addHeadFixedQuadLayer(),
+        if (!displayPorts[eye].initialize(openXrInterface.addHeadFixedOpenGLQuadLayer(),
                                           (eye == 0 ? "/openxrtest/display/left:i" : "/openxrtest/display/right:i"))) {
             yError() << "Cannot initialize" << (eye == 0 ? "left" : "right") << "display texture.";
             return EXIT_FAILURE;

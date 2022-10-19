@@ -79,6 +79,8 @@ void EyesManager::close()
     m_leftEye.close();
     m_rightEye.close();
     m_commonImagePort.close();
+    m_options.leftEyeQuadLayer = nullptr;
+    m_options.rightEyeQuadLayer = nullptr;
 }
 
 bool EyesManager::update()

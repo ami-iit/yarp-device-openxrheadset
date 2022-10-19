@@ -442,6 +442,11 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         slide.layer.close();
     }
 
+    m_huds.clear();
+    m_labels.clear();
+    m_slides.clear();
+    m_eyesManager.close();
+
     m_openXrInterface.close();
 
     if (m_tfPublisher)
@@ -449,8 +454,6 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         m_driver.close();
         m_tfPublisher = nullptr;
     }
-
-    m_eyesManager.close();
 
     m_rpcPort.close();
 

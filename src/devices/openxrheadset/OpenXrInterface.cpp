@@ -1731,6 +1731,7 @@ void OpenXrInterface::close()
     m_pimpl->depth_projection_views.clear();
     m_pimpl->views.clear();
     m_pimpl->headLockedQuadLayers.clear();
+    m_pimpl->openGLQuadLayers.clear();
     m_pimpl->submitted_layers.clear();
     m_pimpl->layer_count = 0;
 
