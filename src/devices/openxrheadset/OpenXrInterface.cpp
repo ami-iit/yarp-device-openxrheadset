@@ -314,9 +314,11 @@ bool OpenXrInterface::prepareGL()
     }
     glfwSetErrorCallback(&OpenXrInterface::Implementation::glfwErrorCallback);
 
-//#ifndef DEBUG_RENDERING
-//    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-//#endif
+    if (m_pimpl->hideWindow)
+    {
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    }
+
     glfwWindowHint(GLFW_DEPTH_BITS, 16);
     m_pimpl->window = glfwCreateWindow(m_pimpl->windowSize[0], m_pimpl->windowSize[1], "YARP OpenXr Device Window", nullptr, nullptr);
     if (!m_pimpl->window) {
@@ -1184,10 +1186,13 @@ void OpenXrInterface::render()
         }
     }
 
-    glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
-                           0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
-                           0, 0, ww / 2, wh,
-                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    if (!m_pimpl->hideWindow)
+    {
+        glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
+                               0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height,
+                               0, 0, ww / 2, wh,
+                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
 
     //Right Eye
     glBindFramebuffer(GL_FRAMEBUFFER, m_pimpl->glFrameBufferId);
@@ -1230,11 +1235,14 @@ void OpenXrInterface::render()
         }
     }
 
-    // Replicate swapchain on screen
-    glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
-                           0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
-                           ww / 2 , 0, ww, wh,
-                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    if (!m_pimpl->hideWindow)
+    {
+        // Replicate swapchain on screen
+        glBlitNamedFramebuffer(m_pimpl->glFrameBufferId, 0,
+                               0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height,
+                               ww / 2 , 0, ww, wh,
+                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
 
     //------------------------------
     glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
@@ -1329,6 +1337,8 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     }
 
     m_pimpl->locate_space_prediction_in_ns = static_cast<long>(std::round(settings.posesPredictionInMs * 1e6));
+
+    m_pimpl->hideWindow = settings.hideWindow;
 
     m_pimpl->closing = false;
     m_pimpl->closed = false;

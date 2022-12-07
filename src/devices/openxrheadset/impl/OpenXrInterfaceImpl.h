@@ -357,6 +357,9 @@ public:
     std::atomic<bool> closing{false};
 
     std::atomic<bool> closed{true};
+
+    // Flag to enable the window visualization
+    bool hideWindow{false};
 };
 
 
