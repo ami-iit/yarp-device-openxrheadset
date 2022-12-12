@@ -64,6 +64,7 @@ public:
 struct OpenXrInterfaceSettings
 {
     double posesPredictionInMs{0.0};
+    bool hideWindow{false};
 };
 
 class OpenXrInterface

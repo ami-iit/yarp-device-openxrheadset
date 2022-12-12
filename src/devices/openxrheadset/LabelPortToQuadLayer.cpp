@@ -99,6 +99,7 @@ void LabelPortToQuadLayer::close()
     }
 
     m_portPtr->close();
+    m_options.quadLayer = nullptr;
 }
 
 bool LabelPortToQuadLayer::updateTexture()

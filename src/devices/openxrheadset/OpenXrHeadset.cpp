@@ -95,6 +95,32 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                     }
                 }
 
+                std::string visibilityString = guip.check("visibility", yarp::os::Value("both")).asString();
+                IOpenXrQuadLayer::Visibility visibility;
+                std::transform(visibilityString.begin(), visibilityString.end(), visibilityString.begin(), ::tolower);
+                if (visibilityString == "left")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::LEFT_EYE;
+                }
+                else if (visibilityString == "right")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::RIGHT_EYE;
+                }
+                else if (visibilityString == "both")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::BOTH_EYES;
+                }
+                else if (visibilityString == "none")
+                {
+                    visibility = IOpenXrQuadLayer::Visibility::NONE;
+                }
+                else
+                {
+                    yCError(OPENXRHEADSET) << "Unrecognized visibility."
+                                           << "Allowed entries: \"left\", \"right\", \"both\", \"none\".";
+                    return false;
+                }
+
                 m_huds.emplace_back();
 
                 m_huds.back().width = guip.find("width").asFloat64();
@@ -103,7 +129,8 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 m_huds.back().y       = guip.find("y").asFloat64();
                 m_huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                m_huds.back().portName = m_prefix + "/" + groupName;
+                m_huds.back().portName = m_prefix + "/" + guip.check("port_id", yarp::os::Value(groupName)).toString();
+                m_huds.back().visibility = visibility;
             }
         }
 
@@ -148,7 +175,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 label.z       = -std::max(0.01, std::abs(labelGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
 
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                std::string portName = m_prefix + "/" + groupName;
+                std::string portName = m_prefix + "/" + labelGroup.check("port_id", yarp::os::Value(groupName)).toString();
 
                 if (!label.options.parseFromConfigurationFile(portName, labelGroup))
                 {
@@ -199,7 +226,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 slide.z       = -std::max(0.01, std::abs(slideGroup.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
 
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
-                std::string portName = m_prefix + "/" + groupName;
+                std::string portName = m_prefix + "/" + slideGroup.check("port_id", yarp::os::Value(groupName)).toString();
 
                 if (!slide.options.parseFromConfigurationFile(portName, slideGroup))
                 {
@@ -215,6 +242,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
 
     m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
+    m_openXrInterfaceSettings.hideWindow = cfg.check("hide_window") && (cfg.find("hide_window").isNull() || cfg.find("hide_window").asBool());
 
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
@@ -337,18 +365,18 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (GuiParam& gui : m_huds)
         {
-            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedQuadLayer(), gui.portName)) {
+            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedOpenGLQuadLayer(), gui.portName)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
                 return false;
             }
-            gui.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+            gui.layer.setVisibility(gui.visibility);
             gui.layer.setDimensions(gui.width, gui.height);
             gui.layer.setPosition({gui.x, gui.y, gui.z});
         }
 
         for (LabelLayer& label : m_labels)
         {
-            label.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+            label.options.quadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
 
             if (!label.layer.initialize(label.options)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
@@ -361,7 +389,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (SlideLayer& slide : m_slides)
         {
-            slide.options.quadLayer = m_openXrInterface.addHeadFixedQuadLayer();
+            slide.options.quadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
             if (!slide.layer.initialize(slide.options)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << slide.options.portName << "slide.";
                 return false;
@@ -415,6 +443,11 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         slide.layer.close();
     }
 
+    m_huds.clear();
+    m_labels.clear();
+    m_slides.clear();
+    m_eyesManager.close();
+
     m_openXrInterface.close();
 
     if (m_tfPublisher)
@@ -422,8 +455,6 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         m_driver.close();
         m_tfPublisher = nullptr;
     }
-
-    m_eyesManager.close();
 
     m_rpcPort.close();
 
@@ -438,28 +469,24 @@ void yarp::dev::OpenXrHeadset::run()
     {
         if (!m_eyesManager.update()) {
             yCError(OPENXRHEADSET) << "Failed to update eyes.";
-            return;
         }
 
         for (GuiParam& gui : m_huds)
         {
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
-                return;
             }
         }
         for (LabelLayer& label : m_labels)
         {
             if (!label.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "label.";
-                return;
             }
         }
         for (SlideLayer& slide : m_slides)
         {
             if (!slide.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << slide.options.portName << "slide.";
-                return;
             }
         }
         m_openXrInterface.draw();

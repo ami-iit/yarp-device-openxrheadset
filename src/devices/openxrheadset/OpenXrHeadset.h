@@ -265,6 +265,7 @@ private:
         float         y;
         float         z;
         std::string    portName;
+        IOpenXrQuadLayer::Visibility visibility;
         ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
     };
 

@@ -32,6 +32,7 @@ bool EyesManager::initialize()
     m_leftEye.setEyeRotationOffset(m_options.leftAzimuthOffset, m_options.leftElevationOffset);
     m_leftEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
     m_leftEye.setImageRotation(m_options.leftImageRotation);
+    m_leftEye.setImageDimensions(1.5, 1.5);
 
     if (!m_rightEye.open(m_options.rightEyeQuadLayer,
                          m_options.portPrefix + "/eyeAngles/right:i")) {
@@ -43,6 +44,7 @@ bool EyesManager::initialize()
     m_rightEye.setEyeRotationOffset(m_options.rightAzimuthOffset, m_options.rightElevationOffset);
     m_rightEye.setEyeRelativeImagePosition(Eigen::Vector3f(0.0, 0.0, m_options.eyeZPosition));
     m_rightEye.setImageRotation(m_options.rightImageRotation);
+    m_rightEye.setImageDimensions(1.5, 1.5);
 
     if (m_options.splitEyes)
     {
@@ -77,6 +79,8 @@ void EyesManager::close()
     m_leftEye.close();
     m_rightEye.close();
     m_commonImagePort.close();
+    m_options.leftEyeQuadLayer = nullptr;
+    m_options.rightEyeQuadLayer = nullptr;
 }
 
 bool EyesManager::update()

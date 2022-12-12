@@ -68,6 +68,8 @@ private:
     std::shared_ptr<yarp::os::BufferedPort<yarp::os::Bottle>> m_portPtr;
     Options m_options;
     std::vector<unsigned char*> m_stbImages;
+    Eigen::Vector3f m_inputPosition;
+    Eigen::Quaternionf m_inputRotation;
 };
 
 #endif // YARP_DEV_SLIDEMANAGER_H
