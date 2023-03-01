@@ -46,7 +46,7 @@ bool EyesManager::initialize()
     m_rightEye.setImageRotation(m_options.rightImageRotation);
     m_rightEye.setImageDimensions(1.5, 1.5);
 
-    if (m_options.splitEyes)
+    if (m_options.mode == Mode::STEREO_DUAL_PORT)
     {
         if (!m_leftEye.openImagePort(m_options.portPrefix + "/display/left:i"))
         {
@@ -85,7 +85,7 @@ void EyesManager::close()
 
 bool EyesManager::update()
 {
-    if (m_options.splitEyes)
+    if (m_options.mode == Mode::STEREO_DUAL_PORT)
     {
         if (!m_leftEye.update()) {
             yCError(OPENXRHEADSET) << "Failed to update left eye.";
@@ -105,14 +105,21 @@ bool EyesManager::update()
             return true;
         }
 
-        GLint splitx = static_cast<GLint>(std::round(image->width()/2.0));
+        GLint leftEndX = image->width();
+        GLint rightBeginX = 0;
 
-        if (!m_leftEye.update(*image, 0, 0, splitx, image->height()))
+        if (m_options.mode == Mode::STEREO_SINGLE_PORT)
+        {
+            leftEndX= static_cast<GLint>(std::round(leftEndX/2.0));
+            rightBeginX = leftEndX + 1;
+        }
+
+        if (!m_leftEye.update(*image, 0, 0, leftEndX, image->height()))
         {
             yCError(OPENXRHEADSET) << "Failed to update left eye.";
             return false;
         }
-        if (!m_rightEye.update(*image, splitx + 1, 0, image->width(), image->height()))
+        if (!m_rightEye.update(*image, rightBeginX, 0, image->width(), image->height()))
         {
             yCError(OPENXRHEADSET) << "Failed to update right eye.";
             return false;

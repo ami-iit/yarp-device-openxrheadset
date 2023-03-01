@@ -247,15 +247,40 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     m_rootFrameRaw = m_rootFrame + "_raw";
-    m_eyesManager.options().leftAzimuthOffset = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
+
+    bool split_eye_ports = cfg.check("split_eye_ports") && (cfg.find("split_eye_ports").isNull() || cfg.find("split_eye_ports").asBool());//split_eye_ports is found and it is either true or it has not value
+    bool split_eye_false = cfg.check("split_eye_ports") && !cfg.find("split_eye_ports").isNull() && !cfg.find("split_eye_ports").asBool(); //split_eye_ports is explictly set to false
+    bool mono_eye = cfg.check("mono_eye") && (cfg.find("mono_eye").isNull() || cfg.find("mono_eye").asBool());
+
+    if (split_eye_ports && mono_eye)
+    {
+        yCError(OPENXRHEADSET) << "Both split_eye_ports_defined and mono_eye_defined are defined. Only one of the two can be true at the same time.";
+        return false;
+    }
+
+    double interCameraDistanceDefault = 0.07;
+    if (mono_eye)
+    {
+        m_eyesManager.options().mode = EyesManager::Mode::MONO;
+        interCameraDistanceDefault = 0.0;
+    }
+    else if (split_eye_false)
+    {
+        m_eyesManager.options().mode = EyesManager::Mode::STEREO_SINGLE_PORT;
+    }
+    else
+    {
+        m_eyesManager.options().mode = EyesManager::Mode::STEREO_DUAL_PORT;
+    }
+
+    m_eyesManager.options().interCameraDistance = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(interCameraDistanceDefault)).asFloat64()); //Distance between the cameras of the iCub robot
+        m_eyesManager.options().leftAzimuthOffset = cfg.check("left_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().leftElevationOffset = cfg.check("left_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().leftImageRotation = cfg.check("left_image_rotation", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().eyeZPosition = -std::max(0.01, std::abs(cfg.check("eye_z_position", yarp::os::Value(-1.0)).asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
-    m_eyesManager.options().interCameraDistance = std::abs(cfg.check("inter_camera_distance", yarp::os::Value(0.07)).asFloat64()); //Distance between the cameras of the iCub robot
     m_eyesManager.options().rightAzimuthOffset = cfg.check("right_azimuth_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().rightElevationOffset = cfg.check("right_elevation_offset", yarp::os::Value(0.0)).asFloat64();
     m_eyesManager.options().rightImageRotation = cfg.check("right_image_rotation", yarp::os::Value(0.0)).asFloat64();
-    m_eyesManager.options().splitEyes = cfg.check("split_eye_ports", yarp::os::Value(true)).asBool();
     m_eyesManager.options().portPrefix = m_prefix;
 
     m_rootFrameRawHRootFrame.position.setZero();

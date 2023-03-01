@@ -19,6 +19,13 @@ class EyesManager
 {
 public:
 
+    enum class Mode
+    {
+        STEREO_DUAL_PORT,
+        STEREO_SINGLE_PORT,
+        MONO
+    };
+
     struct Options
     {
         std::shared_ptr<IOpenXrQuadLayer> leftEyeQuadLayer;
@@ -32,7 +39,7 @@ public:
         double rightImageRotation{0.0};
         double eyeZPosition{-1.0};
         double interCameraDistance{0.07};
-        bool splitEyes{true};
+        Mode mode{Mode::STEREO_DUAL_PORT};
     };
 
     const Options& options() const;
