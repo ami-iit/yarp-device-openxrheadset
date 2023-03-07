@@ -254,7 +254,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
     if (split_eye_ports && mono_eye)
     {
-        yCError(OPENXRHEADSET) << "Both split_eye_ports_defined and mono_eye_defined are defined. Only one of the two can be true at the same time.";
+        yCError(OPENXRHEADSET) << "Both split_eye_ports and mono_eye are defined. Only one of the two can be true at the same time.";
         return false;
     }
 
