@@ -135,6 +135,7 @@ target_link_libraries(yarp_openxrheadset
     Eigen3::Eigen
     GLFont::GLFont
     stb_image
+    glm
 )
 
 if (NOT WIN32)
