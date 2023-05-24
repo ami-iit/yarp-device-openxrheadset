@@ -84,7 +84,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}
         git clone https://gitlab.freedesktop.org/monado/monado.git --depth 1 --branch ${MONADO_TAG}
         cd monado && mkdir -p build && cd build
-        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release -DXRT_FEATURE_SERVICE:BOOL=OFF ..
+        cmake -G Ninja -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/install -DCMAKE_BUILD_TYPE=Release -DXRT_FEATURE_SERVICE:BOOL=OFF -DXRT_OPENXR_INSTALL_ACTIVE_RUNTIME=OFF ..
         ninja install
 
     - name: Source-based YARP installation
