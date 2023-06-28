@@ -45,6 +45,7 @@ public:
         };
 
         bool automaticallyEnabled{true};
+        bool followEyes{false};
         double disableTimeoutInS{-1.0};
         std::shared_ptr<IOpenXrQuadLayer> quadLayer{nullptr};
         std::string portName;

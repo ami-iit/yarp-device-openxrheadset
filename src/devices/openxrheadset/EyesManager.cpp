@@ -254,3 +254,13 @@ std::string EyesManager::getRightImageControlPortName()
     return m_rightEye.controlPortName();
 }
 
+Eigen::Quaternionf EyesManager::getLeftEyeDesiredRotation() const
+{
+    return m_leftEye.getDesiredEyeRotation();
+}
+
+Eigen::Quaternionf EyesManager::getRightEyeDesiredRotation() const
+{
+    return m_rightEye.getDesiredEyeRotation();
+}
+
