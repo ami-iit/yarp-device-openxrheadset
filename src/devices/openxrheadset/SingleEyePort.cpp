@@ -192,6 +192,11 @@ void SingleEyePort::setImageDimensions(float widthInMeters, float heightInMeters
     m_layer.setDimensions(widthInMeters, heightInMeters);
 }
 
+Eigen::Quaternionf SingleEyePort::getDesiredEyeRotation() const
+{
+    return m_desiredRotation;
+}
+
 double SingleEyePort::azimuthOffset() const
 {
     return m_azimuthOffset;

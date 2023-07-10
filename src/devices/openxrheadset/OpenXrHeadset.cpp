@@ -496,14 +496,30 @@ void yarp::dev::OpenXrHeadset::run()
             yCError(OPENXRHEADSET) << "Failed to update eyes.";
         }
 
+        Eigen::Vector3f leftAngles = EulerAngles::XYZ(m_eyesManager.getLeftEyeDesiredRotation().matrix());
+        Eigen::Vector3f rightAngles = EulerAngles::XYZ(m_eyesManager.getRightEyeDesiredRotation().matrix());
+
+        double averageElevation = (leftAngles[0] + rightAngles[0]) / 2.0;
+        double averageAzimuth = (leftAngles[1] + rightAngles[1]) / 2.0;
+
+        Eigen::Quaternionf averageRotation = Eigen::AngleAxisf(averageElevation, Eigen::Vector3f::UnitX()) *
+            Eigen::AngleAxisf(averageAzimuth, Eigen::Vector3f::UnitY());
+
         for (GuiParam& gui : m_huds)
         {
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
             }
         }
+
         for (LabelLayer& label : m_labels)
         {
+            if (label.options.followEyes)
+            {
+                Eigen::Vector3f labelPosition = { label.x, label.y, label.z };
+                label.layer.setPosition(averageRotation * labelPosition);
+            }
+
             if (!label.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << label.options.portName << "label.";
             }

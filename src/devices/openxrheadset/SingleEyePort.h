@@ -51,6 +51,8 @@ public:
 
     void setImageDimensions(float widthInMeters, float heightInMeters);
 
+    Eigen::Quaternionf getDesiredEyeRotation() const;
+
     double azimuthOffset() const;
 
     double elevationOffset() const;

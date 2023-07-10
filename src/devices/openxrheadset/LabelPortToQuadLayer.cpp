@@ -383,6 +383,8 @@ bool LabelPortToQuadLayer::Options::parseFromConfigurationFile(const std::string
     pixelSize = labelGroup.check("pixel_size", yarp::os::Value(64)).asInt32();
     automaticallyEnabled = labelGroup.check("automatically_enabled", yarp::os::Value(true)).asBool();
     disableTimeoutInS = labelGroup.check("disable_timeout_in_S", yarp::os::Value(-1.0)).asFloat64();
+    followEyes = labelGroup.check("follow_eyes") && (labelGroup.find("follow_eyes").isNull() || labelGroup.find("follow_eyes").asBool());
+
 
     std::string inputHorAlignement = labelGroup.check("horizontal_alignement", yarp::os::Value("center")).asString();
     std::transform(inputHorAlignement.begin(), inputHorAlignement.end(), inputHorAlignement.begin(), ::tolower);

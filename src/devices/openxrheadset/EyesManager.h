@@ -88,6 +88,10 @@ public:
 
     std::string getRightImageControlPortName();
 
+    Eigen::Quaternionf getLeftEyeDesiredRotation() const;
+
+    Eigen::Quaternionf getRightEyeDesiredRotation() const;
+
 private:
 
     SingleEyePort m_leftEye, m_rightEye;
