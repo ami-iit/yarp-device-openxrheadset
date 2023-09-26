@@ -305,9 +305,8 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
     //opening tf client
     yarp::os::Property tfClientCfg;
-    tfClientCfg.put("device", cfg.check("tfDevice", yarp::os::Value("transformClient")).asString());
-    tfClientCfg.put("local",  cfg.check("tfLocal", yarp::os::Value(m_prefix + "/tf")).asString());
-    tfClientCfg.put("remote", cfg.check("tfRemote", yarp::os::Value("/transformServer")).asString());
+    tfClientCfg.put("device", cfg.check("tfDevice", yarp::os::Value("frameTransformClient")).asString());
+    tfClientCfg.put("filexml_option",  cfg.check("tfFile", yarp::os::Value("ftc_yarp_only.xml")).asString());
 
     if (!m_driver.open(tfClientCfg))
     {
@@ -320,7 +319,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         yCError(OPENXRHEADSET) << "Unable to view IFrameTransform interface.";
         return false;
     }
-    yCInfo(OPENXRHEADSET) << "TransformCLient successfully opened at port: " << cfg.find("tfLocal").asString();
+    yCInfo(OPENXRHEADSET) << "Transform client successfully opened.";
 
     FilteredPosePublisherSettings posePublisherSettings;
     posePublisherSettings.tfPublisher = m_tfPublisher;
