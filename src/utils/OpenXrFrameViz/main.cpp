@@ -98,6 +98,12 @@ int main(int argc, char** argv)
     yarp::os::Property tfClientCfg;
     tfClientCfg.put("device", rf.check("tfDevice", yarp::os::Value("frameTransformClient")).asString());
     tfClientCfg.put("filexml_option",  rf.check("tfFile", yarp::os::Value("ftc_yarp_only.xml")).asString());
+    tfClientCfg.put("ft_client_prefix", rf.check("tfPrefix", yarp::os::Value("/OpenXrFrameViewer/tf")).asString());
+    if (rf.check("tfRemote"))
+    {
+        tfClientCfg.put("ft_server_prefix", rf.find("tfRemote").asString());
+    }
+    tfClientCfg.put("local_rpc", "OpenXrFrameViewer/tf/local_rpc");
 
     yarp::dev::PolyDriver driver;
     yarp::dev::IFrameTransform* tfReader;

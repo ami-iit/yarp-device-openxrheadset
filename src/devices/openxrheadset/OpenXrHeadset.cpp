@@ -307,6 +307,13 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     yarp::os::Property tfClientCfg;
     tfClientCfg.put("device", cfg.check("tfDevice", yarp::os::Value("frameTransformClient")).asString());
     tfClientCfg.put("filexml_option",  cfg.check("tfFile", yarp::os::Value("ftc_yarp_only.xml")).asString());
+    tfClientCfg.put("ft_client_prefix", cfg.check("tfLocal", yarp::os::Value(m_prefix + "/tf")).asString());
+    if (cfg.check("tfRemote"))
+    {
+        tfClientCfg.put("ft_server_prefix", cfg.find("tfRemote").asString());
+    }
+    tfClientCfg.put("period", period);
+    tfClientCfg.put("local_rpc", m_prefix + "/tf/local_rpc");
 
     if (!m_driver.open(tfClientCfg))
     {
