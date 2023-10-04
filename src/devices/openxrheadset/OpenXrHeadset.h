@@ -310,6 +310,7 @@ private:
 
     OpenXrInterface::Pose m_rootFrameRawHRootFrame;
 
+    std::string m_rpcPortName;
     yarp::os::Port m_rpcPort;
 
     std::atomic_bool m_closed{ false };

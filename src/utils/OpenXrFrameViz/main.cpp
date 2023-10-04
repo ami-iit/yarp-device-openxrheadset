@@ -95,15 +95,17 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    std::string name = rf.check("name", yarp::os::Value("OpenXrFrameViewer")).asString();
+
     yarp::os::Property tfClientCfg;
     tfClientCfg.put("device", rf.check("tfDevice", yarp::os::Value("frameTransformClient")).asString());
     tfClientCfg.put("filexml_option",  rf.check("tfFile", yarp::os::Value("ftc_yarp_only.xml")).asString());
-    tfClientCfg.put("ft_client_prefix", rf.check("tfPrefix", yarp::os::Value("/OpenXrFrameViewer/tf")).asString());
+    tfClientCfg.put("ft_client_prefix", "/" + name + "/tf");
     if (rf.check("tfRemote"))
     {
         tfClientCfg.put("ft_server_prefix", rf.find("tfRemote").asString());
     }
-    tfClientCfg.put("local_rpc", "OpenXrFrameViewer/tf/local_rpc");
+    tfClientCfg.put("local_rpc", "/" + name + "/tf/local_rpc");
 
     yarp::dev::PolyDriver driver;
     yarp::dev::IFrameTransform* tfReader;

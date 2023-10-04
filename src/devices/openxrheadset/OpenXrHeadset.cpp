@@ -39,6 +39,16 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         m_prefix = name;
     }
 
+    std::string rpcName = cfg.check("rpc_name", yarp::os::Value("rpc")).toString();
+    if (rpcName.front() != '/')
+    {
+        m_rpcPortName = m_prefix +  '/' + rpcName;
+    }
+    else
+    {
+        m_rpcPortName = m_prefix + rpcName;
+    }
+
     //checking the additional guis parameter in the configuration file..
     {
         constexpr unsigned int STRING = 0;
@@ -442,9 +452,9 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         std::lock_guard<std::mutex> lock(m_mutex);
 
         this->yarp().attachAsServer(this->m_rpcPort);
-        if(!m_rpcPort.open(m_prefix + "/rpc"))
+        if(!m_rpcPort.open(m_rpcPortName))
         {
-            yCError(OPENXRHEADSET) << "Could not open" << m_prefix + "/rpc" << " RPC port.";
+            yCError(OPENXRHEADSET) << "Could not open" << m_rpcPortName << " RPC port.";
             return false;
         }
     }
