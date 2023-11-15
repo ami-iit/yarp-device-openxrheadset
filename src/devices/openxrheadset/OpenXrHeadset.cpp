@@ -140,6 +140,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
                 m_huds.back().z       = -std::max(0.01, std::abs(guip.find("z").asFloat64())); //make sure that z is negative and that is at least 0.01 in modulus
                 std::transform(groupName.begin(), groupName.end(), groupName.begin(), ::tolower);
                 m_huds.back().portName = m_prefix + "/" + guip.check("port_id", yarp::os::Value(groupName)).toString();
+                m_huds.back().followEyes = guip.check("follow_eyes") && (guip.find("follow_eyes").isNull() || guip.find("follow_eyes").asBool());
                 m_huds.back().visibility = visibility;
             }
         }
@@ -523,6 +524,26 @@ void yarp::dev::OpenXrHeadset::run()
 
         for (GuiParam& gui : m_huds)
         {
+            if (gui.followEyes)
+            {
+                Eigen::Quaternionf newRotation;
+                if (gui.visibility == IOpenXrQuadLayer::Visibility::LEFT_EYE)
+                {
+                    newRotation = m_eyesManager.getLeftEyeDesiredRotation();
+                }
+                else if (gui.visibility == IOpenXrQuadLayer::Visibility::RIGHT_EYE)
+                {
+                    newRotation = m_eyesManager.getRightEyeDesiredRotation();
+                }
+                else
+                {
+                    newRotation = averageRotation;
+                }
+
+                Eigen::Vector3f guiPosition = { gui.x, gui.y, gui.z };
+                gui.layer.setPose(newRotation * guiPosition, newRotation);
+            }
+
             if (!gui.layer.updateTexture()) {
                 yCError(OPENXRHEADSET) << "Failed to update" << gui.portName << "display texture.";
             }

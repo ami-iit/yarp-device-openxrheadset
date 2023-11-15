@@ -264,7 +264,8 @@ private:
         float         x;
         float         y;
         float         z;
-        std::string    portName;
+        std::string   portName;
+        bool          followEyes;
         IOpenXrQuadLayer::Visibility visibility;
         ImagePortToQuadLayer<yarp::sig::ImageOf<yarp::sig::PixelRgba>> layer;
     };
