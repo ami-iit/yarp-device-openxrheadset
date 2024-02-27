@@ -40,7 +40,8 @@ jobs:
       run: |
         # OpenGL is not found on Ubuntu when using conda. Related issue https://github.com/robotology/robotology-superbuild/issues/929
         # See https://github.com/robotology/robotology-superbuild/issues/477
-        mamba install expat-cos6-x86_64 freeglut libselinux-cos6-x86_64 libxau-cos6-x86_64 libxcb-cos6-x86_64 libxdamage-cos6-x86_64 libxext-cos6-x86_64 libxfixes-cos6-x86_64 libxxf86vm-cos6-x86_64 mesa-libgl-cos6-x86_64 mesa-libgl-devel-cos6-x86_64
+        # See https://github.com/robotology/robotology-superbuild/pull/1606
+        mamba install expat freeglut libselinux-cos7-x86_64 xorg-libxau libxcb xorg-libxdamage xorg-libxext xorg-libxfixes xorg-libxxf86vm xorg-libxrandr mesa-libgl-cos7-x86_64 mesa-libgl-devel-cos7-x86_64
 
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
