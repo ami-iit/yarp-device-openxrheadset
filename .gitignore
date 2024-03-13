@@ -8,3 +8,7 @@ build/*
 # Qtcreator
 *.user*
 *.autosave
+
+# Visual Studio
+.vs/
+CmakeSettings.json
