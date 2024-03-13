@@ -251,9 +251,10 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     double period = cfg.check("vr_period", yarp::os::Value(0.011)).asFloat64();
     this->setPeriod(period);
 
+    m_useNativeQuadLayers = cfg.check("use_native_quad_layers") && (cfg.find("use_native_quad_layers").isNull() || cfg.find("use_native_quad_layers").asBool());
 
     m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
-    m_openXrInterfaceSettings.hideWindow = cfg.check("hide_window") && (cfg.find("hide_window").isNull() || cfg.find("hide_window").asBool());
+    m_openXrInterfaceSettings.hideWindow = (m_useNativeQuadLayers && !cfg.check("hide_window")) || (cfg.check("hide_window") && (cfg.find("hide_window").isNull() || cfg.find("hide_window").asBool()));
     m_openXrInterfaceSettings.renderInPlaySpace = cfg.check("render_in_play_space") && (cfg.find("render_in_play_space").isNull() || cfg.find("render_in_play_space").asBool());
 
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
@@ -398,8 +399,20 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             return false;
         }
 
-        m_eyesManager.options().leftEyeQuadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
-        m_eyesManager.options().rightEyeQuadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+        auto getLayer = [this]() -> std::shared_ptr<IOpenXrQuadLayer>
+        {
+            if (m_useNativeQuadLayers)
+            {
+                return m_openXrInterface.addHeadFixedQuadLayer();
+            }
+            else
+            {
+                return m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+            }
+        };
+
+        m_eyesManager.options().leftEyeQuadLayer = getLayer();
+        m_eyesManager.options().rightEyeQuadLayer = getLayer();
 
         if (!m_eyesManager.initialize())
         {
@@ -408,7 +421,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (GuiParam& gui : m_huds)
         {
-            if (!gui.layer.initialize(m_openXrInterface.addHeadFixedOpenGLQuadLayer(), gui.portName)) {
+            if (!gui.layer.initialize(getLayer(), gui.portName)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
                 return false;
             }
@@ -419,7 +432,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (LabelLayer& label : m_labels)
         {
-            label.options.quadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+            label.options.quadLayer = getLayer();
 
             if (!label.layer.initialize(label.options)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
@@ -432,7 +445,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
         for (SlideLayer& slide : m_slides)
         {
-            slide.options.quadLayer = m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+            slide.options.quadLayer = getLayer();
             if (!slide.layer.initialize(slide.options)) {
                 yCError(OPENXRHEADSET) << "Cannot initialize" << slide.options.portName << "slide.";
                 return false;
