@@ -254,6 +254,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
     m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
     m_openXrInterfaceSettings.hideWindow = cfg.check("hide_window") && (cfg.find("hide_window").isNull() || cfg.find("hide_window").asBool());
+    m_openXrInterfaceSettings.renderInPlaySpace = cfg.check("render_in_play_space") && (cfg.find("render_in_play_space").isNull() || cfg.find("render_in_play_space").asBool());
 
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();

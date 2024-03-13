@@ -524,7 +524,7 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         .type = XR_TYPE_COMPOSITION_LAYER_PROJECTION,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->view_space,
+        .space = m_pimpl->renderInPlaySpace? m_pimpl->play_space : m_pimpl->view_space,
         .viewCount = static_cast<uint32_t>(m_pimpl->projection_views.size()),
         .views = m_pimpl->projection_views.data(),
     };
@@ -882,24 +882,15 @@ void OpenXrInterface::updateXrSpaces()
                                          .viewConfigurationType =
                                              XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
                                          .displayTime = m_pimpl->frame_state.predictedDisplayTime,
-                                         .space = m_pimpl->view_space};
+                                         .space = m_pimpl->renderInPlaySpace ? m_pimpl->play_space : m_pimpl->view_space };
 
 
-    uint32_t output_viewCount = m_pimpl->views.size();
+    uint32_t output_viewCount = static_cast<uint32_t>(m_pimpl->views.size());
     XrResult result = xrLocateViews(m_pimpl->session, &view_locate_info, &(m_pimpl->view_state),
-                                    m_pimpl->views.size(), &output_viewCount, m_pimpl->views.data());
+                                    static_cast<uint32_t>(m_pimpl->views.size()), &output_viewCount, m_pimpl->views.data());
     if (!m_pimpl->checkXrOutput(result, "Failed to locate the views!"))
     {
         m_pimpl->view_state.viewStateFlags = 0; //Set to zero all the valid/tracked flags
-    }
-
-    XrPosef identity_pose = { .orientation = {.x = 0, .y = 0, .z = 0, .w = 1.0},
-                            .position = {.x = 0, .y = 0, .z = 0} };
-
-    for (size_t i = 0; i < m_pimpl->views.size(); ++i)
-    {
-        m_pimpl->projection_views[i].pose = identity_pose;
-        m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
     m_pimpl->mid_views_pose = m_pimpl->views[0].pose;
@@ -909,6 +900,12 @@ void OpenXrInterface::updateXrSpaces()
         m_pimpl->mid_views_pose.position = toXr(Eigen::Vector3f(toEigen(m_pimpl->mid_views_pose.position) + toEigen(m_pimpl->views[i].pose.position)));
     }
     m_pimpl->mid_views_pose.position = toXr(Eigen::Vector3f(toEigen(m_pimpl->mid_views_pose.position)/static_cast<float>(m_pimpl->views.size())));
+
+    for (size_t i = 0; i < m_pimpl->views.size(); ++i)
+    {
+        m_pimpl->projection_views[i].pose = m_pimpl->mid_views_pose;
+        m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
+    }
 
     result = xrLocateSpace(m_pimpl->view_space, m_pimpl->play_space,
                            m_pimpl->locate_space_time, &m_pimpl->view_space_location);
@@ -1348,6 +1345,7 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     m_pimpl->locate_space_prediction_in_ns = static_cast<long>(std::round(settings.posesPredictionInMs * 1e6));
 
     m_pimpl->hideWindow = settings.hideWindow;
+    m_pimpl->renderInPlaySpace = settings.renderInPlaySpace;
 
     m_pimpl->closing = false;
     m_pimpl->closed = false;
@@ -1451,7 +1449,7 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedQuadLayer()
         .type = XR_TYPE_COMPOSITION_LAYER_QUAD,
         .next = NULL,
         .layerFlags = 0,
-        .space = m_pimpl->play_space,        //Head fixed
+        .space = m_pimpl->renderInPlaySpace ? m_pimpl->play_space : m_pimpl->view_space,
         .eyeVisibility = XR_EYE_VISIBILITY_BOTH,
         .subImage = {
             .swapchain = XR_NULL_HANDLE,

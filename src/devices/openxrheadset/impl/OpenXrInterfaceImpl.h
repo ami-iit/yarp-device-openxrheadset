@@ -363,6 +363,9 @@ public:
 
     // Flag to enable the window visualization
     bool hideWindow{false};
+
+    // Flag to enable the visualization of the layers in the play space instead of the head space
+    bool renderInPlaySpace{false};
 };
 
 
