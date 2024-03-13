@@ -72,15 +72,23 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     return true;
 }
 
-void OpenGLQuadLayer::setFOVs(float fovX, float fovY)
+void OpenGLQuadLayer::setFOVs(const XrFovf& fov)
 {
-    float tan_fovY_2 = std::tan(fovY/2);
+    // Calculate horizontal and vertical FOVs
+    float horizontal_fov = std::abs(fov.angleLeft) + std::abs(fov.angleRight);
+    float vertical_fov = std::abs(fov.angleUp) + std::abs(fov.angleDown);
 
-    if (std::abs(tan_fovY_2) < 1e-15)
+    float tan_vfov_2 = std::tan(vertical_fov / 2.0f);
+
+    if (tan_vfov_2 < 1e-15)
+    {
+        yCError(OPENXRHEADSET) << "Vertical FOV is zero. Cannot calculate aspect ratio.";
         return;
+    }
 
-    m_fovY = fovY;
-    m_aspectRatio = std::tan(fovX/2) / tan_fovY_2; //See https://en.wikipedia.org/wiki/Field_of_view_in_video_games
+    // Calculate aspect ratio using trigonometry
+    m_aspectRatio = std::tan(horizontal_fov / 2.0f) / tan_vfov_2; //TODO check if needed
+    m_fov = fov;
 }
 
 void OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
@@ -105,9 +113,16 @@ void OpenGLQuadLayer::render()
     glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
 
     glm::mat4 model = m_offsetTra * modelPose * sca;
-    glm::mat4 proj = glm::perspective(m_fovY, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
-    glm::mat4 layerTransform = proj * model;
+    // Calculate perspective matrix
+    float left = -m_zNear * std::tan(m_fov.angleLeft);
+    float right = m_zNear * std::tan(m_fov.angleRight);
+    float bottom = -m_zNear * std::tan(m_fov.angleDown);
+    float top = m_zNear * std::tan(m_fov.angleUp);
+
+    glm::mat4 perspective_matrix = glm::frustum(left, right, bottom, top, m_zNear, m_zFar);
+
+    glm::mat4 layerTransform = perspective_matrix * model;
 
     m_shader.bind();                                                                                                  // bind shader
     m_shader.setUniformMat4f("u_H", layerTransform);

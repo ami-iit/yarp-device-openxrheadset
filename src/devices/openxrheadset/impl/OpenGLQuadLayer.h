@@ -52,9 +52,9 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
 
     glm::vec3 m_modelScale{1.0f, 1.0f, 1.0f};
 
-    float m_fovY = glm::radians(60.0f);                                                      // Field Of View
     float m_zNear = 0.1f;
     float m_zFar = 100.0f;
+    XrFovf m_fov;
     float m_aspectRatio = 1.0f;
 
 public:
@@ -73,7 +73,7 @@ public:
 
     bool initialize(int32_t imageMaxWidth, int32_t imageMaxHeight);
 
-    void setFOVs(float fovX, float fovY);
+    void setFOVs(const XrFovf& fov);
 
     void setDepthLimits(float zNear, float zFar);
 
