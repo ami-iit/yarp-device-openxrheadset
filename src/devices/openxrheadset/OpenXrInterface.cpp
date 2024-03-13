@@ -901,6 +901,9 @@ void OpenXrInterface::updateXrSpaces()
     }
     m_pimpl->mid_views_pose.position = toXr(Eigen::Vector3f(toEigen(m_pimpl->mid_views_pose.position)/static_cast<float>(m_pimpl->views.size())));
 
+    m_pimpl->mid_views_pose_inverted.orientation = toXr(toEigen(m_pimpl->mid_views_pose.orientation).inverse());
+    m_pimpl->mid_views_pose_inverted.position = toXr(toEigen(m_pimpl->mid_views_pose_inverted.orientation) * -toEigen(m_pimpl->mid_views_pose.position));
+
     for (size_t i = 0; i < m_pimpl->views.size(); ++i)
     {
         m_pimpl->projection_views[i].pose = m_pimpl->mid_views_pose;
@@ -1180,7 +1183,8 @@ void OpenXrInterface::render()
             {
                 if (viewIsValid)
                 {
-                    openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[0].pose.position));
+                    Eigen::Vector3f offset = toEigen(m_pimpl->mid_views_pose_inverted.orientation) * toEigen(m_pimpl->views[0].pose.position) + toEigen(m_pimpl->mid_views_pose_inverted.position);
+                    openGLLayer->setOffsetPosition(offset);
                 }
                 else
                 {
@@ -1229,7 +1233,8 @@ void OpenXrInterface::render()
             {
                 if (viewIsValid)
                 {
-                    openGLLayer->setOffsetPosition(toEigen(m_pimpl->views[1].pose.position));
+                    Eigen::Vector3f offset = toEigen(m_pimpl->mid_views_pose_inverted.orientation) * toEigen(m_pimpl->views[1].pose.position) + toEigen(m_pimpl->mid_views_pose_inverted.position);
+                    openGLLayer->setOffsetPosition(offset);
                 }
                 else
                 {
