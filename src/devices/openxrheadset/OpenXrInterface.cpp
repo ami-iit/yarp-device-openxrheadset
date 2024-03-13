@@ -9,6 +9,7 @@
 #include <impl/OpenXrInterfaceImpl.h>
 
 //#define DEBUG_RENDERING
+//#define DEBUG_RENDERING_LOCATION
 
 
 bool OpenXrInterface::checkExtensions()
@@ -906,7 +907,13 @@ void OpenXrInterface::updateXrSpaces()
 
     for (size_t i = 0; i < m_pimpl->views.size(); ++i)
     {
+#ifdef DEBUG_RENDERING_LOCATION
+        XrPosef identity_pose = {.orientation = {.x = 0, .y = 0, .z = 0, .w = 1.0},
+                                       .position = {.x = 0, .y = 0, .z = 0}};
+        m_pimpl->projection_views[i].pose = identity_pose;
+#else
         m_pimpl->projection_views[i].pose = m_pimpl->mid_views_pose;
+#endif
         m_pimpl->projection_views[i].fov = m_pimpl->views[i].fov;
     }
 
@@ -1303,7 +1310,12 @@ void OpenXrInterface::endXrFrame()
         {
             if (layer->shouldSubmit())
             {
+#ifdef DEBUG_RENDERING_LOCATION
+                layer->layer.pose = layer->desiredHeadFixedPose;
+#else
                 layer->layer.pose = toXr(Eigen::Matrix4f(toEigen(m_pimpl->mid_views_pose) * toEigen(layer->desiredHeadFixedPose)));
+#endif
+
                 m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) &layer->layer);
             }
         }
@@ -1351,6 +1363,11 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
 
     m_pimpl->hideWindow = settings.hideWindow;
     m_pimpl->renderInPlaySpace = settings.renderInPlaySpace;
+
+#ifdef DEBUG_RENDERING_LOCATION
+    m_pimpl->renderInPlaySpace = true;
+#endif // DEBUG_RENDERING_LOCATION
+
 
     m_pimpl->closing = false;
     m_pimpl->closed = false;
