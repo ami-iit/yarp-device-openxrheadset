@@ -115,9 +115,9 @@ void OpenGLQuadLayer::render()
     glm::mat4 model = m_offsetTra * modelPose * sca;
 
     // Calculate perspective matrix
-    float left = -m_zNear * std::tan(m_fov.angleLeft);
+    float left = m_zNear * std::tan(m_fov.angleLeft);
     float right = m_zNear * std::tan(m_fov.angleRight);
-    float bottom = -m_zNear * std::tan(m_fov.angleDown);
+    float bottom = m_zNear * std::tan(m_fov.angleDown);
     float top = m_zNear * std::tan(m_fov.angleUp);
 
     glm::mat4 perspective_matrix = glm::mat4(0.0f);
