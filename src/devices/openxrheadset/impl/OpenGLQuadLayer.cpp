@@ -120,7 +120,17 @@ void OpenGLQuadLayer::render()
     float bottom = -m_zNear * std::tan(m_fov.angleDown);
     float top = m_zNear * std::tan(m_fov.angleUp);
 
-    glm::mat4 perspective_matrix = glm::frustum(left, right, bottom, top, m_zNear, m_zFar);
+    glm::mat4 perspective_matrix = glm::mat4(0.0f);
+    //The sintax for glm::mat4 is [col][row]
+    //Source https://learnwebgl.brown37.net/08_projections/projections_perspective.html
+    perspective_matrix[0][0] = (2.0f * m_zNear) / (right - left);
+    perspective_matrix[1][1] = (2.0f * m_zNear) / (top - bottom);
+    perspective_matrix[2][2] = -(m_zFar + m_zNear) / (m_zFar - m_zNear);
+    perspective_matrix[2][3] = -1.0f;
+    perspective_matrix[3][0] = -m_zNear * (right + left) / (right - left);
+    perspective_matrix[3][1] = -m_zNear * (top + bottom) / (top - bottom);
+    perspective_matrix[3][2] = -(2.0f * m_zFar * m_zNear) / (m_zFar - m_zNear);
+
 
     glm::mat4 layerTransform = perspective_matrix * model;
 
