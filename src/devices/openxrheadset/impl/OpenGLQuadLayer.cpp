@@ -18,6 +18,12 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     m_imageMaxWidth = imageMaxWidth;
     m_imageMaxHeight = imageMaxHeight;
 
+    //Random initialization for FOV
+    m_fov.angleLeft = -1.0f;
+    m_fov.angleRight = 1.0f;
+    m_fov.angleUp = 1.0f;
+    m_fov.angleDown = -1.0f;
+
     m_positions = {
         // vertex coords         // texture coords
         -0.5f, -0.5f, 0.0, 1.0f, 0.0f, 0.0f, // 0 (the first 4 numbers of the row are the vertex coordinates, the second 2 numbers are the texture coordinate for that vertex (the bottom left corner of the rectangle is also the bottom left corner of the picture))
@@ -75,19 +81,18 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
 void OpenGLQuadLayer::setFOVs(const XrFovf& fov)
 {
     // Calculate horizontal and vertical FOVs
-    float horizontal_fov = std::abs(fov.angleLeft) + std::abs(fov.angleRight);
-    float vertical_fov = std::abs(fov.angleUp) + std::abs(fov.angleDown);
 
-    float tan_vfov_2 = std::tan(vertical_fov / 2.0f);
-
-    if (tan_vfov_2 < 1e-15)
+    if (std::abs(fov.angleRight - fov.angleLeft) < 1e-15)
     {
-        yCError(OPENXRHEADSET) << "Vertical FOV is zero. Cannot calculate aspect ratio.";
+        yCError(OPENXRHEADSET) << "Horizontal FOV is zero.";
         return;
     }
 
-    // Calculate aspect ratio using trigonometry
-    m_aspectRatio = std::tan(horizontal_fov / 2.0f) / tan_vfov_2; //TODO check if needed
+    if (std::abs(fov.angleUp - fov.angleDown) < 1e-15)
+    {
+        yCError(OPENXRHEADSET) << "Vertical FOV is zero.";
+        return;
+    }
     m_fov = fov;
 }
 

@@ -55,7 +55,6 @@ class OpenGLQuadLayer : public IOpenXrQuadLayer
     float m_zNear = 0.1f;
     float m_zFar = 100.0f;
     XrFovf m_fov;
-    float m_aspectRatio = 1.0f;
 
 public:
 

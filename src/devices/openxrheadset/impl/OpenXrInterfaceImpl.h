@@ -369,6 +369,10 @@ public:
 
     // Flag to enable the visualization of the layers in the play space instead of the head space
     bool renderInPlaySpace{false};
+
+    // Depth limits
+    float nearZ = 0.01f;
+    float farZ = 100.0f;
 };
 
 

@@ -505,8 +505,8 @@ bool OpenXrInterface::prepareXrCompositionLayers()
         m_pimpl->depth_projection_views[i].next = NULL;
         m_pimpl->depth_projection_views[i].minDepth = 0.f;
         m_pimpl->depth_projection_views[i].maxDepth = 1.f;
-        m_pimpl->depth_projection_views[i].nearZ = 0.01f;
-        m_pimpl->depth_projection_views[i].farZ = 100.0f;
+        m_pimpl->depth_projection_views[i].nearZ = m_pimpl->nearZ;
+        m_pimpl->depth_projection_views[i].farZ = m_pimpl->farZ;
 
         m_pimpl->depth_projection_views[i].subImage.swapchain = m_pimpl->projection_view_depth_swapchains[i].swapchain;
         m_pimpl->depth_projection_views[i].subImage.imageArrayIndex = 0;
@@ -1186,6 +1186,7 @@ void OpenXrInterface::render()
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::LEFT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFOVs(m_pimpl->views[0].fov);
+            openGLLayer->setDepthLimits(m_pimpl->nearZ, m_pimpl->farZ);
             if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES || !openGLLayer->offsetIsSet())
             {
                 if (viewIsValid)
@@ -1236,6 +1237,7 @@ void OpenXrInterface::render()
         if (openGLLayer->shouldRender() && (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::RIGHT_EYE || openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES))
         {
             openGLLayer->setFOVs(m_pimpl->views[1].fov);
+            openGLLayer->setDepthLimits(m_pimpl->nearZ, m_pimpl->farZ);
             if (openGLLayer->visibility() == IOpenXrQuadLayer::Visibility::BOTH_EYES || !openGLLayer->offsetIsSet())
             {
                 if (viewIsValid)
