@@ -248,7 +248,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
         }
     }
 
-    double period = cfg.check("vr_period", yarp::os::Value(0.008)).asFloat64(); // 120 Hz, if running at lower frequency, OpenXr will pause waiting for frames
+    double period = cfg.check("vr_period", yarp::os::Value(0.011)).asFloat64();
     this->setPeriod(period);
 
     m_useNativeQuadLayers = cfg.check("use_native_quad_layers") && (cfg.find("use_native_quad_layers").isNull() || cfg.find("use_native_quad_layers").asBool());
