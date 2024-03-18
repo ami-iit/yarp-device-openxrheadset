@@ -18,6 +18,12 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     m_imageMaxWidth = imageMaxWidth;
     m_imageMaxHeight = imageMaxHeight;
 
+    //Random initialization for FOV
+    m_fov.angleLeft = -1.0f;
+    m_fov.angleRight = 1.0f;
+    m_fov.angleUp = 1.0f;
+    m_fov.angleDown = -1.0f;
+
     m_positions = {
         // vertex coords         // texture coords
         -0.5f, -0.5f, 0.0, 1.0f, 0.0f, 0.0f, // 0 (the first 4 numbers of the row are the vertex coordinates, the second 2 numbers are the texture coordinate for that vertex (the bottom left corner of the rectangle is also the bottom left corner of the picture))
@@ -72,15 +78,22 @@ bool OpenGLQuadLayer::initialize(int32_t imageMaxWidth, int32_t imageMaxHeight)
     return true;
 }
 
-void OpenGLQuadLayer::setFOVs(float fovX, float fovY)
+void OpenGLQuadLayer::setFOVs(const XrFovf& fov)
 {
-    float tan_fovY_2 = std::tan(fovY/2);
+    // Calculate horizontal and vertical FOVs
 
-    if (std::abs(tan_fovY_2) < 1e-15)
+    if (std::abs(fov.angleRight - fov.angleLeft) < 1e-15)
+    {
+        yCError(OPENXRHEADSET) << "Horizontal FOV is zero.";
         return;
+    }
 
-    m_fovY = fovY;
-    m_aspectRatio = std::tan(fovX/2) / tan_fovY_2; //See https://en.wikipedia.org/wiki/Field_of_view_in_video_games
+    if (std::abs(fov.angleUp - fov.angleDown) < 1e-15)
+    {
+        yCError(OPENXRHEADSET) << "Vertical FOV is zero.";
+        return;
+    }
+    m_fov = fov;
 }
 
 void OpenGLQuadLayer::setDepthLimits(float zNear, float zFar)
@@ -105,9 +118,26 @@ void OpenGLQuadLayer::render()
     glm::mat4 sca = glm::scale(glm::mat4(1.0f), m_modelScale);
 
     glm::mat4 model = m_offsetTra * modelPose * sca;
-    glm::mat4 proj = glm::perspective(m_fovY, m_aspectRatio, m_zNear, m_zFar);                           // 3D alternative to "ortho" proj type. It allows to define the view frustum by inserting the y FOV, the aspect ratio of the window, where are placed the near and far clipping planes
 
-    glm::mat4 layerTransform = proj * model;
+    // Calculate perspective matrix
+    float left = m_zNear * std::tan(m_fov.angleLeft);
+    float right = m_zNear * std::tan(m_fov.angleRight);
+    float bottom = m_zNear * std::tan(m_fov.angleDown);
+    float top = m_zNear * std::tan(m_fov.angleUp);
+
+    glm::mat4 perspective_matrix = glm::mat4(0.0f);
+    //The sintax for glm::mat4 is [col][row]
+    //Source "Generalized Perspective Projection" By Robert Kooima.
+    perspective_matrix[0][0] = (2.0f * m_zNear) / (right - left);
+    perspective_matrix[1][1] = (2.0f * m_zNear) / (top - bottom);
+    perspective_matrix[2][0] = (right + left) / (right - left);
+    perspective_matrix[2][1] = (top + bottom) / (top - bottom);
+    perspective_matrix[2][2] = -(m_zFar + m_zNear) / (m_zFar - m_zNear);
+    perspective_matrix[2][3] = -1.0f;
+    perspective_matrix[3][2] = -(2.0f * m_zFar * m_zNear) / (m_zFar - m_zNear);
+
+
+    glm::mat4 layerTransform = perspective_matrix * model;
 
     m_shader.bind();                                                                                                  // bind shader
     m_shader.setUniformMat4f("u_H", layerTransform);

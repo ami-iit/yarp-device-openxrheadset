@@ -317,6 +317,7 @@ private:
     std::atomic_bool m_closed{ false };
 
     OpenXrInterfaceSettings m_openXrInterfaceSettings;
+    bool m_useNativeQuadLayers{ false };
     OpenXrInterface m_openXrInterface;
 
     std::vector<bool> m_buttons;

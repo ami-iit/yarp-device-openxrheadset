@@ -19,6 +19,7 @@ class OpenXrQuadLayer : public IOpenXrQuadLayer
 public:
 
     XrCompositionLayerQuad layer;
+    XrPosef desiredHeadFixedPose;
     std::vector<XrSwapchainImageOpenGLKHR> swapchain_images;
     uint32_t swapchainWidth;
     uint32_t swapchainHeight;

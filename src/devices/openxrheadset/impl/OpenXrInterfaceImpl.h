@@ -271,6 +271,12 @@ public:
     // array of views, filled by the runtime with current HMD display pose (basically the position of each eye)
     std::vector<XrView> views;
 
+    // position of a frame in the middle of the eyes, oriented as the first eye
+    XrPosef mid_views_pose;
+
+    // position of a frame in the middle of the eyes, oriented as the first eye
+    XrPosef mid_views_pose_inverted;
+
     // List of top level paths to retrieve the state of each action
     std::vector<TopLevelPath> top_level_paths;
 
@@ -360,6 +366,13 @@ public:
 
     // Flag to enable the window visualization
     bool hideWindow{false};
+
+    // Flag to enable the visualization of the layers in the play space instead of the head space
+    bool renderInPlaySpace{false};
+
+    // Depth limits
+    float nearZ = 0.01f;
+    float farZ = 100.0f;
 };
 
 
