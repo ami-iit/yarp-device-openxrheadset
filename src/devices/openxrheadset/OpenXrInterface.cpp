@@ -41,6 +41,8 @@ bool OpenXrInterface::checkExtensions()
     bool depth_supported = false;
     bool debug_supported = false;
 
+    std::stringstream supported_extensions;
+    supported_extensions << "Supported extensions: " <<std::endl;
     for (uint32_t i = 0; i < ext_count; i++) {
         if (strcmp(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             opengl_supported = true;
@@ -57,7 +59,11 @@ bool OpenXrInterface::checkExtensions()
         if (strcmp(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             m_pimpl->htc_trackers_supported = true;
         }
+
+        supported_extensions << std::endl << "    - " << ext_props[i].extensionName;
     }
+
+    yCInfo(OPENXRHEADSET) << supported_extensions.str();
 
     // A graphics extension like OpenGL is required to draw anything in VR
     if (!opengl_supported) {
