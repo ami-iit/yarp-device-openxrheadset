@@ -10,14 +10,14 @@ service OpenXrHeadsetCommands
 {
     /**
     * Get the current interaction profile for the left hand
-    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller, htc_vive_controller, or htc_vive_focus3_controller
     * @return a string indicating the interaction profile in use.
     */
     string getLeftHandInteractionProfile();
 
     /**
     * Get the current interaction profile for the right hand
-    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller, htc_vive_controller, or htc_vive_focus3_controller
     * @return a string indicating the interaction profile in use.
     */
     string getRightHandInteractionProfile();

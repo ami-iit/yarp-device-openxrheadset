@@ -408,6 +408,11 @@ std::string OpenXrInterface::Implementation::getInteractionProfileShortTag(const
         return "htc_vive_tracker";
     }
 
+    if (interactionProfile == HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG)
+    {
+        return "htc_vive_focus3_controller";
+    }
+
     return "none";
 }
 
