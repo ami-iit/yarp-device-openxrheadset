@@ -34,6 +34,7 @@
 #define OCULUS_TOUCH_INTERACTION_PROFILE_TAG "/interaction_profiles/oculus/touch_controller"
 #define HTC_VIVE_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_controller"
 #define HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_tracker_htcx"
+#define HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_focus3_controller"
 
 // STRUCTS
 template <typename ActionType>
@@ -296,6 +297,9 @@ public:
 
     // Map defining which tracker is connected
     std::unordered_map<std::string, TrackerStatus> htc_trackers_status;
+
+    // flag to check if the HTC VIVE Focus3 controllers are supported by the runtime.
+    bool focus3_supported = false;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;
