@@ -60,6 +60,10 @@ bool OpenXrInterface::checkExtensions()
             m_pimpl->htc_trackers_supported = true;
         }
 
+        if (strcmp(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            m_pimpl->focus3_supported = true;
+        }
+
         supported_extensions << std::endl << "    - " << ext_props[i].extensionName;
     }
 
@@ -83,6 +87,10 @@ bool OpenXrInterface::checkExtensions()
 
     if (!m_pimpl->htc_trackers_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Trackers!";
+    }
+
+    if (!m_pimpl->focus3_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Focus 3 controllers!";
     }
 
     return true;
@@ -123,6 +131,10 @@ bool OpenXrInterface::prepareXrInstance()
     if (m_pimpl->htc_trackers_supported)
     {
         requestedExtensions.push_back(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME);
+    }
+    if (m_pimpl->focus3_supported)
+    {
+        requestedExtensions.push_back(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME);
     }
 
     // Populate the info to create the instance
@@ -671,6 +683,51 @@ bool OpenXrInterface::prepareXrActions()
     };
 
     right_hand.inputsDeclarations[HTC_VIVE_INTERACTION_PROFILE_TAG] = vive_left_inputs; //the inputs from the left and right hand are the same
+
+    if (m_pimpl->focus3_supported)
+    {
+        InputActionsDeclaration& focus3_left_inputs = left_hand.inputsDeclarations[HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG];
+        InputActionsDeclaration& focus3_right_inputs = right_hand.inputsDeclarations[HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG];
+
+        focus3_left_inputs.poses =
+        {
+            {"/input/grip/pose", "grip"}
+        };
+        focus3_right_inputs.poses = focus3_left_inputs.poses;
+
+
+        focus3_left_inputs.buttons =
+        {
+            //We avoid the menu button because it is used to open SteamVR when using the Streaming Hub
+            {"/input/x/click",          "x"},
+            {"/input/y/click",          "y"},
+            {"/input/trigger/click",    "trigger_click"},
+            {"/input/squeeze/click",    "squeeze_click"},
+            {"/input/thumbstick/click", "thumbstick_click"}
+        };
+        focus3_right_inputs.buttons =
+        {
+            {"/input/a/click",          "a"},
+            {"/input/b/click",          "b"},
+            {"/input/trigger/click",    "trigger_click"},
+            {"/input/squeeze/click",    "squeeze_click"},
+            {"/input/thumbstick/click", "thumbstick_click"}
+        };
+
+        focus3_left_inputs.axes =
+        {
+            {"/input/trigger/value",  "trigger"},
+            {"/input/squeeze/value",  "squeeze"}
+        };
+        focus3_right_inputs.axes = focus3_left_inputs.axes;
+
+        focus3_left_inputs.thumbsticks =
+        {
+            {"/input/thumbstick",  "thumbstick"}
+        };
+
+        focus3_right_inputs.thumbsticks = focus3_left_inputs.thumbsticks;
+    }
 
     std::vector<TopLevelPathDeclaration> topLevelPathsDeclaration = {left_hand,    //The left hand should always come first in this list
                                                                      right_hand};  //The right hand should always come second in this list
