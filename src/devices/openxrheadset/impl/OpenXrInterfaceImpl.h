@@ -204,7 +204,7 @@ public:
         }
         else
         {
-            yCError(OPENXRHEADSET) << format;
+            yCError(OPENXRHEADSET) << format << "(error:" << result << ")";
         }
 
         return false;
