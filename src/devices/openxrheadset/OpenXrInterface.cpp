@@ -176,7 +176,7 @@ bool OpenXrInterface::prepareXrInstance()
                                                                    {XR_API_VERSION_1_0, "XR_API_VERSION_1_0"}};
     size_t version_index = 0;
 
-    while (result == XR_ERROR_API_VERSION_UNSUPPORTED && version_index < api_versions.size())
+    while ((result == XR_ERROR_API_VERSION_UNSUPPORTED || result == XR_ERROR_INITIALIZATION_FAILED) && version_index < api_versions.size())
     {
         instanceCreateInfo.applicationInfo.apiVersion = api_versions[version_index].first;
         result = xrCreateInstance(&instanceCreateInfo, &(m_pimpl->instance));
