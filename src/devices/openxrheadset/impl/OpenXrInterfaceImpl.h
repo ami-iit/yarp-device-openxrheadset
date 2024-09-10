@@ -301,6 +301,32 @@ public:
     // flag to check if the HTC VIVE Focus3 controllers are supported by the runtime.
     bool focus3_supported = false;
 
+    //flag to check if the HTC facial tracking is supported by the runtime.
+    bool htc_facial_tracking_extension_supported = false;
+
+    //flag to check if facial tracking is supported by the headset.
+    bool htc_eye_facial_tracking_supported = false;
+
+    //flag to check if lip facial tracking is supported by the headset.
+    bool htc_lip_facial_tracking_supported = false;
+
+    // Pointer to function to create the HTC facial tracker
+    PFN_xrCreateFacialTrackerHTC pfn_xrCreateFacialTrackerHTC = NULL;
+
+    // Pointer to function to destroy the HTC facial tracker
+    PFN_xrDestroyFacialTrackerHTC pfn_xrDestroyFacialTrackerHTC = NULL;
+
+    // Pointer to function to get the facial expressions
+    PFN_xrGetFacialExpressionsHTC pfn_xrGetFacialExpressionsHTC = NULL;
+
+    // Handles for eye and lip tracking
+    XrFacialTrackerHTC* htc_eye_facial_tracker = nullptr;
+    XrFacialTrackerHTC* htc_lip_facial_tracker = nullptr;
+
+    // Stucts to store the facial expressions
+    std::vector<float> htc_eye_expressions;
+    std::vector<float> htc_lip_expressions;
+
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;
 
