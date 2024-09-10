@@ -82,7 +82,7 @@ class OpenXrInterface
 
     bool prepareXrSystem();
 
-    void printSystemProperties();
+    void checkSystemProperties();
 
     bool prepareGL();
 
