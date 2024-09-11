@@ -1956,6 +1956,26 @@ bool OpenXrInterface::shouldResetLocalReferenceSpace()
     return shouldReset;
 }
 
+bool OpenXrInterface::eyeExpressionsSupported() const
+{
+    return m_pimpl->htc_eye_facial_tracker;
+}
+
+bool OpenXrInterface::lipExpressionsSupported() const
+{
+    return m_pimpl->htc_lip_facial_tracker;
+}
+
+const std::vector<float>& OpenXrInterface::eyeExpressions() const
+{
+    return m_pimpl->htc_eye_expressions;
+}
+
+const std::vector<float>& OpenXrInterface::lipExpressions() const
+{
+    return m_pimpl->htc_lip_expressions;
+}
+
 void OpenXrInterface::close()
 {
     m_pimpl->closing = true;

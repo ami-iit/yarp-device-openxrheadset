@@ -481,6 +481,10 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             slide.layer.setImage(slide.options.initialSlide);
         }
 
+        // We know if the expressions are supported only after the initialization of the OpenXrInterface
+        m_expressionsManager.configure(m_prefix,
+                                       m_openXrInterface.eyeExpressionsSupported(),
+                                       m_openXrInterface.lipExpressionsSupported());
         this->yarp().attachAsServer(this->m_rpcPort);
         if (!m_rpcPort.open(m_rpcPortName))
         {
@@ -526,6 +530,7 @@ void yarp::dev::OpenXrHeadset::threadRelease()
         m_labels.clear();
         m_slides.clear();
         m_eyesManager.close();
+        m_expressionsManager.close();
 
         m_openXrInterface.close();
 
@@ -637,6 +642,8 @@ void yarp::dev::OpenXrHeadset::run()
         m_posesManager.setTransformFromRawToRootFrame(m_rootFrameRawHRootFrame);
 
         m_posesManager.publishFrames();
+
+        m_expressionsManager.setExpressions(m_openXrInterface.eyeExpressions(), m_openXrInterface.lipExpressions());
     }
     else
     {
