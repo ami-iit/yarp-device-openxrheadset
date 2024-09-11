@@ -80,6 +80,7 @@ set(yarp_openxrheadset_driver_SRCS
     PosePublisher.cpp
     CustomPosePublisher.cpp
     FilteredPosePublisher.cpp
+    ExpressionsManager.cpp
 )
 
 set(yarp_openxrheadset_driver_HDRS
@@ -91,6 +92,7 @@ set(yarp_openxrheadset_driver_HDRS
     PosePublisher.h
     CustomPosePublisher.h
     FilteredPosePublisher.h
+    ExpressionsManager.h
 )
 
 set (THRIFTS thrifts/OpenXrHeadsetCommands.thrift)

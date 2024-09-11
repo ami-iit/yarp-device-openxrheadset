@@ -30,6 +30,7 @@
 #include <EyesManager.h>
 #include <SlideManager.h>
 #include <PosesManager.h>
+#include <ExpressionsManager.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -305,6 +306,8 @@ private:
     std::string m_prefix;
 
     EyesManager m_eyesManager;
+
+    ExpressionsManager m_expressionsManager;
 
     std::vector<GuiParam> m_huds;
     std::vector<LabelLayer> m_labels;
