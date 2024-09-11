@@ -204,6 +204,14 @@ public:
 
     bool shouldResetLocalReferenceSpace();
 
+    bool eyeExpressionsSupported() const;
+
+    bool lipExpressionsSupported() const;
+
+    const std::vector<float>& eyeExpressions() const;
+
+    const std::vector<float>& lipExpressions() const;
+
     void close();
 };
 
