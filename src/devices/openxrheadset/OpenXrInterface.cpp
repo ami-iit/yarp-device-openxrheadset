@@ -40,6 +40,7 @@ bool OpenXrInterface::checkExtensions()
     bool opengl_supported = false;
     bool depth_supported = false;
     bool debug_supported = false;
+    bool gaze_supported = false;
 
     std::stringstream supported_extensions;
     supported_extensions << "Supported extensions: " <<std::endl;
@@ -66,6 +67,10 @@ bool OpenXrInterface::checkExtensions()
 
         if (strcmp(XR_HTC_FACIAL_TRACKING_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             m_pimpl->htc_facial_tracking_extension_supported = true;
+        }
+
+        if (strcmp(XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            gaze_supported = true;
         }
 
         supported_extensions << std::endl << "    - " << ext_props[i].extensionName;
@@ -99,6 +104,11 @@ bool OpenXrInterface::checkExtensions()
 
     if (!m_pimpl->htc_facial_tracking_extension_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Facial Tracking!";
+    }
+
+    if (!gaze_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support the eye gaze extension!";
+        m_pimpl->use_gaze = false;
     }
 
     return true;
@@ -353,6 +363,8 @@ void OpenXrInterface::checkSystemProperties()
     system_props.type = XR_TYPE_SYSTEM_PROPERTIES;
     system_props.next = NULL;
 
+    void** next_chain = &system_props.next;
+
     XrSystemFacialTrackingPropertiesHTC facial_tracking_props;
     facial_tracking_props.type = XR_TYPE_SYSTEM_FACIAL_TRACKING_PROPERTIES_HTC;
     facial_tracking_props.next = NULL;
@@ -361,7 +373,19 @@ void OpenXrInterface::checkSystemProperties()
 
     if (m_pimpl->htc_facial_tracking_extension_supported)
     {
-        system_props.next = &facial_tracking_props;
+        *next_chain = &facial_tracking_props;
+        next_chain = &facial_tracking_props.next;
+    }
+
+    XrSystemEyeGazeInteractionPropertiesEXT eye_gaze_props;
+    eye_gaze_props.type = XR_TYPE_SYSTEM_EYE_GAZE_INTERACTION_PROPERTIES_EXT;
+    eye_gaze_props.next = NULL;
+    eye_gaze_props.supportsEyeGazeInteraction = XR_FALSE;
+
+    if (m_pimpl->use_gaze)
+    {
+        *next_chain = &eye_gaze_props;
+        next_chain = &eye_gaze_props.next;
     }
 
     XrResult result = xrGetSystemProperties(m_pimpl->instance, m_pimpl->system_id, &system_props);
@@ -388,6 +412,14 @@ void OpenXrInterface::checkSystemProperties()
         m_pimpl->htc_eye_facial_tracking_supported = facial_tracking_props.supportEyeFacialTracking;
         m_pimpl->htc_lip_facial_tracking_supported = facial_tracking_props.supportLipFacialTracking;
     }
+
+    if (m_pimpl->use_gaze)
+    {
+        yCInfo(OPENXRHEADSET, "Eye gaze properties for system %lu: Eye gaze %d",
+            system_props.systemId, eye_gaze_props.supportsEyeGazeInteraction);
+        m_pimpl->use_gaze = eye_gaze_props.supportsEyeGazeInteraction;
+    }
+
 }
 
 bool OpenXrInterface::prepareGL()
@@ -877,6 +909,24 @@ bool OpenXrInterface::prepareXrActions()
         }
 
         interactionProfilesPrefixes.push_back({HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG, "vive_tracker_"});
+    }
+
+    if (m_pimpl->use_gaze)
+    {
+        InputActionsDeclaration gazeInputs;
+
+        gazeInputs.poses =
+        {
+            {"/input/gaze_ext/pose", "pose"}
+        };
+
+        TopLevelPathDeclaration gaze;
+        gaze.stringPath = "/user/eyes_ext";
+        gaze.actionNamePrefix = "eyes_";
+        gaze.inputsDeclarations[GAZE_INTERACTION_PROFILE_TAG] = gazeInputs;
+
+        topLevelPathsDeclaration.push_back(gaze); //The gaze should be the last one in this list
+        interactionProfilesPrefixes.push_back({ GAZE_INTERACTION_PROFILE_TAG, "gaze_" });
     }
 
     if (!m_pimpl->fillActionBindings(interactionProfilesPrefixes, topLevelPathsDeclaration))
@@ -1586,6 +1636,7 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
 
     m_pimpl->hideWindow = settings.hideWindow;
     m_pimpl->renderInPlaySpace = settings.renderInPlaySpace;
+    m_pimpl->use_gaze = settings.useGaze;
 
 #ifdef DEBUG_RENDERING_LOCATION
     m_pimpl->renderInPlaySpace = true;
@@ -1974,6 +2025,27 @@ const std::vector<float>& OpenXrInterface::eyeExpressions() const
 const std::vector<float>& OpenXrInterface::lipExpressions() const
 {
     return m_pimpl->htc_lip_expressions;
+}
+
+bool OpenXrInterface::gazeSupported() const
+{
+    return m_pimpl->use_gaze;
+}
+
+OpenXrInterface::Pose OpenXrInterface::gazePose() const
+{
+    if (!m_pimpl->use_gaze)
+    {
+        yCError(OPENXRHEADSET) << "Gaze is not enabled.";
+        return Pose();
+    }
+    const std::vector<PoseAction>& currentPoses = m_pimpl->top_level_paths.back().currentActions().poses; //eyes are in the last position
+    if (currentPoses.size() == 0) //no pose in the current interaction profile
+    {
+        return OpenXrInterface::Pose();
+    }
+
+    return currentPoses.front().pose;
 }
 
 void OpenXrInterface::close()
