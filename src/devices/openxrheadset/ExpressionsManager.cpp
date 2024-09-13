@@ -13,10 +13,13 @@ bool ExpressionsManager::configure(const std::string& prefix, bool eyeSupported,
     m_eyeSupported = eyeSupported;
     m_lipSupported = lipSupported;
     m_gazeSupported = gazeSupported;
+    m_eyeExpressionsPortName = prefix + "/expressions/eye";
+    m_lipExpressionsPortName = prefix + "/expressions/lip";
+    m_gazePortName = prefix + "/expressions/gaze";
 
     if (m_eyeSupported)
     {
-        if (!m_eyeExpressionsPort.open(prefix + "/expressions/eye"))
+        if (!m_eyeExpressionsPort.open(m_eyeExpressionsPortName))
         {
             return false;
         }
@@ -24,7 +27,7 @@ bool ExpressionsManager::configure(const std::string& prefix, bool eyeSupported,
 
     if (m_lipSupported)
     {
-        if (!m_lipExpressionsPort.open(prefix + "/expressions/lip"))
+        if (!m_lipExpressionsPort.open(m_lipExpressionsPortName))
         {
             return false;
         }
@@ -32,7 +35,7 @@ bool ExpressionsManager::configure(const std::string& prefix, bool eyeSupported,
 
     if (m_gazeSupported)
     {
-        if (!m_gazePort.open(prefix + "/expressions/gaze"))
+        if (!m_gazePort.open(m_gazePortName))
         {
             return false;
         }
@@ -88,4 +91,19 @@ void ExpressionsManager::close()
     m_eyeExpressionsPort.close();
     m_lipExpressionsPort.close();
     m_gazePort.close();
+}
+
+std::string ExpressionsManager::getEyeExpressionsPortName() const
+{
+    return m_eyeExpressionsPortName;
+}
+
+std::string ExpressionsManager::getLipExpressionsPortName() const
+{
+    return m_lipExpressionsPortName;
+}
+
+std::string ExpressionsManager::getGazePortName() const
+{
+    return m_gazePortName;
 }

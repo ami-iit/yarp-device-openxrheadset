@@ -24,6 +24,9 @@ class ExpressionsManager
     bool m_eyeSupported{ false };
     bool m_lipSupported{ false };
     bool m_gazeSupported{ false };
+    std::string m_eyeExpressionsPortName;
+    std::string m_lipExpressionsPortName;
+    std::string m_gazePortName;
 
 public:
 
@@ -34,6 +37,12 @@ public:
     void setGaze(const OpenXrInterface::Pose& headPose, const OpenXrInterface::Pose& gaze);
 
     void close();
+
+    std::string getEyeExpressionsPortName() const;
+
+    std::string getLipExpressionsPortName() const;
+
+    std::string getGazePortName() const;
 };
 
 
