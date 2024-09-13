@@ -158,6 +158,10 @@ bool OpenXrInterface::prepareXrInstance()
     {
         requestedExtensions.push_back(XR_HTC_FACIAL_TRACKING_EXTENSION_NAME);
     }
+    if (m_pimpl->use_gaze)
+    {
+        requestedExtensions.push_back(XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME);
+    }
 
     // Populate the info to create the instance
     XrInstanceCreateInfo instanceCreateInfo
@@ -417,7 +421,10 @@ void OpenXrInterface::checkSystemProperties()
     {
         yCInfo(OPENXRHEADSET, "Eye gaze properties for system %lu: Eye gaze %d",
             system_props.systemId, eye_gaze_props.supportsEyeGazeInteraction);
-        m_pimpl->use_gaze = eye_gaze_props.supportsEyeGazeInteraction;
+        if (!eye_gaze_props.supportsEyeGazeInteraction)
+        {
+            yCWarning(OPENXRHEADSET) << "The runtime does not seem to support eye gaze interaction! Trying to use it anyway.";
+        }
     }
 
 }
