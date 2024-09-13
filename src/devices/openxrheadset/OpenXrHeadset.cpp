@@ -950,6 +950,13 @@ bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
     return m_eyesManager.setInterCameraDistance(distance);
 }
 
+double yarp::dev::OpenXrHeadset::getIPD()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_openXrInterface.ipd();
+}
+
 std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -1040,4 +1047,40 @@ bool yarp::dev::OpenXrHeadset::resetTransforms()
     m_tfPublisher->clear();
     m_posesManager.reset();
     return true;
+}
+
+bool yarp::dev::OpenXrHeadset::eyeExpressionsEnabled()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_openXrInterface.eyeExpressionsSupported();
+}
+
+std::string yarp::dev::OpenXrHeadset::getEyeExpressionsPortName()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_expressionsManager.getEyeExpressionsPortName();
+}
+
+bool yarp::dev::OpenXrHeadset::lipExpressionsEnabled()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_openXrInterface.lipExpressionsSupported();
+}
+
+std::string yarp::dev::OpenXrHeadset::getLipExpressionsPortName()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_expressionsManager.getLipExpressionsPortName();
+}
+
+bool yarp::dev::OpenXrHeadset::gazeEnabled()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_openXrInterface.gazeSupported();
+}
+
+std::string yarp::dev::OpenXrHeadset::getGazePortName()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_expressionsManager.getGazePortName();
 }
