@@ -284,6 +284,8 @@ public:
     // position of a frame in the middle of the eyes, oriented as the first eye
     XrPosef mid_views_pose_inverted;
 
+    float ipd = 0.06f;
+
     // List of top level paths to retrieve the state of each action
     std::vector<TopLevelPath> top_level_paths;
 

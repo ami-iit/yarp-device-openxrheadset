@@ -177,6 +177,8 @@ public:
 
     bool isRunning() const;
 
+    float ipd() const;
+
     Pose headPose() const;
 
     Velocity headVelocity() const;

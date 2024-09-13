@@ -1127,6 +1127,8 @@ void OpenXrInterface::updateXrSpaces()
     m_pimpl->mid_views_pose_inverted.orientation = toXr(toEigen(m_pimpl->mid_views_pose.orientation).inverse());
     m_pimpl->mid_views_pose_inverted.position = toXr(toEigen(m_pimpl->mid_views_pose_inverted.orientation) * -toEigen(m_pimpl->mid_views_pose.position));
 
+    m_pimpl->ipd = (toEigen(m_pimpl->views[1].pose.position) - toEigen(m_pimpl->views[0].pose.position)).norm();
+
     for (size_t i = 0; i < m_pimpl->views.size(); ++i)
     {
 #ifdef DEBUG_RENDERING_LOCATION
@@ -1803,6 +1805,11 @@ std::shared_ptr<IOpenXrQuadLayer> OpenXrInterface::addHeadFixedOpenGLQuadLayer()
 bool OpenXrInterface::isRunning() const
 {
     return m_pimpl->initialized && !m_pimpl->closing;
+}
+
+float OpenXrInterface::ipd() const
+{
+    return m_pimpl->ipd;
 }
 
 OpenXrInterface::Pose OpenXrInterface::headPose() const

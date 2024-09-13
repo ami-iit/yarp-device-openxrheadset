@@ -191,7 +191,7 @@ public:
 
     /**
      * Get the current lateral distance between the visualization of the robot cameras.
-     * @return The IPD in meters.
+     * @return The distance in meters.
      */
     virtual double getInterCameraDistance() override;
 
@@ -201,6 +201,12 @@ public:
      * @return True if successfull.
      */
     virtual bool setInterCameraDistance(const double distance) override;
+
+    /**
+     * Get the current IPD (Inter Pupillary Distance) of the VR eyes.
+     * @return The IPD in meters
+     */
+    virtual double getIPD() override;
 
     /**
      * Get the current drawable area percentage.
@@ -283,6 +289,42 @@ public:
      * @return True if the server is started successfully, false otherwise.
      */
     virtual bool restartJoypadControlServer() override;
+
+    /**
+     * Check if the eye expressions are enabled
+     * @return True if the eye expressions are enabled, false otherwise
+     */
+    virtual bool eyeExpressionsEnabled() override;
+
+    /**
+     * Get the name of the port trough which it is possible to get the eye expressions.
+     * @return the name of the port to get the eye expressions.
+     */
+    virtual std::string getEyeExpressionsPortName() override;
+
+    /**
+     * Check if the lip expressions are enabled
+     * @return True if the lip expressions are enabled, false otherwise
+     */
+    virtual bool lipExpressionsEnabled() override;
+
+    /**
+     * Get the name of the port trough which it is possible to get the lip expressions.
+     * @return the name of the port to get the lip expressions.
+     */
+    virtual std::string getLipExpressionsPortName() override;
+
+    /**
+     * Check if the gaze acquisition is enabled
+     * @return True if the gaze acquisition is enabled, false otherwise
+     */
+    virtual bool gazeEnabled() override;
+
+    /**
+     * Get the name of the port trough which it is possible to get the gaze position.
+     * @return the name of the port to get the gaze position.
+     */
+    virtual std::string getGazePortName() override;
 
 private:
 
