@@ -256,6 +256,8 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
     m_openXrInterfaceSettings.hideWindow = (m_useNativeQuadLayers && !cfg.check("hide_window")) || (cfg.check("hide_window") && (cfg.find("hide_window").isNull() || cfg.find("hide_window").asBool()));
     m_openXrInterfaceSettings.renderInPlaySpace = cfg.check("render_in_play_space") && (cfg.find("render_in_play_space").isNull() || cfg.find("render_in_play_space").asBool());
+    bool noGaze = cfg.check("no_gaze") && (cfg.find("no_gaze").isNull() || cfg.find("no_gaze").asBool());
+    m_openXrInterfaceSettings.useGaze = !noGaze;
 
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
@@ -459,7 +461,8 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         // We know if the expressions are supported only after the initialization of the OpenXrInterface
         m_expressionsManager.configure(m_prefix,
                                        m_openXrInterface.eyeExpressionsSupported(),
-                                       m_openXrInterface.lipExpressionsSupported());
+                                       m_openXrInterface.lipExpressionsSupported(),
+                                       m_openXrInterface.gazeSupported());
     }
 
     for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
@@ -607,6 +610,7 @@ void yarp::dev::OpenXrHeadset::run()
         m_posesManager.publishFrames();
 
         m_expressionsManager.setExpressions(m_openXrInterface.eyeExpressions(), m_openXrInterface.lipExpressions());
+        m_expressionsManager.setGaze(m_openXrInterface.headPose(), m_openXrInterface.gazePose());
     }
     else
     {
