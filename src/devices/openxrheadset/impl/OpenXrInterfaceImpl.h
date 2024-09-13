@@ -114,9 +114,14 @@ struct ActionDeclaration
     std::string nameSuffix;
 };
 
+struct PoseActionDeclaration : public ActionDeclaration
+{
+    PoseFilterType filterType{ PoseFilterType::JumpFilter };
+};
+
 struct InputActionsDeclaration
 {
-    std::vector<ActionDeclaration> poses;
+    std::vector<PoseActionDeclaration> poses;
 
     std::vector<ActionDeclaration>  buttons;
 
