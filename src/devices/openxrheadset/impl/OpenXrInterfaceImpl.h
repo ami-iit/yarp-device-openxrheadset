@@ -35,6 +35,7 @@
 #define HTC_VIVE_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_controller"
 #define HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_tracker_htcx"
 #define HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_focus3_controller"
+#define GAZE_INTERACTION_PROFILE_TAG "/interaction_profiles/ext/eye_gaze_interaction"
 
 // STRUCTS
 template <typename ActionType>
@@ -326,6 +327,9 @@ public:
     // Stucts to store the facial expressions
     std::vector<float> htc_eye_expressions;
     std::vector<float> htc_lip_expressions;
+
+    // Flag to enable the use of gaze
+    bool use_gaze = true;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;

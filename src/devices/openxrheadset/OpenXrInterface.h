@@ -72,6 +72,7 @@ struct OpenXrInterfaceSettings
     double posesPredictionInMs{0.0};
     bool hideWindow{false};
     bool renderInPlaySpace{false};
+    bool useGaze{ true };
 };
 
 class OpenXrInterface
@@ -211,6 +212,10 @@ public:
     const std::vector<float>& eyeExpressions() const;
 
     const std::vector<float>& lipExpressions() const;
+
+    bool gazeSupported() const;
+
+    Pose gazePose() const;
 
     void close();
 };
