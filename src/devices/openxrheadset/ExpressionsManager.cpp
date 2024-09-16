@@ -76,13 +76,13 @@ void ExpressionsManager::setGaze(const OpenXrInterface::Pose& headPose, const Op
         return;
     }
 
-    Eigen::Vector3f gazeInHead = headPose.rotation.inverse() * (gaze.position - headPose.position);
+    Eigen::Vector3f gazeDirectionInHead = headPose.rotation.inverse() * gaze.rotation * Eigen::Vector3f::UnitZ();
 
     yarp::sig::Vector& gazeVector = m_gazePort.prepare();
     gazeVector.resize(3);
-    gazeVector[0] = gazeInHead.x();
-    gazeVector[1] = gazeInHead.y();
-    gazeVector[2] = gazeInHead.z();
+    gazeVector[0] = gazeDirectionInHead.x();
+    gazeVector[1] = gazeDirectionInHead.y();
+    gazeVector[2] = gazeDirectionInHead.z();
     m_gazePort.write();
 }
 
