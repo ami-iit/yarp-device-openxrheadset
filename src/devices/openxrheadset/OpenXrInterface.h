@@ -73,6 +73,7 @@ struct OpenXrInterfaceSettings
     bool hideWindow{false};
     bool renderInPlaySpace{false};
     bool useGaze{ true };
+    bool useExpressions{ true };
 };
 
 class OpenXrInterface
