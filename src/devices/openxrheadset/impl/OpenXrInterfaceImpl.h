@@ -304,9 +304,6 @@ public:
     // flag to check if the HTC VIVE Focus3 controllers are supported by the runtime.
     bool focus3_supported = false;
 
-    //flag to check if the HTC facial tracking is supported by the runtime.
-    bool htc_facial_tracking_extension_supported = false;
-
     //flag to check if facial tracking is supported by the headset.
     bool htc_eye_facial_tracking_supported = false;
 
@@ -329,6 +326,9 @@ public:
     // Stucts to store the facial expressions
     std::vector<float> htc_eye_expressions;
     std::vector<float> htc_lip_expressions;
+
+    // Flag to enable the use of expressions
+    bool use_expressions = true;
 
     // Flag to enable the use of gaze
     bool use_gaze = true;

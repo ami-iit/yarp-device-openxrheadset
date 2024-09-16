@@ -284,6 +284,9 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     bool noGaze = cfg.check("no_gaze") && (cfg.find("no_gaze").isNull() || cfg.find("no_gaze").asBool());
     m_openXrInterfaceSettings.useGaze = !noGaze;
 
+    bool noExpressions = cfg.check("no_expressions") && (cfg.find("no_expressions").isNull() || cfg.find("no_expressions").asBool());
+    m_openXrInterfaceSettings.useExpressions = !noExpressions;
+
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     m_rootFrameRaw = m_rootFrame + "_raw";

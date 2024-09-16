@@ -41,6 +41,7 @@ bool OpenXrInterface::checkExtensions()
     bool depth_supported = false;
     bool debug_supported = false;
     bool gaze_supported = false;
+    bool htc_facial_tracking_supported = false;
 
     std::stringstream supported_extensions;
     supported_extensions << "Supported extensions: " <<std::endl;
@@ -66,7 +67,7 @@ bool OpenXrInterface::checkExtensions()
         }
 
         if (strcmp(XR_HTC_FACIAL_TRACKING_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
-            m_pimpl->htc_facial_tracking_extension_supported = true;
+            htc_facial_tracking_supported = true;
         }
 
         if (strcmp(XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
@@ -102,8 +103,9 @@ bool OpenXrInterface::checkExtensions()
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Focus 3 controllers!";
     }
 
-    if (!m_pimpl->htc_facial_tracking_extension_supported) {
+    if (!htc_facial_tracking_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Facial Tracking!";
+        m_pimpl->use_expressions = false;
     }
 
     if (!gaze_supported) {
@@ -154,7 +156,7 @@ bool OpenXrInterface::prepareXrInstance()
     {
         requestedExtensions.push_back(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME);
     }
-    if (m_pimpl->htc_facial_tracking_extension_supported)
+    if (m_pimpl->use_expressions)
     {
         requestedExtensions.push_back(XR_HTC_FACIAL_TRACKING_EXTENSION_NAME);
     }
@@ -255,7 +257,7 @@ bool OpenXrInterface::prepareXrInstance()
             return false;
     }
 
-    if (m_pimpl->htc_facial_tracking_extension_supported)
+    if (m_pimpl->use_expressions)
     {
         result = xrGetInstanceProcAddr(m_pimpl->instance, "xrCreateFacialTrackerHTC",
             (PFN_xrVoidFunction*)&(m_pimpl->pfn_xrCreateFacialTrackerHTC));
@@ -375,7 +377,7 @@ void OpenXrInterface::checkSystemProperties()
     facial_tracking_props.supportEyeFacialTracking = XR_FALSE;
     facial_tracking_props.supportLipFacialTracking = XR_FALSE;
 
-    if (m_pimpl->htc_facial_tracking_extension_supported)
+    if (m_pimpl->use_expressions)
     {
         *next_chain = &facial_tracking_props;
         next_chain = &facial_tracking_props.next;
@@ -409,7 +411,7 @@ void OpenXrInterface::checkSystemProperties()
     yCInfo(OPENXRHEADSET, "\tOrientation Tracking: %d", system_props.trackingProperties.orientationTracking);
     yCInfo(OPENXRHEADSET, "\tPosition Tracking   : %d", system_props.trackingProperties.positionTracking);
 
-    if (m_pimpl->htc_facial_tracking_extension_supported)
+    if (m_pimpl->use_expressions)
     {
         yCInfo(OPENXRHEADSET, "Facial tracking properties for system %lu: Eye tracking %d, Lip tracking %d",
             system_props.systemId, facial_tracking_props.supportEyeFacialTracking, facial_tracking_props.supportLipFacialTracking);
@@ -1646,6 +1648,7 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     m_pimpl->hideWindow = settings.hideWindow;
     m_pimpl->renderInPlaySpace = settings.renderInPlaySpace;
     m_pimpl->use_gaze = settings.useGaze;
+    m_pimpl->use_expressions = settings.useExpressions;
 
 #ifdef DEBUG_RENDERING_LOCATION
     m_pimpl->renderInPlaySpace = true;
