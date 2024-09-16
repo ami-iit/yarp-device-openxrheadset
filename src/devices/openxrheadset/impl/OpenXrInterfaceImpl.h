@@ -323,8 +323,8 @@ public:
     PFN_xrGetFacialExpressionsHTC pfn_xrGetFacialExpressionsHTC = NULL;
 
     // Handles for eye and lip tracking
-    XrFacialTrackerHTC* htc_eye_facial_tracker = nullptr;
-    XrFacialTrackerHTC* htc_lip_facial_tracker = nullptr;
+    XrFacialTrackerHTC htc_eye_facial_tracker = XR_NULL_HANDLE;
+    XrFacialTrackerHTC htc_lip_facial_tracker = XR_NULL_HANDLE;
 
     // Stucts to store the facial expressions
     std::vector<float> htc_eye_expressions;

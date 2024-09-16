@@ -530,10 +530,10 @@ bool OpenXrInterface::prepareXrSession()
             .next = NULL,
             .facialTrackingType = XR_FACIAL_TRACKING_TYPE_EYE_DEFAULT_HTC,
         };
-        result = m_pimpl->pfn_xrCreateFacialTrackerHTC(m_pimpl->session, &facial_tracker_create_info, m_pimpl->htc_eye_facial_tracker);
+        result = m_pimpl->pfn_xrCreateFacialTrackerHTC(m_pimpl->session, &facial_tracker_create_info, &m_pimpl->htc_eye_facial_tracker);
         if (!m_pimpl->checkXrOutput(result, "Failed to create eye facial tracker! Avoiding using it."))
         {
-            m_pimpl->htc_eye_facial_tracker = nullptr;
+            m_pimpl->htc_eye_facial_tracking_supported = false;
         }
         else
         {
@@ -549,10 +549,10 @@ bool OpenXrInterface::prepareXrSession()
             .next = NULL,
             .facialTrackingType = XR_FACIAL_TRACKING_TYPE_LIP_DEFAULT_HTC,
         };
-        result = m_pimpl->pfn_xrCreateFacialTrackerHTC(m_pimpl->session, &facial_tracker_create_info, m_pimpl->htc_lip_facial_tracker);
+        result = m_pimpl->pfn_xrCreateFacialTrackerHTC(m_pimpl->session, &facial_tracker_create_info, &m_pimpl->htc_lip_facial_tracker);
         if (!m_pimpl->checkXrOutput(result, "Failed to create lip facial tracker! Avoiding using it."))
         {
-            m_pimpl->htc_lip_facial_tracker = nullptr;
+            m_pimpl->htc_lip_facial_tracking_supported = false;
         }
         else
         {
@@ -1203,7 +1203,7 @@ void OpenXrInterface::updateXrActions()
         }
     }
 
-    if (m_pimpl->htc_eye_facial_tracker)
+    if (m_pimpl->htc_eye_facial_tracking_supported)
     {
         XrFacialExpressionsHTC expressions = { .type = XR_TYPE_FACIAL_EXPRESSIONS_HTC,
                                                .next = NULL,
@@ -1211,7 +1211,7 @@ void OpenXrInterface::updateXrActions()
                                                .sampleTime = m_pimpl->frame_state.predictedDisplayTime,
                                                .expressionCount = static_cast<uint32_t>(m_pimpl->htc_eye_expressions.size()),
                                                .expressionWeightings = m_pimpl->htc_eye_expressions.data() };
-        result = m_pimpl->pfn_xrGetFacialExpressionsHTC(*m_pimpl->htc_eye_facial_tracker, &expressions);
+        result = m_pimpl->pfn_xrGetFacialExpressionsHTC(m_pimpl->htc_eye_facial_tracker, &expressions);
         if (!m_pimpl->checkXrOutput(result, "Failed to get the facial expressions of the eye tracker!") || !expressions.isActive)
         {
             if (!expressions.isActive)
@@ -1222,7 +1222,7 @@ void OpenXrInterface::updateXrActions()
         }
     }
 
-    if (m_pimpl->htc_lip_facial_tracker)
+    if (m_pimpl->htc_lip_facial_tracking_supported)
     {
         XrFacialExpressionsHTC expressions = { .type = XR_TYPE_FACIAL_EXPRESSIONS_HTC,
                                                .next = NULL,
@@ -1230,7 +1230,7 @@ void OpenXrInterface::updateXrActions()
                                                .sampleTime = m_pimpl->frame_state.predictedDisplayTime,
                                                .expressionCount = static_cast<uint32_t>(m_pimpl->htc_lip_expressions.size()),
                                                .expressionWeightings = m_pimpl->htc_lip_expressions.data() };
-        result = m_pimpl->pfn_xrGetFacialExpressionsHTC(*m_pimpl->htc_lip_facial_tracker, &expressions);
+        result = m_pimpl->pfn_xrGetFacialExpressionsHTC(m_pimpl->htc_lip_facial_tracker, &expressions);
         if (!m_pimpl->checkXrOutput(result, "Failed to get the facial expressions of the lip tracker!") || !expressions.isActive)
         {
             if (!expressions.isActive)
@@ -2023,12 +2023,12 @@ bool OpenXrInterface::shouldResetLocalReferenceSpace()
 
 bool OpenXrInterface::eyeExpressionsSupported() const
 {
-    return m_pimpl->htc_eye_facial_tracker;
+    return m_pimpl->htc_eye_facial_tracking_supported;
 }
 
 bool OpenXrInterface::lipExpressionsSupported() const
 {
-    return m_pimpl->htc_lip_facial_tracker;
+    return m_pimpl->htc_lip_facial_tracking_supported;
 }
 
 const std::vector<float>& OpenXrInterface::eyeExpressions() const
@@ -2065,16 +2065,16 @@ void OpenXrInterface::close()
 {
     m_pimpl->closing = true;
 
-    if (m_pimpl->htc_eye_facial_tracker)
+    if (m_pimpl->htc_eye_facial_tracking_supported)
     {
-        m_pimpl->pfn_xrDestroyFacialTrackerHTC(*m_pimpl->htc_eye_facial_tracker);
-        m_pimpl->htc_eye_facial_tracker = nullptr;
+        m_pimpl->pfn_xrDestroyFacialTrackerHTC(m_pimpl->htc_eye_facial_tracker);
+        m_pimpl->htc_eye_facial_tracking_supported = false;
     }
 
-    if (m_pimpl->htc_lip_facial_tracker)
+    if (m_pimpl->htc_lip_facial_tracking_supported)
     {
-        m_pimpl->pfn_xrDestroyFacialTrackerHTC(*m_pimpl->htc_lip_facial_tracker);
-        m_pimpl->htc_lip_facial_tracker = nullptr;
+        m_pimpl->pfn_xrDestroyFacialTrackerHTC(m_pimpl->htc_lip_facial_tracker);
+        m_pimpl->htc_lip_facial_tracking_supported = false;
     }
 
     if (m_pimpl->glFrameBufferId != 0) {
