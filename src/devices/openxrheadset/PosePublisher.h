@@ -18,6 +18,7 @@ struct PosePublisherSettings
 {
     yarp::dev::IFrameTransform* tfPublisher{nullptr};
     std::string tfBaseFrame;
+    bool staticPose{ false };
 };
 
 class PosePublisher
@@ -30,6 +31,7 @@ class PosePublisher
     bool m_publishedOnce{false};
     double m_lastWarningTime{0.0};
     size_t m_warningCount{0};
+    bool m_staticPose{ false };
 
     void resetWarnings();
 

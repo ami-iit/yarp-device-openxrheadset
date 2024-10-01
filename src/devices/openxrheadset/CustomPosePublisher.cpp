@@ -146,6 +146,8 @@ bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bot
         return false;
     }
 
+    staticPose = inputGroup.check("static_pose") && (inputGroup.find("static_pose").isNull() || inputGroup.find("static_pose").asBool());
+
     std::string parametrization = inputGroup.check("euler_angles", yarp::os::Value("")).toString();
 
     if (parametrization.size() != 3)
