@@ -219,7 +219,7 @@ bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bot
             {
                 yCError(OPENXRHEADSET) << "Failed to parse" << maskName
                                        << "at element" << i
-                                       << ". Only float numbers and the special carachter \"*\" are allowed";
+                                       << ". Only float numbers and the special character \"*\" are allowed";
                 return false;
             }
         }
@@ -235,6 +235,24 @@ bool CustomPosePublisherSettings::parseFromConfigurationFile(const yarp::os::Bot
     if (!parseMask(inputGroup, "relative_rotation", rotationMask, relativeRotation))
     {
         return false;
+    }
+
+    if (staticPose)
+    {
+        for (size_t i = 0; i < 3; ++i)
+        {
+            if (!positionMask[i])
+            {
+                yCError(OPENXRHEADSET) << "The relative_position mask is not valid for a static pose.";
+                return false;
+            }
+
+            if (!rotationMask[i])
+            {
+                yCError(OPENXRHEADSET) << "The relative_rotation mask is not valid for a static pose.";
+                return false;
+            }
+        }
     }
 
     return true;

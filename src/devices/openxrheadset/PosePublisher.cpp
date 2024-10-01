@@ -64,6 +64,11 @@ const std::string &PosePublisher::tfBaseFrame() const
     return m_tfBaseFrame;
 }
 
+const bool PosePublisher::staticPose() const
+{
+    return m_staticPose;
+}
+
 bool PosePublisher::configured() const
 {
     return m_tfPublisher != nullptr;
@@ -147,6 +152,10 @@ void PosePublisher::publish()
         if (!m_tfPublisher->setTransformStatic(m_label, m_tfBaseFrame, m_localPose))
         {
             yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame (static). It will not be published again.";
+        }
+        else
+        {
+            yCInfo(OPENXRHEADSET) << "Published transformation from" << m_tfBaseFrame << "to" << m_label << " (static).";
         }
         return;
     }

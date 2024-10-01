@@ -35,7 +35,14 @@ void PosesManager::initialize(const std::string &editedRootFrame, const std::vec
         m_customPoses.emplace_back();
         auto customOptions = std::make_shared<CustomPosePublisherSettings>(customPose);
         customOptions->tfPublisher = m_settings->tfPublisher;
-        customOptions->tfBaseFrame = editedRootFrame;
+        if (customOptions->staticPose)
+        {
+            customOptions->tfBaseFrame = customOptions->parentFrame; //for static poses we publish wrt the parent frame
+        }
+        else
+        {
+            customOptions->tfBaseFrame = editedRootFrame; //for dynamic poses we publish wrt the root frame
+        }
         m_customPoses.back().configure(customOptions);
         m_customPosesMap[customPose.name] = m_customPoses.size() - 1;
     }
@@ -71,8 +78,11 @@ void PosesManager::publishFrames()
         auto& customPose = m_customPoses[i];
         const std::string& relativeFrame = customPose.relativeFrame();
         OpenXrInterface::NamedPoseVelocity parentFramePose;
-
-        if (relativeFrame == m_rootFramePublisher.name())
+        if (customPose.staticPose())
+        {
+            parentFramePose = OpenXrInterface::NamedPoseVelocity::Identity(relativeFrame);
+        }
+        else if (relativeFrame == m_rootFramePublisher.name())
         {
             parentFramePose = m_rootPose;
         }

@@ -55,6 +55,8 @@ public:
 
     const std::string& tfBaseFrame() const;
 
+    const bool staticPose() const;
+
     virtual bool configured() const;
 
     virtual void updateInputPose(const OpenXrInterface::NamedPoseVelocity& input);
