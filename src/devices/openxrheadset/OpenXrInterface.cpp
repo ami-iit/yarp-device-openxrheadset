@@ -171,7 +171,10 @@ bool OpenXrInterface::prepareXrInstance()
 
     XrResult result = XR_ERROR_API_VERSION_UNSUPPORTED;
 
-    std::vector<std::pair<XrVersion, std::string>> api_versions = {{XR_API_VERSION_1_0, "XR_API_VERSION_1_0"},
+    std::vector<std::pair<XrVersion, std::string>> api_versions = {
+#ifdef XR_API_VERSION_1_0
+                                                                   {XR_API_VERSION_1_0, "XR_API_VERSION_1_0"},
+#endif
                                                                    {XR_CURRENT_API_VERSION, "XR_CURRENT_API_VERSION"},
 #ifdef XR_API_VERSION_1_1
                                                                    {XR_API_VERSION_1_1, "XR_API_VERSION_1_1"},
