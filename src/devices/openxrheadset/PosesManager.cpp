@@ -205,3 +205,18 @@ bool PosesManager::setCustomPoseRelativeOrientation(const std::string &customFra
     m_customPoses[customFrameIt->second].setRelativeOrientation(relativeOrientationEulerAngles);
     return true;
 }
+
+void PosesManager::reset()
+{
+    m_rootFramePublisher.reset();
+
+    for (auto& poseIt : m_poses)
+    {
+        poseIt.second.reset();
+    }
+
+    for (auto& customPose : m_customPoses)
+    {
+        customPose.reset();
+    }
+}

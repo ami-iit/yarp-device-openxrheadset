@@ -165,3 +165,12 @@ void PosePublisher::publish()
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
     }
 }
+
+void PosePublisher::reset()
+{
+    m_publishedOnce = false;
+    m_data = OpenXrInterface::NamedPoseVelocity();
+    m_previouslyPublishedData = OpenXrInterface::NamedPoseVelocity();
+    m_localPose.eye();
+    deactivate();
+}

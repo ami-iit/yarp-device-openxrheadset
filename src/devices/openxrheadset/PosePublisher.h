@@ -65,6 +65,8 @@ public:
 
     void publish();
 
+    void reset();
+
 };
 
 #endif // YARP_DEV_POSEPUBLISHER_H
