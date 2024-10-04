@@ -186,5 +186,5 @@ service OpenXrHeadsetCommands
      * so also the static poses will be published again. This must be used with caution,
      * as it will reset all the transforms, including the ones that are not published by this module.
      */
-     void resetTransforms();
+     bool resetTransforms();
 }

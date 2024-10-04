@@ -1022,9 +1022,10 @@ bool yarp::dev::OpenXrHeadset::setCustomPoseRelativeOrientation(const std::strin
                                                                               static_cast<float>(angle3)});
 }
 
-void yarp::dev::OpenXrHeadset::resetTransforms()
+bool yarp::dev::OpenXrHeadset::resetTransforms()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_tfPublisher->clear();
     m_posesManager.reset();
+    return true;
 }
