@@ -61,11 +61,19 @@ public:
     virtual void setEnabled(bool enabled) = 0;
 };
 
+enum class PoseFilterType
+{
+    NONE,
+    JUMP_FILTER
+};
+
 struct OpenXrInterfaceSettings
 {
     double posesPredictionInMs{0.0};
     bool hideWindow{false};
     bool renderInPlaySpace{false};
+    bool useGaze{ true };
+    bool useExpressions{ true };
 };
 
 class OpenXrInterface
@@ -82,7 +90,7 @@ class OpenXrInterface
 
     bool prepareXrSystem();
 
-    void printSystemProperties();
+    void checkSystemProperties();
 
     bool prepareGL();
 
@@ -141,6 +149,7 @@ public:
         std::string name;
         Pose pose;
         Velocity velocity;
+        PoseFilterType filterType;
 
         static NamedPoseVelocity Identity(const std::string& name);
     };
@@ -169,6 +178,8 @@ public:
 
     bool isRunning() const;
 
+    float ipd() const;
+
     Pose headPose() const;
 
     Velocity headVelocity() const;
@@ -196,6 +207,18 @@ public:
     int64_t currentNanosecondsSinceEpoch() const;
 
     bool shouldResetLocalReferenceSpace();
+
+    bool eyeExpressionsSupported() const;
+
+    bool lipExpressionsSupported() const;
+
+    const std::vector<float>& eyeExpressions() const;
+
+    const std::vector<float>& lipExpressions() const;
+
+    bool gazeSupported() const;
+
+    Pose gazePose() const;
 
     void close();
 };
