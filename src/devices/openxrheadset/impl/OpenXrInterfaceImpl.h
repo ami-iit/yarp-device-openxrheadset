@@ -116,7 +116,7 @@ struct ActionDeclaration
 
 struct PoseActionDeclaration : public ActionDeclaration
 {
-    PoseFilterType filterType{ PoseFilterType::JumpFilter };
+    PoseFilterType filterType{ PoseFilterType::JUMP_FILTER };
 };
 
 struct InputActionsDeclaration

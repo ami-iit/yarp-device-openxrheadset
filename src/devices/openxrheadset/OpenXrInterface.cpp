@@ -926,7 +926,7 @@ bool OpenXrInterface::prepareXrActions()
 
         gazeInputs.poses =
         {
-            {"/input/gaze_ext/pose", "pose", PoseFilterType::None}
+            {"/input/gaze_ext/pose", "pose", PoseFilterType::NONE}
         };
 
         TopLevelPathDeclaration gaze;
