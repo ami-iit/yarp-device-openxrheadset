@@ -63,8 +63,8 @@ public:
 
 enum class PoseFilterType
 {
-    None,
-    JumpFilter,
+    NONE,
+    JUMP_FILTER
 };
 
 struct OpenXrInterfaceSettings
