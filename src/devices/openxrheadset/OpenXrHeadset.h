@@ -255,6 +255,14 @@ public:
      */
     virtual bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const double angle1, const double angle2, const double angle3) override;
 
+    /**
+     * Reset the transforms all the published tranforms.
+     * This will also delete all the transforms currently stored in the transform server,
+     * so also the static poses will be published again. This must be used with caution,
+     * as it will reset all the transforms, including the ones that are not published by this module.
+     */
+    virtual bool resetTransforms() override;
+
 private:
 
     struct GuiParam

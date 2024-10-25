@@ -46,6 +46,7 @@ void PosePublisher::configurePublisher(std::shared_ptr<PosePublisherSettings> se
 
     m_tfBaseFrame = settings->tfBaseFrame;
     m_tfPublisher = settings->tfPublisher;
+    m_staticPose = settings->staticPose;
 }
 
 void PosePublisher::setLabel(const std::string &label)
@@ -61,6 +62,11 @@ const std::string &PosePublisher::label() const
 const std::string &PosePublisher::tfBaseFrame() const
 {
     return m_tfBaseFrame;
+}
+
+const bool PosePublisher::staticPose() const
+{
+    return m_staticPose;
 }
 
 bool PosePublisher::configured() const
@@ -103,6 +109,11 @@ void PosePublisher::publish()
         return;
     }
 
+    if (m_staticPose && m_publishedOnce)
+    {
+        return;
+    }
+
     if (!m_publishedOnce)
     {
         if (m_label.empty())
@@ -136,8 +147,30 @@ void PosePublisher::publish()
         }
     }
 
+    if (m_staticPose)
+    {
+        if (!m_tfPublisher->setTransformStatic(m_label, m_tfBaseFrame, m_localPose))
+        {
+            yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame (static). It will not be published again.";
+        }
+        else
+        {
+            yCInfo(OPENXRHEADSET) << "Published transformation from" << m_tfBaseFrame << "to" << m_label << " (static).";
+        }
+        return;
+    }
+
     if (!m_tfPublisher->setTransform(m_label, m_tfBaseFrame, m_localPose))
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
     }
+}
+
+void PosePublisher::reset()
+{
+    m_publishedOnce = false;
+    m_data = OpenXrInterface::NamedPoseVelocity();
+    m_previouslyPublishedData = OpenXrInterface::NamedPoseVelocity();
+    m_localPose.eye();
+    deactivate();
 }

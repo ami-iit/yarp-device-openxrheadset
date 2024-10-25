@@ -169,7 +169,29 @@ bool OpenXrInterface::prepareXrInstance()
     };
     instanceCreateInfo.next = &debugCallbackSettings;
 
-    XrResult result = xrCreateInstance(&instanceCreateInfo, &(m_pimpl->instance));
+    XrResult result = XR_ERROR_API_VERSION_UNSUPPORTED;
+
+    std::vector<std::pair<XrVersion, std::string>> api_versions = {
+#ifdef XR_API_VERSION_1_0
+                                                                   {XR_API_VERSION_1_0, "XR_API_VERSION_1_0"},
+#endif
+                                                                   {XR_CURRENT_API_VERSION, "XR_CURRENT_API_VERSION"},
+#ifdef XR_API_VERSION_1_1
+                                                                   {XR_API_VERSION_1_1, "XR_API_VERSION_1_1"},
+#endif // XR_API_VERSION_1_1
+                                                                   };
+    size_t version_index = 0;
+
+    while ((result == XR_ERROR_API_VERSION_UNSUPPORTED || result == XR_ERROR_INITIALIZATION_FAILED) && version_index < api_versions.size())
+    {
+        instanceCreateInfo.applicationInfo.apiVersion = api_versions[version_index].first;
+        result = xrCreateInstance(&instanceCreateInfo, &(m_pimpl->instance));
+        if (!XR_SUCCEEDED(result))
+        {
+            yCWarning(OPENXRHEADSET) << "The runtime does not support the API version" << api_versions[version_index].second;
+        }
+        version_index++;
+    }
 
     if (!m_pimpl->checkXrOutput(result, "Failed to create XR instance."))
         return false;

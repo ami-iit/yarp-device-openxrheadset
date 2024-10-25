@@ -179,4 +179,12 @@ service OpenXrHeadsetCommands
      * @return True if successfull, false if the pose is not found
      */
      bool setCustomPoseRelativeOrientation(1:string customFrameName, 2:double angle1, 3:double angle2, 4:double angle3);
+
+     /**
+     * Reset the transforms all the published tranforms.
+     * This will also delete all the transforms currently stored in the transform server,
+     * so also the static poses will be published again. This must be used with caution,
+     * as it will reset all the transforms, including the ones that are not published by this module.
+     */
+     bool resetTransforms();
 }

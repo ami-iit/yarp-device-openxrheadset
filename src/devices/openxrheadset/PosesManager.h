@@ -61,6 +61,8 @@ public:
 
     bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const Eigen::Vector3f& relativeOrientationEulerAngles);
 
+    void reset();
+
 };
 
 
