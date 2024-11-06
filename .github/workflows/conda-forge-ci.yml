@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Release]
-        os: [ubuntu-latest, windows-2019]
+        os: [ubuntu-latest, windows-2022]
       fail-fast: false
 
     steps:
@@ -23,16 +23,18 @@ jobs:
 
     - uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
+        miniforge-variant: Miniforge3
         miniforge-version: latest
+        channels: conda-forge,robostack-staging,robotology
+        channel-priority: true
 
     - name: Dependencies
       shell: bash -l {0}
       run: |
         # Compilation related dependencies
-        mamba install cmake compilers make ninja pkg-config
+        conda install cmake compilers make ninja pkg-config
         # Actual dependencies
-        mamba install glew glfw eigen glm openxr-sdk yarp
+        conda install glew glfw eigen glm openxr-sdk yarp
 
     - name: OpenGL [Linux]
       if: contains(matrix.os, 'ubuntu')
@@ -41,7 +43,7 @@ jobs:
         # OpenGL is not found on Ubuntu when using conda. Related issue https://github.com/robotology/robotology-superbuild/issues/929
         # See https://github.com/robotology/robotology-superbuild/issues/477
         # See https://github.com/robotology/robotology-superbuild/pull/1606
-        mamba install expat freeglut libselinux-cos7-x86_64 xorg-libxau libxcb xorg-libxdamage xorg-libxext xorg-libxfixes xorg-libxxf86vm xorg-libxrandr mesa-libgl-cos7-x86_64 mesa-libgl-devel-cos7-x86_64
+        conda install expat freeglut libselinux-cos7-x86_64 xorg-libxau libxcb xorg-libxdamage xorg-libxext xorg-libxfixes xorg-libxxf86vm xorg-libxrandr mesa-libgl-cos7-x86_64 mesa-libgl-devel-cos7-x86_64
 
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
@@ -57,7 +59,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        cmake -G"Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
+        cmake -G"Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
 
     - name: Build
       shell: bash -l {0}
