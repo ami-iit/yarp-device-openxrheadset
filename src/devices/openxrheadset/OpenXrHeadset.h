@@ -264,6 +264,12 @@ public:
      */
     virtual bool resetTransforms() override;
 
+    /**
+     * Start the joypad control server. The server will restart if already started.
+     * @return True if the server is started successfully, false otherwise.
+     */
+    virtual bool restartJoypadControlServer() override;
+
 private:
 
     /**
@@ -343,7 +349,7 @@ private:
     std::vector<float> m_axes;
     std::vector<Eigen::Vector2f> m_thumbsticks;
 
-    bool m_launchJoypadControlServer{ false };
+    bool m_autoJoypadControlServer{ false };
     std::unique_ptr<yarp::dev::PolyDriver> m_joypadControlServerPtr;
     yarp::dev::IWrapper* m_joypadControlServerWrapper = nullptr;
     yarp::dev::PolyDriver m_thisDevice;

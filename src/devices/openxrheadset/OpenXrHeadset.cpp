@@ -251,7 +251,7 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     double period = cfg.check("vr_period", yarp::os::Value(0.011)).asFloat64();
     this->setPeriod(period);
 
-    m_launchJoypadControlServer = cfg.check("launch_joypad_control_server") && (cfg.find("launch_joypad_control_server").isNull() || cfg.find("launch_joypad_control_server").asBool());
+    m_autoJoypadControlServer = cfg.check("joypad_control_server_auto") && (cfg.find("joypad_control_server_auto").isNull() || cfg.find("joypad_control_server_auto").asBool());
 
     m_useNativeQuadLayers = cfg.check("use_native_quad_layers") && (cfg.find("use_native_quad_layers").isNull() || cfg.find("use_native_quad_layers").asBool());
 
@@ -614,7 +614,7 @@ void yarp::dev::OpenXrHeadset::run()
         return;
     }
 
-    if (shouldResetJoypadServer)
+    if (shouldResetJoypadServer && m_autoJoypadControlServer)
     {
         startJoypadControlServer();
     }
@@ -1044,14 +1044,15 @@ bool yarp::dev::OpenXrHeadset::resetTransforms()
     return true;
 }
 
-bool yarp::dev::OpenXrHeadset::startJoypadControlServer()
+bool yarp::dev::OpenXrHeadset::restartJoypadControlServer()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+    startJoypadControlServer();
+}
 
-    if (!m_launchJoypadControlServer)
-    {
-        return true;
-    }
+bool yarp::dev::OpenXrHeadset::startJoypadControlServer()
+{
+    stopJoypadControlServer();
 
     yarp::os::Property options;
     options.put("device", "joypadControlServer");
