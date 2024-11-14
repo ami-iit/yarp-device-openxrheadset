@@ -263,6 +263,9 @@ public:
      * as it will reset all the transforms, including the ones that are not published by this module.
      */
     virtual bool resetTransforms() override;
+
+private:
+
     /**
     * Opens the joypad control server. It reopens it if already opened.
     */
@@ -272,8 +275,6 @@ public:
     * Closes the joypad control server.
     */
     void stopJoypadControlServer();
-
-private:
 
     struct GuiParam
     {

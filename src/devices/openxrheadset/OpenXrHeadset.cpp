@@ -390,78 +390,76 @@ bool yarp::dev::OpenXrHeadset::close()
 
 bool yarp::dev::OpenXrHeadset::threadInit()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (!m_openXrInterface.initialize(m_openXrInterfaceSettings))
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
+        return false;
+    }
 
-        if (!m_openXrInterface.initialize(m_openXrInterfaceSettings))
+    auto getLayer = [this]() -> std::shared_ptr<IOpenXrQuadLayer>
+    {
+        if (m_useNativeQuadLayers)
         {
-            yCError(OPENXRHEADSET) << "Failed to initialize OpenXr interface.";
+            return m_openXrInterface.addHeadFixedQuadLayer();
+        }
+        else
+        {
+            return m_openXrInterface.addHeadFixedOpenGLQuadLayer();
+        }
+    };
+
+    m_eyesManager.options().leftEyeQuadLayer = getLayer();
+    m_eyesManager.options().rightEyeQuadLayer = getLayer();
+
+    if (!m_eyesManager.initialize())
+    {
+        yCError(OPENXRHEADSET) << "Failed to initialize eyes.";
+    }
+
+    for (GuiParam& gui : m_huds)
+    {
+        if (!gui.layer.initialize(getLayer(), gui.portName)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
             return false;
         }
+        gui.layer.setVisibility(gui.visibility);
+        gui.layer.setDimensions(gui.width, gui.height);
+        gui.layer.setPosition({gui.x, gui.y, gui.z});
+    }
 
-        auto getLayer = [this]() -> std::shared_ptr<IOpenXrQuadLayer>
-        {
-            if (m_useNativeQuadLayers)
-            {
-                return m_openXrInterface.addHeadFixedQuadLayer();
-            }
-            else
-            {
-                return m_openXrInterface.addHeadFixedOpenGLQuadLayer();
-            }
-        };
+    for (LabelLayer& label : m_labels)
+    {
+        label.options.quadLayer = getLayer();
 
-        m_eyesManager.options().leftEyeQuadLayer = getLayer();
-        m_eyesManager.options().rightEyeQuadLayer = getLayer();
-
-        if (!m_eyesManager.initialize())
-        {
-            yCError(OPENXRHEADSET) << "Failed to initialize eyes.";
-        }
-
-        for (GuiParam& gui : m_huds)
-        {
-            if (!gui.layer.initialize(getLayer(), gui.portName)) {
-                yCError(OPENXRHEADSET) << "Cannot initialize" << gui.portName << "display texture.";
-                return false;
-            }
-            gui.layer.setVisibility(gui.visibility);
-            gui.layer.setDimensions(gui.width, gui.height);
-            gui.layer.setPosition({gui.x, gui.y, gui.z});
-        }
-
-        for (LabelLayer& label : m_labels)
-        {
-            label.options.quadLayer = getLayer();
-
-            if (!label.layer.initialize(label.options)) {
-                yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
-                return false;
-            }
-            label.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
-            label.layer.setDimensions(label.width, label.height);
-            label.layer.setPosition({label.x, label.y, label.z});
-        }
-
-        for (SlideLayer& slide : m_slides)
-        {
-            slide.options.quadLayer = getLayer();
-            if (!slide.layer.initialize(slide.options)) {
-                yCError(OPENXRHEADSET) << "Cannot initialize" << slide.options.portName << "slide.";
-                return false;
-            }
-            slide.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
-            slide.layer.setDimensions(slide.width, slide.height);
-            slide.layer.setPosition({slide.x, slide.y, slide.z});
-            slide.layer.setImage(slide.options.initialSlide);
-        }
-
-        this->yarp().attachAsServer(this->m_rpcPort);
-        if(!m_rpcPort.open(m_rpcPortName))
-        {
-            yCError(OPENXRHEADSET) << "Could not open" << m_rpcPortName << " RPC port.";
+        if (!label.layer.initialize(label.options)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize" << label.options.portName << "label.";
             return false;
         }
+        label.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+        label.layer.setDimensions(label.width, label.height);
+        label.layer.setPosition({label.x, label.y, label.z});
+    }
+
+    for (SlideLayer& slide : m_slides)
+    {
+        slide.options.quadLayer = getLayer();
+        if (!slide.layer.initialize(slide.options)) {
+            yCError(OPENXRHEADSET) << "Cannot initialize" << slide.options.portName << "slide.";
+            return false;
+        }
+        slide.layer.setVisibility(IOpenXrQuadLayer::Visibility::BOTH_EYES);
+        slide.layer.setDimensions(slide.width, slide.height);
+        slide.layer.setPosition({slide.x, slide.y, slide.z});
+        slide.layer.setImage(slide.options.initialSlide);
+    }
+
+    this->yarp().attachAsServer(this->m_rpcPort);
+    if(!m_rpcPort.open(m_rpcPortName))
+    {
+        yCError(OPENXRHEADSET) << "Could not open" << m_rpcPortName << " RPC port.";
+        return false;
     }
 
     m_thisDevice.give(this, false);
@@ -471,51 +469,51 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
 void yarp::dev::OpenXrHeadset::threadRelease()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_closed)
+        return;
+
+    for (auto& hud : m_huds)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-
-        if (m_closed)
-            return;
-
-        for (auto& hud : m_huds)
-        {
-            hud.layer.close();
-        }
-
-        for (auto& label : m_labels)
-        {
-            label.layer.close();
-        }
-
-        for (auto& slide : m_slides)
-        {
-            slide.layer.close();
-        }
-
-        m_huds.clear();
-        m_labels.clear();
-        m_slides.clear();
-        m_eyesManager.close();
-
-        m_openXrInterface.close();
-
-        if (m_tfPublisher)
-        {
-            m_driver.close();
-            m_tfPublisher = nullptr;
-        }
-
-        m_rpcPort.close();
-
-        m_closed = true;
+        hud.layer.close();
     }
 
+    for (auto& label : m_labels)
+    {
+        label.layer.close();
+    }
+
+    for (auto& slide : m_slides)
+    {
+        slide.layer.close();
+    }
+
+    m_huds.clear();
+    m_labels.clear();
+    m_slides.clear();
+    m_eyesManager.close();
+
+    m_openXrInterface.close();
+
+    if (m_tfPublisher)
+    {
+        m_driver.close();
+        m_tfPublisher = nullptr;
+    }
+
+    m_rpcPort.close();
+
     stopJoypadControlServer();
+
+    m_closed = true;
 }
 
 void yarp::dev::OpenXrHeadset::run()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+
+    bool shouldResetJoypadServer = false;
 
     if (m_openXrInterface.isRunning())
     {
@@ -579,9 +577,21 @@ void yarp::dev::OpenXrHeadset::run()
         }
         m_openXrInterface.draw();
 
+        size_t previousButtonsSize = m_buttons.size();
+        size_t previousAxesSize = m_axes.size();
+        size_t previousThumbsticksSize = m_thumbsticks.size();
+
         m_openXrInterface.getButtons(m_buttons);
         m_openXrInterface.getAxes(m_axes);
         m_openXrInterface.getThumbsticks(m_thumbsticks);
+
+        if (m_buttons.size() != previousButtonsSize ||
+            m_axes.size() != previousAxesSize ||
+            m_thumbsticks.size() != previousThumbsticksSize)
+        {
+            shouldResetJoypadServer = true;
+        }
+
         m_openXrInterface.getAllPoses(m_posesManager.inputs());
 
         if (m_openXrInterface.shouldResetLocalReferenceSpace())
@@ -601,6 +611,12 @@ void yarp::dev::OpenXrHeadset::run()
         close();
         return;
     }
+
+    if (shouldResetJoypadServer)
+    {
+        startJoypadControlServer();
+    }
+
 }
 
 bool yarp::dev::OpenXrHeadset::startService()
@@ -1028,41 +1044,35 @@ bool yarp::dev::OpenXrHeadset::resetTransforms()
 
 bool yarp::dev::OpenXrHeadset::startJoypadControlServer()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
 
-    stopJoypadControlServer();
+    yarp::os::Property options;
+    options.put("device", "joypadControlServer");
+    options.put("name", m_prefix);
+    options.put("period", getPeriod());
+    options.put("use_separate_ports", true);
+    options.put("stick_as_axis", false);
 
+    m_joypadControlServerPtr = std::make_unique<yarp::dev::PolyDriver>();
+
+    if (!m_joypadControlServerPtr->open(options) || !m_joypadControlServerPtr->isValid())
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-
-        yarp::os::Property options;
-        options.put("device", "joypadControlServer");
-        options.put("name", m_prefix);
-        options.put("period", getPeriod());
-        options.put("use_separate_ports", true);
-        options.put("stick_as_axis", false);
-
-        m_joypadControlServerPtr = std::make_unique<yarp::dev::PolyDriver>();
-
-        if (!m_joypadControlServerPtr->open(options) || !m_joypadControlServerPtr->isValid())
-        {
-            yCError(OPENXRHEADSET) << "Failed to open JoypadControlServer with the following options:" << options.toString();
-            return false;
-        }
+        yCError(OPENXRHEADSET) << "Failed to open JoypadControlServer with the following options:" << options.toString();
+        return false;
+    }
 
 
-        if (!m_joypadControlServerPtr->view(m_joypadControlServerWrapper) || !m_joypadControlServerWrapper)
-        {
-            yCError(OPENXRHEADSET) << "Failed to view wrapper interface in joypad control server.";
-            return false;
-        }
+    if (!m_joypadControlServerPtr->view(m_joypadControlServerWrapper) || !m_joypadControlServerWrapper)
+    {
+        yCError(OPENXRHEADSET) << "Failed to view wrapper interface in joypad control server.";
+        return false;
+    }
 
-        if (!m_joypadControlServerWrapper->attach(&m_thisDevice))
-        {
-            yCError(OPENXRHEADSET) << "Failed to attach the device to the joypad control server.";
+    if (!m_joypadControlServerWrapper->attach(&m_thisDevice))
+    {
+        yCError(OPENXRHEADSET) << "Failed to attach the device to the joypad control server.";
 
-            return false;
-        }
-
+        return false;
     }
 
     return true;
@@ -1070,8 +1080,6 @@ bool yarp::dev::OpenXrHeadset::startJoypadControlServer()
 
 void yarp::dev::OpenXrHeadset::stopJoypadControlServer()
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
     if (m_joypadControlServerWrapper)
     {
         m_joypadControlServerWrapper->detach();
