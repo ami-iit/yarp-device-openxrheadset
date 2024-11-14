@@ -343,6 +343,7 @@ private:
     std::vector<float> m_axes;
     std::vector<Eigen::Vector2f> m_thumbsticks;
 
+    bool m_launchJoypadControlServer{ false };
     std::unique_ptr<yarp::dev::PolyDriver> m_joypadControlServerPtr;
     yarp::dev::IWrapper* m_joypadControlServerWrapper = nullptr;
     yarp::dev::PolyDriver m_thisDevice;
