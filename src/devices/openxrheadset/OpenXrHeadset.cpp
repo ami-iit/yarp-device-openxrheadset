@@ -455,16 +455,6 @@ bool yarp::dev::OpenXrHeadset::threadInit()
             slide.layer.setPosition({slide.x, slide.y, slide.z});
             slide.layer.setImage(slide.options.initialSlide);
         }
-    }
-
-    for (size_t i = 0; i < 10 && m_openXrInterface.isRunning(); ++i)
-    {
-        run(); //dry run. This is to make sure that the number of buttons is correctly retrieved by the JoypadControlServer
-        yarp::os::Time::delay(this->getPeriod());
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
 
         this->yarp().attachAsServer(this->m_rpcPort);
         if(!m_rpcPort.open(m_rpcPortName))
@@ -474,47 +464,53 @@ bool yarp::dev::OpenXrHeadset::threadInit()
         }
     }
 
+    m_thisDevice.give(this, false);
+
     return true;
 }
 
 void yarp::dev::OpenXrHeadset::threadRelease()
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (m_closed)
-        return;
-
-    for (auto& hud : m_huds)
     {
-        hud.layer.close();
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        if (m_closed)
+            return;
+
+        for (auto& hud : m_huds)
+        {
+            hud.layer.close();
+        }
+
+        for (auto& label : m_labels)
+        {
+            label.layer.close();
+        }
+
+        for (auto& slide : m_slides)
+        {
+            slide.layer.close();
+        }
+
+        m_huds.clear();
+        m_labels.clear();
+        m_slides.clear();
+        m_eyesManager.close();
+
+        m_openXrInterface.close();
+
+        if (m_tfPublisher)
+        {
+            m_driver.close();
+            m_tfPublisher = nullptr;
+        }
+
+        m_rpcPort.close();
+
+        m_closed = true;
     }
 
-    for (auto& label : m_labels)
-    {
-        label.layer.close();
-    }
-
-    for (auto& slide : m_slides)
-    {
-        slide.layer.close();
-    }
-
-    m_huds.clear();
-    m_labels.clear();
-    m_slides.clear();
-    m_eyesManager.close();
-
-    m_openXrInterface.close();
-
-    if (m_tfPublisher)
-    {
-        m_driver.close();
-        m_tfPublisher = nullptr;
-    }
-
-    m_rpcPort.close();
-
-    m_closed = true;
+    stopJoypadControlServer();
 }
 
 void yarp::dev::OpenXrHeadset::run()
@@ -1028,4 +1024,62 @@ bool yarp::dev::OpenXrHeadset::resetTransforms()
     m_tfPublisher->clear();
     m_posesManager.reset();
     return true;
+}
+
+bool yarp::dev::OpenXrHeadset::startJoypadControlServer()
+{
+
+    stopJoypadControlServer();
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        yarp::os::Property options;
+        options.put("device", "joypadControlServer");
+        options.put("name", m_prefix);
+        options.put("period", getPeriod());
+        options.put("use_separate_ports", true);
+        options.put("stick_as_axis", false);
+
+        m_joypadControlServerPtr = std::make_unique<yarp::dev::PolyDriver>();
+
+        if (!m_joypadControlServerPtr->open(options) || !m_joypadControlServerPtr->isValid())
+        {
+            yCError(OPENXRHEADSET) << "Failed to open JoypadControlServer with the following options:" << options.toString();
+            return false;
+        }
+
+
+        if (!m_joypadControlServerPtr->view(m_joypadControlServerWrapper) || !m_joypadControlServerWrapper)
+        {
+            yCError(OPENXRHEADSET) << "Failed to view wrapper interface in joypad control server.";
+            return false;
+        }
+
+        if (!m_joypadControlServerWrapper->attach(&m_thisDevice))
+        {
+            yCError(OPENXRHEADSET) << "Failed to attach the device to the joypad control server.";
+
+            return false;
+        }
+
+    }
+
+    return true;
+}
+
+void yarp::dev::OpenXrHeadset::stopJoypadControlServer()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_joypadControlServerWrapper)
+    {
+        m_joypadControlServerWrapper->detach();
+        m_joypadControlServerWrapper = nullptr;
+    }
+    if (m_joypadControlServerPtr)
+    {
+        m_joypadControlServerPtr->close();
+    }
+    m_joypadControlServerPtr.reset();
 }

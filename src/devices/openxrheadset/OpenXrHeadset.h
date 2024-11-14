@@ -20,6 +20,7 @@
 #include <yarp/dev/IJoypadController.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ServiceInterfaces.h>
+#include <yarp/dev/IWrapper.h>
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
 #include <yarp/os/Stamp.h>
@@ -262,6 +263,15 @@ public:
      * as it will reset all the transforms, including the ones that are not published by this module.
      */
     virtual bool resetTransforms() override;
+    /**
+    * Opens the joypad control server. It reopens it if already opened.
+    */
+    bool startJoypadControlServer();
+
+    /**
+    * Closes the joypad control server.
+    */
+    void stopJoypadControlServer();
 
 private:
 
@@ -331,6 +341,10 @@ private:
     std::vector<bool> m_buttons;
     std::vector<float> m_axes;
     std::vector<Eigen::Vector2f> m_thumbsticks;
+
+    std::unique_ptr<yarp::dev::PolyDriver> m_joypadControlServerPtr;
+    yarp::dev::IWrapper* m_joypadControlServerWrapper = nullptr;
+    yarp::dev::PolyDriver m_thisDevice;
 
     std::mutex m_mutex;
 
