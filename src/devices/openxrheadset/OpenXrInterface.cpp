@@ -2036,7 +2036,6 @@ OpenXrInterface::Pose OpenXrInterface::gazePose() const
 {
     if (!m_pimpl->use_gaze)
     {
-        yCError(OPENXRHEADSET) << "Gaze is not enabled.";
         return Pose();
     }
     const std::vector<PoseAction>& currentPoses = m_pimpl->top_level_paths.back().currentActions().poses; //eyes are in the last position
