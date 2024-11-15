@@ -20,6 +20,7 @@
 #include <yarp/dev/IJoypadController.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ServiceInterfaces.h>
+#include <yarp/dev/IWrapper.h>
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
 #include <yarp/os/Stamp.h>
@@ -263,7 +264,23 @@ public:
      */
     virtual bool resetTransforms() override;
 
+    /**
+     * Start the joypad control server. The server will restart if already started.
+     * @return True if the server is started successfully, false otherwise.
+     */
+    virtual bool restartJoypadControlServer() override;
+
 private:
+
+    /**
+    * Opens the joypad control server. It reopens it if already opened.
+    */
+    bool startJoypadControlServer();
+
+    /**
+    * Closes the joypad control server.
+    */
+    void stopJoypadControlServer();
 
     struct GuiParam
     {
@@ -332,7 +349,12 @@ private:
     std::vector<float> m_axes;
     std::vector<Eigen::Vector2f> m_thumbsticks;
 
-    std::mutex m_mutex;
+    bool m_autoJoypadControlServer{ false };
+    std::unique_ptr<yarp::dev::PolyDriver> m_joypadControlServerPtr;
+    yarp::dev::IWrapper* m_joypadControlServerWrapper = nullptr;
+    yarp::dev::PolyDriver m_thisDevice;
+
+    std::mutex m_mutex, m_joypadServerMutex;
 
 };
 

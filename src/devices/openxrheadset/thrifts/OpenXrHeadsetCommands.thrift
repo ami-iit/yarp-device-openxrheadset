@@ -187,4 +187,10 @@ service OpenXrHeadsetCommands
      * as it will reset all the transforms, including the ones that are not published by this module.
      */
      bool resetTransforms();
+
+     /**
+     * Start the joypad control server. The server will restart if already started.
+     * @return True if the server is started successfully, false otherwise.
+     */
+     bool restartJoypadControlServer();
 }
