@@ -8,14 +8,15 @@
 
 #include <ExpressionsManager.h>
 
-bool ExpressionsManager::configure(const std::string& prefix, bool eyeSupported, bool lipSupported)
+bool ExpressionsManager::configure(const std::string& prefix, bool eyeSupported, bool lipSupported, bool gazeSupported)
 {
     m_eyeSupported = eyeSupported;
     m_lipSupported = lipSupported;
+    m_gazeSupported = gazeSupported;
 
     if (m_eyeSupported)
     {
-        if (!m_eyeExpressionsPort.open(prefix + "/eyeExpressions"))
+        if (!m_eyeExpressionsPort.open(prefix + "/expressions/eye"))
         {
             return false;
         }
@@ -23,7 +24,15 @@ bool ExpressionsManager::configure(const std::string& prefix, bool eyeSupported,
 
     if (m_lipSupported)
     {
-        if (!m_lipExpressionsPort.open(prefix + "/lipExpressions"))
+        if (!m_lipExpressionsPort.open(prefix + "/expressions/lip"))
+        {
+            return false;
+        }
+    }
+
+    if (m_gazeSupported)
+    {
+        if (!m_gazePort.open(prefix + "/expressions/gaze"))
         {
             return false;
         }
@@ -57,8 +66,26 @@ void ExpressionsManager::setExpressions(const std::vector<float>& eyeExpressions
     }
 }
 
+void ExpressionsManager::setGaze(const OpenXrInterface::Pose& headPose, const OpenXrInterface::Pose& gaze)
+{
+    if (!m_gazeSupported || !gaze.positionValid || !headPose.positionValid || !headPose.rotationValid)
+    {
+        return;
+    }
+
+    Eigen::Vector3f gazeInHead = headPose.rotation.inverse() * (gaze.position - headPose.position);
+
+    yarp::sig::Vector& gazeVector = m_gazePort.prepare();
+    gazeVector.resize(3);
+    gazeVector[0] = gazeInHead.x();
+    gazeVector[1] = gazeInHead.y();
+    gazeVector[2] = gazeInHead.z();
+    m_gazePort.write();
+}
+
 void ExpressionsManager::close()
 {
     m_eyeExpressionsPort.close();
     m_lipExpressionsPort.close();
+    m_gazePort.close();
 }
