@@ -472,7 +472,7 @@ bool yarp::dev::OpenXrHeadset::threadInit()
 
     {
         std::lock_guard<std::mutex> lock(m_joypadServerMutex);
-        m_thisDevice.give(this, false);
+        m_thisDevice.give(this, /*own=*/false);
     }
 
     return true;
