@@ -4,23 +4,17 @@
 # This software may be modified and distributed under the terms of the
 # BSD-2-Clause license. See the accompanying LICENSE file for details.
 
-set(DEPENDS_STRING "OpenXR_FOUND;glfw3_FOUND;GLEW_FOUND;OpenGL_FOUND; Eigen3_FOUND")
-
-if (NOT WIN32)
-    string(APPEND DEPENDS_STRING ";X11_FOUND")
-endif()
 
 yarp_prepare_plugin(openxrheadset
   CATEGORY device
   TYPE yarp::dev::OpenXrHeadset
   INCLUDE OpenXrHeadset.h
-  DEPENDS ${DEPENDS_STRING}
   INTERNAL
   QUIET
 )
 
 if(NOT ENABLE_openxrheadset)
-  return()
+  message(FATAL_ERROR "It is not allowed to set ENABLE_openxrheadset to OFF in yarp-device-openxrheadset repo.")
 endif()
 
 set(yarp_openxrheadset_SRCS
