@@ -40,10 +40,7 @@ jobs:
       if: contains(matrix.os, 'ubuntu')
       shell: bash -l {0}
       run: |
-        # OpenGL is not found on Ubuntu when using conda. Related issue https://github.com/robotology/robotology-superbuild/issues/929
-        # See https://github.com/robotology/robotology-superbuild/issues/477
-        # See https://github.com/robotology/robotology-superbuild/pull/1606
-        conda install expat freeglut libselinux-cos7-x86_64 xorg-libxau libxcb xorg-libxdamage xorg-libxext xorg-libxfixes xorg-libxxf86vm xorg-libxrandr mesa-libgl-cos7-x86_64 mesa-libgl-devel-cos7-x86_64 xorg-xorgproto
+        conda install libgl-devel xorg-xorgproto
 
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
