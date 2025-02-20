@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(yarp-device-openxrheadset
         LANGUAGES C CXX
-        VERSION 0.0.5)
+        VERSION 0.0.6)
 
 # Defines the CMAKE_INSTALL_LIBDIR, CMAKE_INSTALL_BINDIR and many other useful macros.
 # See https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
