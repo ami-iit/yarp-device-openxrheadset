@@ -157,7 +157,15 @@ int main(int argc, char** argv)
                 {
                     if (frames.find(id) == frames.end())
                     {
-                        if (tfReader->canTransform(id, rootFrame->name)) //The frame has never been added and it is linked to the openxr_origin
+                        bool canTransform = false;
+#if YARP_VERSION_MAJOR == 3 && YARP_VERSION_MINOR < 11
+                        canTransform = tfReader->canTransform(id, rootFrame->name)
+#else
+                        bool canTranformOk = false;
+                        bool canTransformRetValue = tfReader->canTransform(id, rootFrame->name, canTranformOk);
+                        canTransform = canTranformOk && canTransformRetValue;
+#endif
+                        if (canTransform) //The frame has never been added and it is linked to the openxr_origin
                         {
                             std::shared_ptr<FrameViewer> newFrame = std::make_shared<FrameViewer>();
                             newFrame->name = id;
