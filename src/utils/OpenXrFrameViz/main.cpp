@@ -13,6 +13,7 @@
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/os/LogStream.h>
 #include <yarp/os/ResourceFinder.h>
+#include <yarp/conf/version.h>
 
 #include <iostream>
 #include <cstdlib>
