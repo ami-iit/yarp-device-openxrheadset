@@ -160,7 +160,7 @@ int main(int argc, char** argv)
                     {
                         bool canTransform = false;
 #if YARP_VERSION_MAJOR == 3 && YARP_VERSION_MINOR < 11
-                        canTransform = tfReader->canTransform(id, rootFrame->name)
+                        canTransform = tfReader->canTransform(id, rootFrame->name);
 #else
                         bool canTranformOk = false;
                         bool canTransformRetValue = tfReader->canTransform(id, rootFrame->name, canTranformOk);
