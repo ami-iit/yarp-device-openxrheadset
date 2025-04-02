@@ -9,8 +9,8 @@ on:
   - cron:  '0 2 * * *'
 
 env:
-  YCM_TAG: v0.14.0
-  YARP_TAG: v3.6.0
+  YCM_TAG: v0.18.2
+  YARP_TAG: v3.10.0
   OPENXR_TAG: main
   MONADO_TAG: main
 
