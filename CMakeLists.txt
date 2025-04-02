@@ -70,6 +70,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 ### Dependencies
+
+# Temporary set CMAKE_POLICY_VERSION_MINIMUM 3.5 as a workaround 
+# for https://github.com/robotology/gz-sim-yarp-plugins/pull/258#issue-2963247728
+# Remove once we drop support for compilation on Ubuntu 22.04 with apt dependencies
+# find_package(jsoncpp) is transitively called by find_package(OpenXR)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+    if(DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+        set(YDOXH_CMAKE_POLICY_VERSION_MINIMUM_BACK ${CMAKE_POLICY_VERSION_MINIMUM})
+    endif()
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+endif()
+
 # Fetching GLFont for displaying labels
 option(YARP_OPENXR_USES_SYSTEM_GLFont OFF)
 if(YARP_OPENXR_USES_SYSTEM_GLFont)
@@ -78,7 +90,7 @@ else()
     include(FetchContent)
     FetchContent_Declare(glfont
       GIT_REPOSITORY https://github.com/ami-iit/GLFont
-      GIT_TAG bd6b7290c5e51e58662c80dbbdf28858c1ded9b3)
+      GIT_TAG 68914f7093acb485c01fe661e7b4b2cb91921bef)
 
     FetchContent_GetProperties(glfont)
     if(NOT glfont_POPULATED)
@@ -105,6 +117,15 @@ find_package(OpenGL REQUIRED)
 
 if (NOT WIN32)
     find_package(X11 REQUIRED)
+endif()
+
+# Cleanup the value of CMAKE_POLICY_VERSION_MINIMUM set before finding all dependencies
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+    if(DEFINED YDOXH_CMAKE_POLICY_VERSION_MINIMUM_BACK)
+        set(CMAKE_POLICY_VERSION_MINIMUM ${YDOXH_CMAKE_POLICY_VERSION_MINIMUM_BACK})
+    else()
+        unset(CMAKE_POLICY_VERSION_MINIMUM)
+    endif()
 endif()
 
 # Encourage user to specify a build type (e.g. Release, Debug, etc.), otherwise set it to Release.
