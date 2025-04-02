@@ -90,7 +90,26 @@ endif()
 find_package(YCM REQUIRED)
 find_package(YARP 3.4 COMPONENTS os sig dev math idl_tools REQUIRED)
 find_package(Threads REQUIRED)
+
+# Temporary set CMAKE_POLICY_VERSION_MINIMUM 3.5 as a workaround 
+# for https://github.com/robotology/gz-sim-yarp-plugins/pull/258#issue-2963247728
+# Remove once we drop support for compilation on Ubuntu 22.04 with apt dependencies
+# find_package(jsoncpp) is transitively called by find_package(OpenXR)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+    if(DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+        set(YDOXH_CMAKE_POLICY_VERSION_MINIMUM_BACK ${CMAKE_POLICY_VERSION_MINIMUM})
+    endif()
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+endif()
 find_package(OpenXR 1.0.20 REQUIRED)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+    if(DEFINED YDOXH_CMAKE_POLICY_VERSION_MINIMUM_BACK)
+        set(CMAKE_POLICY_VERSION_MINIMUM ${YDOXH_CMAKE_POLICY_VERSION_MINIMUM_BACK})
+    else()
+        unset(CMAKE_POLICY_VERSION_MINIMUM)
+    endif()
+endif()
+
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED) #Helps with the OpenGL configuration on Windows
 find_package(GLM REQUIRED)
