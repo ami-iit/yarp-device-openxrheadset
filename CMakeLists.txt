@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(yarp-device-openxrheadset
         LANGUAGES C CXX
-        VERSION 0.0.7)
+        VERSION 0.0.8)
 
 # Defines the CMAKE_INSTALL_LIBDIR, CMAKE_INSTALL_BINDIR and many other useful macros.
 # See https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
@@ -90,7 +90,7 @@ else()
     include(FetchContent)
     FetchContent_Declare(glfont
       GIT_REPOSITORY https://github.com/ami-iit/GLFont
-      GIT_TAG 68914f7093acb485c01fe661e7b4b2cb91921bef)
+      GIT_TAG f31bac175c233fa4028d0883cda91f6db7995b38)
 
     FetchContent_GetProperties(glfont)
     if(NOT glfont_POPULATED)
