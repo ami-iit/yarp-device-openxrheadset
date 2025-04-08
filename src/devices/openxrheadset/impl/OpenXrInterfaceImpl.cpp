@@ -289,6 +289,7 @@ bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<Inter
                     bindings.emplace_back();
                     bindings.back().action = newAction.xrAction;
                     bindings.back().binding = xrPath;
+                    newAction.filterType = input.filterType;
                 }
 
                 for (auto& input : actionDeclaration.buttons)
@@ -405,6 +406,11 @@ std::string OpenXrInterface::Implementation::getInteractionProfileShortTag(const
     if (interactionProfile == HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG)
     {
         return "htc_vive_tracker";
+    }
+
+    if (interactionProfile == HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG)
+    {
+        return "htc_vive_focus3_controller";
     }
 
     return "none";
