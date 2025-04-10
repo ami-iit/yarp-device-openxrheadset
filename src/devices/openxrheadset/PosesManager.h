@@ -15,6 +15,8 @@
 #include <yarp/dev/IFrameTransform.h>
 #include <string>
 #include <unordered_map>
+#include <openxr/openxr.h>
+
 
 class PosesManager
 {
@@ -60,6 +62,11 @@ public:
     bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const Eigen::Quaternionf& relativeOrientation);
 
     bool setCustomPoseRelativeOrientation(const std::string& customFrameName, const Eigen::Vector3f& relativeOrientationEulerAngles);
+
+    void setHandJoints(const std::vector<XrHandJointLocationEXT>&leftHandJoints, const std::vector<XrHandJointLocationEXT>&rightHandJoints);
+    
+    std::vector<XrHandJointLocationEXT> m_leftHandJoints;
+    std::vector<XrHandJointLocationEXT> m_rightHandJoints;
 
     void reset();
 

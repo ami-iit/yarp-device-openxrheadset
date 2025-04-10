@@ -106,6 +106,8 @@ class OpenXrInterface
 
     bool updateInteractionProfiles();
 
+    void updateHandTracking();
+
     void printInteractionProfiles();
 
     bool updateConnectedTrackers();
@@ -117,6 +119,8 @@ class OpenXrInterface
     void endXrFrame();
 
 public:
+
+    int counter = 0;
 
     struct Pose
     {

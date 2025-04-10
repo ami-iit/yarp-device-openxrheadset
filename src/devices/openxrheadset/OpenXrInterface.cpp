@@ -57,6 +57,10 @@ bool OpenXrInterface::checkExtensions()
         if (strcmp(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             m_pimpl->htc_trackers_supported = true;
         }
+        if (strcmp(XR_EXT_HAND_TRACKING_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            m_pimpl->hand_tracking_supported = true;
+            
+        }
     }
 
     // A graphics extension like OpenGL is required to draw anything in VR
@@ -77,6 +81,9 @@ bool OpenXrInterface::checkExtensions()
 
     if (!m_pimpl->htc_trackers_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Trackers!";
+    }
+    if (!m_pimpl->hand_tracking_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support hand tracking!";
     }
 
     return true;
@@ -117,6 +124,10 @@ bool OpenXrInterface::prepareXrInstance()
     if (m_pimpl->htc_trackers_supported)
     {
         requestedExtensions.push_back(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME);
+    }
+    if (m_pimpl->hand_tracking_supported)
+    {
+        requestedExtensions.push_back(XR_EXT_HAND_TRACKING_EXTENSION_NAME);
     }
 
     // Populate the info to create the instance
@@ -209,6 +220,27 @@ bool OpenXrInterface::prepareXrInstance()
             (PFN_xrVoidFunction*)&(m_pimpl->pfn_xrEnumerateViveTrackerPathsHTCX));
         if (!m_pimpl->checkXrOutput(result, "Failed to get the function to enumerate the HTC trackers!"))
             return false;
+    }
+
+    yCWarning(OPENXRHEADSET) << "Loading functions...";
+    if (m_pimpl->hand_tracking_supported)
+    {
+        yCWarning(OPENXRHEADSET) << "Loading xrCreateHandTrackerEXT...";
+        XrResult result = xrGetInstanceProcAddr(m_pimpl->instance, "xrCreateHandTrackerEXT",
+            (PFN_xrVoidFunction*)&m_pimpl->pfn_xrCreateHandTrackerEXT);
+        if (!m_pimpl->checkXrOutput(result, "Failed to load xrCreateHandTrackerEXT function pointer"))
+            return false;
+        yCWarning(OPENXRHEADSET) << "Loading xrLocateHandJointsEXT...";
+        result = xrGetInstanceProcAddr(m_pimpl->instance, "xrLocateHandJointsEXT",
+            (PFN_xrVoidFunction*)&m_pimpl->pfn_xrLocateHandJointsEXT);
+        if (!m_pimpl->checkXrOutput(result, "Failed to load xrLocateHandJointsEXT function pointer"))
+            return false;
+        if (m_pimpl->pfn_xrCreateHandTrackerEXT == nullptr || m_pimpl->pfn_xrLocateHandJointsEXT == nullptr)
+        {
+            yCError(OPENXRHEADSET) << "Failed to load hand tracking function pointers!";
+            return false;  
+        }
+        yCWarning(OPENXRHEADSET) << "Loaded hand tracking functions!";
     }
 
     return true;
@@ -1038,6 +1070,63 @@ bool OpenXrInterface::updateInteractionProfiles()
     return true;
 }
 
+void OpenXrInterface::updateHandTracking()
+{
+    XrHandJointLocationsEXT left_hand_joints = 
+    {
+    .type = XR_TYPE_HAND_JOINT_LOCATIONS_EXT,
+    .next = NULL,
+    .isActive = XR_FALSE,
+    .jointCount = XR_HAND_JOINT_COUNT_EXT,
+    .jointLocations = m_pimpl->left_hand_joint_locations.data()
+    };
+    
+    XrHandJointLocationsEXT right_hand_joints = 
+    {
+    .type = XR_TYPE_HAND_JOINT_LOCATIONS_EXT,
+    .next = NULL,
+    .isActive = XR_FALSE,
+    .jointCount = XR_HAND_JOINT_COUNT_EXT,
+    .jointLocations = m_pimpl->right_hand_joint_locations.data()
+    };
+    
+    const XrHandJointsLocateInfoEXT locate_info = 
+    {
+    .type = XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT,
+    .next = NULL,
+    .baseSpace = m_pimpl->play_space,
+    .time = m_pimpl->frame_state.predictedDisplayTime
+    };
+    yCWarning(OPENXRHEADSET) << "START";
+        //counter += 1;
+            //if (counter < 1000)
+            //    return;
+    yCWarning(OPENXRHEADSET) << "Reading";
+    XrResult result;
+    if (m_pimpl->pfn_xrLocateHandJointsEXT == nullptr)
+        yCWarning(OPENXRHEADSET) << "AAAAAAAAAAAAAAAAAAAAAAAA";
+    try
+    {
+        result = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->left_hand_tracker, &locate_info, &left_hand_joints);
+    }
+    catch (const std::exception& ex)
+    {
+        yCError(OPENXRHEADSET) << "ERROR PTR";
+        yCError(OPENXRHEADSET) << ex.what();
+    }
+    
+    yCWarning(OPENXRHEADSET) << "END";
+
+    if (XR_SUCCEEDED(result) && left_hand_joints.isActive) 
+        yCWarning(OPENXRHEADSET) << "I CAN READ LEFT DATA";
+
+        
+    result = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->right_hand_tracker, &locate_info, &right_hand_joints);
+    if (XR_SUCCEEDED(result) && right_hand_joints.isActive)
+        yCWarning(OPENXRHEADSET) << "I CAN READ RIGHT DATA";
+        
+}
+
 void OpenXrInterface::printInteractionProfiles()
 {
     for (auto& topLevel : m_pimpl->top_level_paths)
@@ -1405,7 +1494,29 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
 
-    m_pimpl->initialized = ok;
+    // hand tracking
+    if (m_pimpl->hand_tracking_supported) {
+        XrHandTrackerCreateInfoEXT handTrackerCreateInfo =
+        {
+            .type = XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT,
+            .next = NULL,
+            .hand = XR_HAND_LEFT_EXT,
+            .handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT
+        };
+        yCWarning(OPENXRHEADSET) << "Creating left tracker...";
+        XrResult result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->left_hand_tracker);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create left hand tracker"))
+            return false;
+
+        yCWarning(OPENXRHEADSET) << "Creating right tracker...";
+        handTrackerCreateInfo.hand = XR_HAND_RIGHT_EXT;
+        result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->right_hand_tracker);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker"))
+            return false;
+        yCWarning(OPENXRHEADSET) << "CREATED TRACKERS!";
+
+        m_pimpl->initialized = ok;
+    }
 
     return ok;
 }
@@ -1434,6 +1545,7 @@ void OpenXrInterface::draw()
         m_pimpl->locate_space_time = currentNanosecondsSinceEpoch() + m_pimpl->locate_space_prediction_in_ns;
         updateXrSpaces();
         updateXrActions();
+        updateHandTracking();
         if (m_pimpl->frame_state.shouldRender) {
             render();
         }

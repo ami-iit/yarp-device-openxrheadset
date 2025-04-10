@@ -12,3 +12,4 @@ build/*
 # Visual Studio
 .vs/
 CmakeSettings.json
+.vscode
