@@ -59,7 +59,6 @@ bool OpenXrInterface::checkExtensions()
         }
         if (strcmp(XR_EXT_HAND_TRACKING_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             m_pimpl->hand_tracking_supported = true;
-            
         }
     }
 
@@ -222,15 +221,12 @@ bool OpenXrInterface::prepareXrInstance()
             return false;
     }
 
-    yCWarning(OPENXRHEADSET) << "Loading functions...";
     if (m_pimpl->hand_tracking_supported)
     {
-        yCWarning(OPENXRHEADSET) << "Loading xrCreateHandTrackerEXT...";
         XrResult result = xrGetInstanceProcAddr(m_pimpl->instance, "xrCreateHandTrackerEXT",
             (PFN_xrVoidFunction*)&m_pimpl->pfn_xrCreateHandTrackerEXT);
         if (!m_pimpl->checkXrOutput(result, "Failed to load xrCreateHandTrackerEXT function pointer"))
             return false;
-        yCWarning(OPENXRHEADSET) << "Loading xrLocateHandJointsEXT...";
         result = xrGetInstanceProcAddr(m_pimpl->instance, "xrLocateHandJointsEXT",
             (PFN_xrVoidFunction*)&m_pimpl->pfn_xrLocateHandJointsEXT);
         if (!m_pimpl->checkXrOutput(result, "Failed to load xrLocateHandJointsEXT function pointer"))
@@ -238,9 +234,8 @@ bool OpenXrInterface::prepareXrInstance()
         if (m_pimpl->pfn_xrCreateHandTrackerEXT == nullptr || m_pimpl->pfn_xrLocateHandJointsEXT == nullptr)
         {
             yCError(OPENXRHEADSET) << "Failed to load hand tracking function pointers!";
-            return false;  
+            return false;
         }
-        yCWarning(OPENXRHEADSET) << "Loaded hand tracking functions!";
     }
 
     return true;
@@ -1072,7 +1067,14 @@ bool OpenXrInterface::updateInteractionProfiles()
 
 void OpenXrInterface::updateHandTracking()
 {
-    XrHandJointLocationsEXT left_hand_joints = 
+    // allocate memory for left_hand_joint_locations
+    m_pimpl->right_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
+
+    // Allocate memory for left_hand_joint_locations (if not already done)
+    m_pimpl->left_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
+
+
+    XrHandJointLocationsEXT left_hand_joints =
     {
     .type = XR_TYPE_HAND_JOINT_LOCATIONS_EXT,
     .next = NULL,
@@ -1080,8 +1082,8 @@ void OpenXrInterface::updateHandTracking()
     .jointCount = XR_HAND_JOINT_COUNT_EXT,
     .jointLocations = m_pimpl->left_hand_joint_locations.data()
     };
-    
-    XrHandJointLocationsEXT right_hand_joints = 
+
+    XrHandJointLocationsEXT right_hand_joints =
     {
     .type = XR_TYPE_HAND_JOINT_LOCATIONS_EXT,
     .next = NULL,
@@ -1089,42 +1091,64 @@ void OpenXrInterface::updateHandTracking()
     .jointCount = XR_HAND_JOINT_COUNT_EXT,
     .jointLocations = m_pimpl->right_hand_joint_locations.data()
     };
-    
-    const XrHandJointsLocateInfoEXT locate_info = 
+
+    const XrHandJointsLocateInfoEXT locate_info =
     {
     .type = XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT,
     .next = NULL,
     .baseSpace = m_pimpl->play_space,
     .time = m_pimpl->frame_state.predictedDisplayTime
     };
-    yCWarning(OPENXRHEADSET) << "START";
-        //counter += 1;
-            //if (counter < 1000)
-            //    return;
-    yCWarning(OPENXRHEADSET) << "Reading";
-    XrResult result;
-    if (m_pimpl->pfn_xrLocateHandJointsEXT == nullptr)
-        yCWarning(OPENXRHEADSET) << "AAAAAAAAAAAAAAAAAAAAAAAA";
-    try
-    {
-        result = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->left_hand_tracker, &locate_info, &left_hand_joints);
-    }
-    catch (const std::exception& ex)
-    {
-        yCError(OPENXRHEADSET) << "ERROR PTR";
-        yCError(OPENXRHEADSET) << ex.what();
-    }
-    
-    yCWarning(OPENXRHEADSET) << "END";
 
-    if (XR_SUCCEEDED(result) && left_hand_joints.isActive) 
-        yCWarning(OPENXRHEADSET) << "I CAN READ LEFT DATA";
+    // Locate left hand joints
+    leftHandJointPoses_.clear();
+    leftHandJointPoses_.resize(left_hand_joints.jointCount);
+    XrResult leftResult = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->left_hand_tracker, &locate_info, &left_hand_joints);
+    if (XR_SUCCEEDED(leftResult) && left_hand_joints.isActive) {
+        for (uint32_t i = 0; i < left_hand_joints.jointCount; ++i) {
+            const XrHandJointLocationEXT& joint = left_hand_joints.jointLocations[i];
+            if (joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) {
+                Eigen::Vector3f position(joint.pose.position.x, joint.pose.position.y, joint.pose.position.z);
+                Eigen::Quaternionf rotation(joint.pose.orientation.w, joint.pose.orientation.x, joint.pose.orientation.y, joint.pose.orientation.z);
+                OpenXrInterface::Pose handPose;
+                handPose.position = position;
+                handPose.rotation = rotation;
+                handPose.positionValid = true;
+                handPose.rotationValid = true;
+                leftHandJointPoses_.push_back(handPose);
+                if (i == 0)
+                    leftHandPose_ = handPose;
+                // Log or store the joint pose
+                //yCInfo(OPENXRHEADSET) << "Left Hand Joint" << i << "Position:" << position.transpose()
+                //    << "Rotation:" << rotation.coeffs().transpose();
+            }
+        }
+    }
 
-        
-    result = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->right_hand_tracker, &locate_info, &right_hand_joints);
-    if (XR_SUCCEEDED(result) && right_hand_joints.isActive)
-        yCWarning(OPENXRHEADSET) << "I CAN READ RIGHT DATA";
-        
+    // Locate right hand joints
+    rightHandJointPoses_.clear();
+    rightHandJointPoses_.resize(right_hand_joints.jointCount);
+    XrResult rightResult = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->right_hand_tracker, &locate_info, &right_hand_joints);
+    if (XR_SUCCEEDED(rightResult) && right_hand_joints.isActive) {
+        for (uint32_t i = 0; i < right_hand_joints.jointCount; ++i) {
+            const XrHandJointLocationEXT& joint = right_hand_joints.jointLocations[i];
+            if (joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) {
+                Eigen::Vector3f position(joint.pose.position.x, joint.pose.position.y, joint.pose.position.z);
+                Eigen::Quaternionf rotation(joint.pose.orientation.w, joint.pose.orientation.x, joint.pose.orientation.y, joint.pose.orientation.z);
+                OpenXrInterface::Pose handPose;
+                handPose.position = position;
+                handPose.rotation = rotation;
+                handPose.positionValid = true;
+                handPose.rotationValid = true;
+                rightHandJointPoses_.push_back(handPose);
+                if (i == 0)
+                    rightHandPose_ = handPose;
+                // Log or store the joint pose
+                //yCInfo(OPENXRHEADSET) << "Right Hand Joint" << i << "Position:" << position.transpose()
+                //    << "Rotation:" << rotation.coeffs().transpose();
+            }
+        }
+    }
 }
 
 void OpenXrInterface::printInteractionProfiles()
@@ -1503,20 +1527,17 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
             .hand = XR_HAND_LEFT_EXT,
             .handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT
         };
-        yCWarning(OPENXRHEADSET) << "Creating left tracker...";
         XrResult result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->left_hand_tracker);
         if (!m_pimpl->checkXrOutput(result, "Failed to create left hand tracker"))
             return false;
 
-        yCWarning(OPENXRHEADSET) << "Creating right tracker...";
         handTrackerCreateInfo.hand = XR_HAND_RIGHT_EXT;
         result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->right_hand_tracker);
         if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker"))
             return false;
-        yCWarning(OPENXRHEADSET) << "CREATED TRACKERS!";
-
-        m_pimpl->initialized = ok;
     }
+
+    m_pimpl->initialized = ok;
 
     return ok;
 }
@@ -1828,14 +1849,16 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
 
     auto& left_arm = additionalPoses[poseIndex];
     left_arm.name = "openxr_left_hand";
-    left_arm.pose = leftHandPose();
-    left_arm.velocity = leftHandVelocity();
+    left_arm.pose = leftHandPose_;
+    left_arm.velocity = headVelocity();  // Tapullo
+    //yCInfo(OPENXRHEADSET) << "LEFT POSE X: " << left_arm.pose.position[0] << " Y: " << left_arm.pose.position[1] << " Z: " << left_arm.pose.position[2];
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
     right_arm.name = "openxr_right_hand";
-    right_arm.pose = rightHandPose();
-    right_arm.velocity = rightHandVelocity();
+    right_arm.pose = rightHandPose_;
+    right_arm.velocity = headVelocity();  // Tapullo
+    //yCInfo(OPENXRHEADSET) << "RIGHT POSE X: " << right_arm.pose.position[0] <<  " Y: " << right_arm.pose.position[1] <<  " Z: " << right_arm.pose.position[2];
     poseIndex++;
 
     for (size_t topLevelIndex = 0; topLevelIndex <  m_pimpl->top_level_paths.size(); ++topLevelIndex)

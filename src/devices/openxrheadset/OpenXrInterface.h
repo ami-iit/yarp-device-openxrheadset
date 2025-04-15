@@ -120,8 +120,6 @@ class OpenXrInterface
 
 public:
 
-    int counter = 0;
-
     struct Pose
     {
         bool positionValid{false};
@@ -202,6 +200,12 @@ public:
     bool shouldResetLocalReferenceSpace();
 
     void close();
+
+    Pose leftHandPose_;
+    Pose rightHandPose_;
+    std::vector<Pose> leftHandJointPoses_;
+    std::vector<Pose> rightHandJointPoses_;
+
 };
 
 #endif // YARP_DEV_OPENXRINTERFACE_H

@@ -10,7 +10,6 @@
 #include <OpenXrHeadsetLogComponent.h>
 #include <OpenXrYarpUtilities.h>
 #include <yarp/os/LogStream.h>
-#include <OpenXrEigenConversions.h>
 
 void PosesManager::initialize(const std::string &editedRootFrame, const std::vector<Label>& labels, const std::vector<CustomPosePublisherSettings> &customPoses, const FilteredPosePublisherSettings &settings)
 {
@@ -50,12 +49,6 @@ void PosesManager::initialize(const std::string &editedRootFrame, const std::vec
 
     m_rootPose = OpenXrInterface::NamedPoseVelocity::Identity(editedRootFrame);
     m_rootFrameRawRelativePoseInverse = OpenXrInterface::NamedPoseVelocity::Identity(editedRootFrame).pose;
-}
-
-void PosesManager::setHandJoints(const std::vector<XrHandJointLocationEXT>&leftHandJoints, const std::vector<XrHandJointLocationEXT>&rightHandJoints)
-{
-    m_leftHandJoints = leftHandJoints;
-    m_rightHandJoints = rightHandJoints;
 }
 
 std::vector<OpenXrInterface::NamedPoseVelocity> &PosesManager::inputs()
@@ -156,27 +149,6 @@ void PosesManager::publishFrames()
     {
         customPose.publish();
     }
-
-    //for (size_t i = 0; i < m_leftHandJoints.size(); ++i) {
-    //    if (m_leftHandJoints[i].locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) {
-    //                    // Publish left hand joint
-    //        Eigen::Vector3f position = toEigen(m_leftHandJoints[i].pose.position);
-    //        Eigen::Quaternionf orientation = toEigen(m_leftHandJoints[i].pose.orientation);
-    //                    //m_tfPublisher->setTransform("left_hand_joint_" + std::to_string(i), m_rootFrame, position, orientation);
-    //            
-    //    }
-    //    
-    //}
-    //
-    //for (size_t i = 0; i < m_rightHandJoints.size(); ++i) {
-    //    if (m_rightHandJoints[i].locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) {
-    //                   // Publish right hand joint
-    //        Eigen::Vector3f position = toEigen(m_rightHandJoints[i].pose.position);
-    //        Eigen::Quaternionf orientation = toEigen(m_rightHandJoints[i].pose.orientation);
-    //                    //m_tfPublisher->setTransform("right_hand_joint_" + std::to_string(i), m_rootFrame, position, orientation);
-    //          
-    //    }
-    //}
 }
 
 void PosesManager::setTransformFromRawToRootFrame(const OpenXrInterface::Pose &relativePose)
