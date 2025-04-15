@@ -146,6 +146,13 @@ void FilteredPosePublisher::updateInputPose(const OpenXrInterface::NamedPoseVelo
     {
         return;
     }
-
-    PosePublisher::updateInputPose(filterJumps(input));
+    switch (input.filterType)
+    {
+        case PoseFilterType::JUMP_FILTER:
+            PosePublisher::updateInputPose(filterJumps(input));
+            break;
+        default:
+            PosePublisher::updateInputPose(input);
+            break;
+    }
 }
