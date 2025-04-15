@@ -289,6 +289,7 @@ bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<Inter
                     bindings.emplace_back();
                     bindings.back().action = newAction.xrAction;
                     bindings.back().binding = xrPath;
+                    newAction.filterType = input.filterType;
                 }
 
                 for (auto& input : actionDeclaration.buttons)
