@@ -762,6 +762,28 @@ bool OpenXrInterface::prepareXrActions()
     return true;
 }
 
+bool OpenXrInterface::prepareHandTracking() {
+    // hand tracking
+    if (m_pimpl->hand_tracking_supported) {
+        XrHandTrackerCreateInfoEXT handTrackerCreateInfo =
+        {
+            .type = XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT,
+            .next = NULL,
+            .hand = XR_HAND_LEFT_EXT,
+            .handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT
+        };
+        XrResult result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->left_hand_tracker);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create left hand tracker"))
+            return false;
+
+        handTrackerCreateInfo.hand = XR_HAND_RIGHT_EXT;
+        result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->right_hand_tracker);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker"))
+            return false;
+    }
+    return true;
+}
+
 bool OpenXrInterface::prepareGlFramebuffer()
 {
     // Create a framebuffer for printing in our window (not required by OpenXr)
@@ -1073,6 +1095,8 @@ void OpenXrInterface::updateHandTracking()
     // Allocate memory for left_hand_joint_locations (if not already done)
     m_pimpl->left_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
 
+    m_pimpl->leftHandJointPoses_.clear();
+    m_pimpl->rightHandJointPoses_.clear();
 
     XrHandJointLocationsEXT left_hand_joints =
     {
@@ -1101,8 +1125,6 @@ void OpenXrInterface::updateHandTracking()
     };
 
     // Locate left hand joints
-    leftHandJointPoses_.clear();
-    leftHandJointPoses_.resize(left_hand_joints.jointCount);
     XrResult leftResult = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->left_hand_tracker, &locate_info, &left_hand_joints);
     if (XR_SUCCEEDED(leftResult) && left_hand_joints.isActive) {
         for (uint32_t i = 0; i < left_hand_joints.jointCount; ++i) {
@@ -1115,19 +1137,14 @@ void OpenXrInterface::updateHandTracking()
                 handPose.rotation = rotation;
                 handPose.positionValid = true;
                 handPose.rotationValid = true;
-                leftHandJointPoses_.push_back(handPose);
+                m_pimpl->leftHandJointPoses_.push_back(handPose);
                 if (i == 0)
-                    leftHandPose_ = handPose;
-                // Log or store the joint pose
-                //yCInfo(OPENXRHEADSET) << "Left Hand Joint" << i << "Position:" << position.transpose()
-                //    << "Rotation:" << rotation.coeffs().transpose();
+                    m_pimpl->leftHandPose_ = handPose;
             }
         }
     }
 
     // Locate right hand joints
-    rightHandJointPoses_.clear();
-    rightHandJointPoses_.resize(right_hand_joints.jointCount);
     XrResult rightResult = m_pimpl->pfn_xrLocateHandJointsEXT(m_pimpl->right_hand_tracker, &locate_info, &right_hand_joints);
     if (XR_SUCCEEDED(rightResult) && right_hand_joints.isActive) {
         for (uint32_t i = 0; i < right_hand_joints.jointCount; ++i) {
@@ -1140,12 +1157,9 @@ void OpenXrInterface::updateHandTracking()
                 handPose.rotation = rotation;
                 handPose.positionValid = true;
                 handPose.rotationValid = true;
-                rightHandJointPoses_.push_back(handPose);
+                m_pimpl->rightHandJointPoses_.push_back(handPose);
                 if (i == 0)
-                    rightHandPose_ = handPose;
-                // Log or store the joint pose
-                //yCInfo(OPENXRHEADSET) << "Right Hand Joint" << i << "Position:" << position.transpose()
-                //    << "Rotation:" << rotation.coeffs().transpose();
+                    m_pimpl->rightHandPose_ = handPose;
             }
         }
     }
@@ -1517,26 +1531,7 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     ok = ok && prepareXrCompositionLayers();
     ok = ok && prepareXrActions();
     ok = ok && prepareGlFramebuffer();
-
-    // hand tracking
-    if (m_pimpl->hand_tracking_supported) {
-        XrHandTrackerCreateInfoEXT handTrackerCreateInfo =
-        {
-            .type = XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT,
-            .next = NULL,
-            .hand = XR_HAND_LEFT_EXT,
-            .handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT
-        };
-        XrResult result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->left_hand_tracker);
-        if (!m_pimpl->checkXrOutput(result, "Failed to create left hand tracker"))
-            return false;
-
-        handTrackerCreateInfo.hand = XR_HAND_RIGHT_EXT;
-        result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->right_hand_tracker);
-        if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker"))
-            return false;
-    }
-
+    ok = ok && prepareHandTracking();
     m_pimpl->initialized = ok;
 
     return ok;
@@ -1837,6 +1832,7 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
         }
     }
 
+    numberOfPoses += 52;  // adding also fingers
     additionalPoses.resize(numberOfPoses);
 
     size_t poseIndex = 0;
@@ -1844,30 +1840,50 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     auto& head = additionalPoses[poseIndex];
     head.name = "openxr_head";
     head.pose = headPose();
-    head.velocity = headVelocity();
+	head.velocity = headVelocity();
+    head.filterType = PoseFilterType::NONE;
     poseIndex++;
 
     auto& left_arm = additionalPoses[poseIndex];
     left_arm.name = "openxr_left_hand";
-    left_arm.pose = leftHandPose_;
-    left_arm.velocity = headVelocity();  // Tapullo
-    //yCInfo(OPENXRHEADSET) << "LEFT POSE X: " << left_arm.pose.position[0] << " Y: " << left_arm.pose.position[1] << " Z: " << left_arm.pose.position[2];
+    left_arm.pose = m_pimpl->leftHandPose_;
+    if (m_pimpl->hand_tracking_supported)
+        left_arm.filterType = PoseFilterType::NONE;
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
     right_arm.name = "openxr_right_hand";
-    right_arm.pose = rightHandPose_;
-    right_arm.velocity = headVelocity();  // Tapullo
-    //yCInfo(OPENXRHEADSET) << "RIGHT POSE X: " << right_arm.pose.position[0] <<  " Y: " << right_arm.pose.position[1] <<  " Z: " << right_arm.pose.position[2];
+    right_arm.pose = m_pimpl->rightHandPose_;
+    if (m_pimpl->hand_tracking_supported)
+        right_arm.filterType = PoseFilterType::NONE;
     poseIndex++;
 
-    for (size_t topLevelIndex = 0; topLevelIndex <  m_pimpl->top_level_paths.size(); ++topLevelIndex)
-    {
-        std::vector<PoseAction>& posesList = m_pimpl->top_level_paths[topLevelIndex].currentActions().poses;
-        for (size_t i = (topLevelIndex < 2) ? 1 : 0; i < posesList.size(); ++i) // if we are in the first or the second top level path (hence left or right hand), we start from the index 1 (the first one is the default)
+    // add also all finger poses
+    if (m_pimpl->hand_tracking_supported) {
+        for (size_t i = 0; i < m_pimpl->leftHandJointPoses_.size(); ++i)
         {
-            additionalPoses[poseIndex] = posesList[i];
+            auto& finger = additionalPoses[poseIndex];
+            finger.name = "openxr_left_hand_finger_" + std::to_string(i);
+            finger.pose = m_pimpl->leftHandJointPoses_[i];
+            finger.filterType = PoseFilterType::NONE;
             poseIndex++;
+        }
+        for (size_t i = 0; i < m_pimpl->rightHandJointPoses_.size(); ++i)
+        {
+            auto& finger = additionalPoses[poseIndex];
+            finger.name = "openxr_right_hand_finger_" + std::to_string(i);
+            finger.pose = m_pimpl->rightHandJointPoses_[i];
+            finger.filterType = PoseFilterType::NONE;
+            poseIndex++;
+        }
+        for (size_t topLevelIndex = 0; topLevelIndex < m_pimpl->top_level_paths.size(); ++topLevelIndex)
+        {
+            std::vector<PoseAction>& posesList = m_pimpl->top_level_paths[topLevelIndex].currentActions().poses;
+            for (size_t i = (topLevelIndex < 2) ? 1 : 0; i < posesList.size(); ++i)
+            {
+                additionalPoses[poseIndex] = posesList[i];
+                poseIndex++;
+            }
         }
     }
 }

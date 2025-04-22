@@ -102,6 +102,8 @@ class OpenXrInterface
 
     bool prepareGlFramebuffer();
 
+    bool prepareHandTracking();
+
     void pollXrEvents();
 
     bool startXrFrame();
@@ -208,10 +210,7 @@ public:
 
     void close();
 
-    Pose leftHandPose_;
-    Pose rightHandPose_;
-    std::vector<Pose> leftHandJointPoses_;
-    std::vector<Pose> rightHandJointPoses_;
+    bool handTrackingReady;
 
 };
 

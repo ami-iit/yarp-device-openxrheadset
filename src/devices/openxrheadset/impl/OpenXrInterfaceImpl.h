@@ -389,6 +389,12 @@ public:
     // Depth limits
     float nearZ = 0.01f;
     float farZ = 100.0f;
+
+    // Hand tracking
+    Pose leftHandPose_;
+    Pose rightHandPose_;
+    std::vector<Pose> leftHandJointPoses_;
+    std::vector<Pose> rightHandJointPoses_;
 };
 
 
