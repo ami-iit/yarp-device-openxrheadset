@@ -61,6 +61,12 @@ public:
     virtual void setEnabled(bool enabled) = 0;
 };
 
+enum class PoseFilterType
+{
+    NONE,
+    JUMP_FILTER
+};
+
 struct OpenXrInterfaceSettings
 {
     double posesPredictionInMs{0.0};
@@ -143,6 +149,7 @@ public:
         std::string name;
         Pose pose;
         Velocity velocity;
+        PoseFilterType filterType{ PoseFilterType::JUMP_FILTER };
 
         static NamedPoseVelocity Identity(const std::string& name);
     };
