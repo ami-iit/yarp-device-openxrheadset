@@ -40,7 +40,12 @@ jobs:
       if: contains(matrix.os, 'ubuntu')
       shell: bash -l {0}
       run: |
-        conda install libgl-devel xorg-xorgproto
+        conda install libgl-devel xorg-xorgproto xorg-libxrandr
+        
+    - name: Conda list
+      shell: bash -l {0}
+      run: |
+        conda list
 
     - name: Configure [Linux]
       if: contains(matrix.os, 'ubuntu')
