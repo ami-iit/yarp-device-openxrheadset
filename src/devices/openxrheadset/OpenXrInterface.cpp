@@ -1138,7 +1138,7 @@ void OpenXrInterface::updateHandTracking()
                 handPose.positionValid = true;
                 handPose.rotationValid = true;
                 m_pimpl->leftHandJointPoses_.push_back(handPose);
-                if (i == 0)
+                if (i == 1)
                     m_pimpl->leftHandPose_ = handPose;
             }
         }
@@ -1158,7 +1158,7 @@ void OpenXrInterface::updateHandTracking()
                 handPose.positionValid = true;
                 handPose.rotationValid = true;
                 m_pimpl->rightHandJointPoses_.push_back(handPose);
-                if (i == 0)
+                if (i == 1)
                     m_pimpl->rightHandPose_ = handPose;
             }
         }
@@ -1858,6 +1858,9 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
         right_arm.filterType = PoseFilterType::NONE;
     poseIndex++;
 
+    //yCInfo(OPENXRHEADSET) << "m_pimpl->leftHandJointPoses_.size()" << m_pimpl->leftHandJointPoses_.size();
+    //yCInfo(OPENXRHEADSET) << "m_pimpl->rightHandJointPoses_.size()" << m_pimpl->rightHandJointPoses_.size();
+
     // add also all finger poses
     if (m_pimpl->hand_tracking_supported) {
         for (size_t i = 0; i < m_pimpl->leftHandJointPoses_.size(); ++i)
@@ -1868,6 +1871,9 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
             finger.filterType = PoseFilterType::NONE;
             poseIndex++;
         }
+		// if the left hand is not tracked, we need to skip to the right hand fingers
+        if (m_pimpl->leftHandJointPoses_.size() == 0)
+            poseIndex += 26;
         for (size_t i = 0; i < m_pimpl->rightHandJointPoses_.size(); ++i)
         {
             auto& finger = additionalPoses[poseIndex];
