@@ -102,6 +102,8 @@ class OpenXrInterface
 
     bool prepareGlFramebuffer();
 
+    bool prepareHandTracking();
+
     void pollXrEvents();
 
     bool startXrFrame();
@@ -111,6 +113,8 @@ class OpenXrInterface
     void updateXrActions();
 
     bool updateInteractionProfiles();
+
+    void updateHandTracking();
 
     void printInteractionProfiles();
 
@@ -205,6 +209,9 @@ public:
     bool shouldResetLocalReferenceSpace();
 
     void close();
+
+    bool handTrackingReady;
+
 };
 
 #endif // YARP_DEV_OPENXRINTERFACE_H
