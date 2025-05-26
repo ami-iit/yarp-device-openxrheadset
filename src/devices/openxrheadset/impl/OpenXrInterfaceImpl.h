@@ -288,6 +288,9 @@ public:
     // flag to check if the HTC Vive trackers are supported by the runtime.
     bool htc_trackers_supported = false;
 
+    // flag to check if the hand tracking is supported by the runtime.
+    bool hand_tracking_supported = false;
+
     // Pointer to function to get the list of trackers
     PFN_xrEnumerateViveTrackerPathsHTCX pfn_xrEnumerateViveTrackerPathsHTCX = NULL;
 
@@ -296,6 +299,14 @@ public:
 
     // Map defining which tracker is connected
     std::unordered_map<std::string, TrackerStatus> htc_trackers_status;
+
+    // Hand tracking
+    std::vector<XrHandJointLocationEXT> left_hand_joint_locations;
+    std::vector<XrHandJointLocationEXT> right_hand_joint_locations;
+    XrHandTrackerEXT left_hand_tracker = XR_NULL_HANDLE;
+    XrHandTrackerEXT right_hand_tracker = XR_NULL_HANDLE;
+    PFN_xrLocateHandJointsEXT pfn_xrLocateHandJointsEXT = nullptr;
+    PFN_xrCreateHandTrackerEXT pfn_xrCreateHandTrackerEXT = nullptr;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;
@@ -378,6 +389,12 @@ public:
     // Depth limits
     float nearZ = 0.01f;
     float farZ = 100.0f;
+
+    // Hand tracking
+    Pose leftHandPose_;
+    Pose rightHandPose_;
+    std::vector<Pose> leftHandJointPoses_;
+    std::vector<Pose> rightHandJointPoses_;
 };
 
 
