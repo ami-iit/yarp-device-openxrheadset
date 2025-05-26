@@ -123,11 +123,23 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    bool z_up = rf.check("z_up") && (rf.find("z_up").isNull() || rf.find("z_up").asBool());
+
     iDynTree::Rotation openXrInertialRotation;
     openXrInertialRotation.zero();
-    openXrInertialRotation(0,2) = -1.0; //-z is forward
-    openXrInertialRotation(1,0) = -1.0; //-x is left
-    openXrInertialRotation(2,1) =  1.0; // +y is up
+
+    if (z_up) //Standard convention with the z up
+    {
+        openXrInertialRotation(0, 0) = 1.0; //x is forward
+        openXrInertialRotation(1, 1) = 1.0; //y is left
+        openXrInertialRotation(2, 2) = 1.0; //z is up
+    }
+    else //OpenXR convention, where y is up and -z is forward
+    {
+        openXrInertialRotation(0, 2) = -1.0; //-z is forward
+        openXrInertialRotation(1, 0) = -1.0; //-x is left
+        openXrInertialRotation(2, 1) =  1.0; // +y is up
+    }
     iDynTree::Transform openXrInertial;
     openXrInertial.setPosition(iDynTree::Position::Zero());
     openXrInertial.setRotation(openXrInertialRotation);
