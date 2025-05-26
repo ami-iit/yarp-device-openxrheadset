@@ -210,8 +210,6 @@ public:
 
     void close();
 
-    bool handTrackingReady;
-
 };
 
 #endif // YARP_DEV_OPENXRINTERFACE_H
