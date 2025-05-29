@@ -144,13 +144,18 @@ int main(int argc, char** argv)
     openXrInertial.setPosition(iDynTree::Position::Zero());
     openXrInertial.setRotation(openXrInertialRotation);
 
+    double frame_length = rf.check("frame_length", yarp::os::Value(0.5)).asFloat64();
+    double label_height = rf.check("label_height", yarp::os::Value(0.1)).asFloat64();
+
     std::unordered_map<std::string, std::shared_ptr<FrameViewer>> frames;
 
     std::shared_ptr<FrameViewer> rootFrame = std::make_shared<FrameViewer>();
     rootFrame->name = rf.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     rootFrame->transform = openXrInertial;
-    rootFrame->vizIndex = visualizer.frames().addFrame(openXrInertial, 0.5);
-    visualizer.frames().getFrameLabel(rootFrame->vizIndex)->setText(rootFrame->name);
+    rootFrame->vizIndex = visualizer.frames().addFrame(openXrInertial, frame_length);
+    iDynTree::ILabel* label = visualizer.frames().getFrameLabel(rootFrame->vizIndex);
+    label->setSize(label_height);
+    label->setText(rootFrame->name);
     frames[rootFrame->name] = rootFrame;
 
     iDynTree::Transform transformBuffer;
@@ -183,8 +188,10 @@ int main(int argc, char** argv)
                             std::shared_ptr<FrameViewer> newFrame = std::make_shared<FrameViewer>();
                             newFrame->name = id;
                             newFrame->parent = rootFrame;
-                            newFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity(), 0.5);
-                            visualizer.frames().getFrameLabel(newFrame->vizIndex)->setText(newFrame->name);
+                            newFrame->vizIndex = visualizer.frames().addFrame(iDynTree::Transform::Identity(), frame_length);
+                            iDynTree::ILabel* label = visualizer.frames().getFrameLabel(newFrame->vizIndex);
+                            label->setSize(label_height);
+                            label->setText(newFrame->name);
                             frames[id] = newFrame;
                         }
                     }
