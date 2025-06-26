@@ -176,7 +176,7 @@ int main(int argc, char** argv)
                     if (frames.find(id) == frames.end())
                     {
                         bool canTransform = false;
-#if YARP_VERSION_MAJOR == 3 && YARP_VERSION_MINOR < 11
+#if YARP_VERSION_COMPARE(<, 3, 11, 0)
                         canTransform = tfReader->canTransform(id, rootFrame->name);
 #else
                         bool canTranformOk = false;
