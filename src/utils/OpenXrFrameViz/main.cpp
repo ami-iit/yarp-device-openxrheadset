@@ -146,6 +146,7 @@ int main(int argc, char** argv)
 
     double frame_length = rf.check("frame_length", yarp::os::Value(0.5)).asFloat64();
     double label_height = rf.check("label_height", yarp::os::Value(0.1)).asFloat64();
+    double position_scale = rf.check("position_scale", yarp::os::Value(1.0)).asFloat64();
 
     std::unordered_map<std::string, std::shared_ptr<FrameViewer>> frames;
 
@@ -209,7 +210,13 @@ int main(int argc, char** argv)
                 {
                     iDynTree::toiDynTree(matrixBuffer, transformBuffer);
                     frame->transform = frame->parent->transform * transformBuffer;
-                    visualizer.frames().updateFrame(frame->vizIndex, frame->transform);
+                    iDynTree::Transform transformScaled = frame->transform;
+                    const iDynTree::Position& position = frame->transform.getPosition();
+                    iDynTree::Position positionScaled(position[0] * position_scale,
+                                                      position[1] * position_scale,
+                                                      position[2] * position_scale);
+                    transformScaled.setPosition(positionScaled);
+                    visualizer.frames().updateFrame(frame->vizIndex, transformScaled);
                 }
             }
         }
