@@ -7,7 +7,7 @@
  */
 
 #include <iDynTree/Visualizer.h>
-#include <iDynTree/yarp/YARPConversions.h>
+#include <iDynTree/YARPConversions.h>
 
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
