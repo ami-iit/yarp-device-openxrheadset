@@ -1200,7 +1200,14 @@ void OpenXrInterface::render()
 
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[0].width, m_pimpl->projection_view_swapchain_create_info[0].height);
+    double drawableArea = 0.6;
+    uint32_t maxHeight = m_pimpl->projection_view_swapchain_create_info[0].height;
+    uint32_t maxWidth = m_pimpl->projection_view_swapchain_create_info[0].width;
+    uint32_t paddingHeight = static_cast<uint32_t>((1.0 - drawableArea) * maxHeight / 2.0);
+    uint32_t paddingWidth = static_cast<uint32_t>((1.0 - drawableArea) * maxWidth / 2.0);
+
+
+    glViewport(paddingWidth, paddingHeight, maxWidth - 2 * paddingWidth, maxHeight - 2 * paddingHeight);
 
     bool viewIsValid = m_pimpl->view_state.viewStateFlags & XR_VIEW_STATE_POSITION_VALID_BIT;
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
@@ -1252,7 +1259,12 @@ void OpenXrInterface::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
 
-    glViewport(0, 0, m_pimpl->projection_view_swapchain_create_info[1].width, m_pimpl->projection_view_swapchain_create_info[1].height);
+    maxHeight = m_pimpl->projection_view_swapchain_create_info[1].height;
+    maxWidth = m_pimpl->projection_view_swapchain_create_info[1].width;
+    paddingHeight = static_cast<uint32_t>((1.0 - drawableArea) * maxHeight / 2.0);
+    paddingWidth = static_cast<uint32_t>((1.0 - drawableArea) * maxWidth / 2.0);
+
+    glViewport(paddingWidth, paddingHeight, maxWidth - 2 * paddingWidth, maxHeight - 2* paddingHeight);
 
     for (auto& openGLLayer : m_pimpl->openGLQuadLayers)
     {
