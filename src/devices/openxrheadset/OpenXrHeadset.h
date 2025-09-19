@@ -202,6 +202,19 @@ public:
     virtual bool setInterCameraDistance(const double distance) override;
 
     /**
+     * Get the current drawable area percentage.
+     * @return The drawable area percentage.
+     */
+    virtual double getDrawableArea() override;
+
+    /**
+     * Set the drawable area percentage.
+     * @param area The drawable area percentage to set (between 0.0 and 1.0).
+     * @return True if successfull.
+     */
+    virtual bool setDrawableArea(const double area) override;
+
+    /**
      * Get the name of the port trough which it is possible to control the left image.
      * @return the name of the port to control the left image.
      */

@@ -982,6 +982,30 @@ bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
     return m_eyesManager.setInterCameraDistance(distance);
 }
 
+double yarp::dev::OpenXrHeadset::getDrawableArea()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_drawableArea;
+}
+
+bool yarp::dev::OpenXrHeadset::setDrawableArea(const double area)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (area <= 0.0 || area > 1.0)
+    {
+        yCError(OPENXRHEADSET) << "The drawable area must be in the range (0, 1].";
+        return false;
+    }
+    if (area < 1.0 && m_useNativeQuadLayers)
+    {
+        yCWarning(OPENXRHEADSET) << "The drawable_area parameter is set to a value lower than 1.0, but the use_native_quad_layers is set to true."
+            << "The drawable_area setting will have no effect.";
+    }
+    m_drawableArea = area;
+    return true;
+}
+
 std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
 {
     std::lock_guard<std::mutex> lock(m_mutex);

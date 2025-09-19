@@ -125,6 +125,19 @@ service OpenXrHeadsetCommands
     */
     bool setInterCameraDistance(1:double distance);
 
+    /**
+    * Get the current drawable area percentage.
+    * @return The drawable area percentage.
+    */
+    double getDrawableArea();
+
+    /**
+    * Set the drawable area percentage.
+    * @param area The drawable area percentage to set (between 0.0 and 1.0).
+    * @return True if successfull.
+    */
+    bool setDrawableArea(1:double area);
+
    /**
     * Get the name of the port trough which it is possible to control the left image.
     * @return the name of the port to control the left image.
