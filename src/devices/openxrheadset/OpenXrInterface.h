@@ -118,7 +118,7 @@ class OpenXrInterface
 
     void forceTrackersInteractionProfile();
 
-    void render();
+    void render(double drawableArea);
 
     void endXrFrame();
 
@@ -168,7 +168,7 @@ public:
 
     bool isInitialized() const;
 
-    void draw();
+    void draw(double drawableArea = 1.0);
 
     std::shared_ptr<IOpenXrQuadLayer> addHeadFixedQuadLayer();
 

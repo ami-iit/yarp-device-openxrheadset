@@ -259,6 +259,25 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
 
     m_useNativeQuadLayers = cfg.check("use_native_quad_layers") && (cfg.find("use_native_quad_layers").isNull() || cfg.find("use_native_quad_layers").asBool());
 
+    m_drawableArea = cfg.check("drawable_area", yarp::os::Value(1.0)).asFloat64();
+
+    if (m_drawableArea <= 0.0)
+    {
+        yCWarning(OPENXRHEADSET) << "The drawable_area parameter is set to a non positive value. Setting it to 1.0";
+        m_drawableArea = 1.0;
+    }
+    else if (m_drawableArea > 1.0)
+    {
+        yCWarning(OPENXRHEADSET) << "The drawable_area parameter is set to a value greater than 1.0. Setting it to 1.0";
+        m_drawableArea = 1.0;
+    }
+
+    if (m_drawableArea < 1.0 && m_useNativeQuadLayers)
+    {
+        yCWarning(OPENXRHEADSET) << "The drawable_area parameter is set to a value lower than 1.0, but the use_native_quad_layers is set to true."
+            << "The drawable_area setting will have no effect.";
+    }
+
     m_openXrInterfaceSettings.posesPredictionInMs = cfg.check("vr_poses_prediction_in_ms", yarp::os::Value(0.0)).asFloat64();
     m_openXrInterfaceSettings.hideWindow = (m_useNativeQuadLayers && !cfg.check("hide_window")) || (cfg.check("hide_window") && (cfg.find("hide_window").isNull() || cfg.find("hide_window").asBool()));
     m_openXrInterfaceSettings.renderInPlaySpace = cfg.check("render_in_play_space") && (cfg.find("render_in_play_space").isNull() || cfg.find("render_in_play_space").asBool());
@@ -588,7 +607,7 @@ void yarp::dev::OpenXrHeadset::run()
                 yCError(OPENXRHEADSET) << "Failed to update" << slide.options.portName << "slide.";
             }
         }
-        m_openXrInterface.draw();
+        m_openXrInterface.draw(m_drawableArea);
 
         size_t previousButtonsSize = m_buttons.size();
         size_t previousAxesSize = m_axes.size();
@@ -961,6 +980,30 @@ bool yarp::dev::OpenXrHeadset::setInterCameraDistance(const double distance)
     std::lock_guard<std::mutex> lock(m_mutex);
 
     return m_eyesManager.setInterCameraDistance(distance);
+}
+
+double yarp::dev::OpenXrHeadset::getDrawableArea()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    return m_drawableArea;
+}
+
+bool yarp::dev::OpenXrHeadset::setDrawableArea(const double area)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (area <= 0.0 || area > 1.0)
+    {
+        yCError(OPENXRHEADSET) << "The drawable area must be in the range (0, 1].";
+        return false;
+    }
+    if (area < 1.0 && m_useNativeQuadLayers)
+    {
+        yCWarning(OPENXRHEADSET) << "The drawable_area parameter is set to a value lower than 1.0, but the use_native_quad_layers is set to true."
+            << "The drawable_area setting will have no effect.";
+    }
+    m_drawableArea = area;
+    return true;
 }
 
 std::string yarp::dev::OpenXrHeadset::getLeftImageControlPortName()
