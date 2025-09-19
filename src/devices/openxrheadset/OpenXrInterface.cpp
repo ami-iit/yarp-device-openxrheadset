@@ -1128,7 +1128,7 @@ void OpenXrInterface::forceTrackersInteractionProfile()
     }
 }
 
-void OpenXrInterface::render()
+void OpenXrInterface::render(double drawableArea)
 {
     glEnable(GL_DEPTH_TEST);
 
@@ -1200,7 +1200,6 @@ void OpenXrInterface::render()
 
     //Clear the backgorund color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    double drawableArea = 0.6;
     uint32_t maxHeight = m_pimpl->projection_view_swapchain_create_info[0].height;
     uint32_t maxWidth = m_pimpl->projection_view_swapchain_create_info[0].width;
     uint32_t paddingHeight = static_cast<uint32_t>((1.0 - drawableArea) * maxHeight / 2.0);
@@ -1427,7 +1426,7 @@ bool OpenXrInterface::isInitialized() const
     return m_pimpl->initialized;
 }
 
-void OpenXrInterface::draw()
+void OpenXrInterface::draw(double drawableArea)
 {
     if (m_pimpl->closing)
     {
@@ -1447,7 +1446,7 @@ void OpenXrInterface::draw()
         updateXrSpaces();
         updateXrActions();
         if (m_pimpl->frame_state.shouldRender) {
-            render();
+            render(drawableArea);
         }
         endXrFrame();
     }

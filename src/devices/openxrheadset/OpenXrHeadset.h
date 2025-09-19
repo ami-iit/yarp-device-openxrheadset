@@ -354,6 +354,8 @@ private:
     yarp::dev::IWrapper* m_joypadControlServerWrapper = nullptr;
     yarp::dev::PolyDriver m_thisDevice;
 
+    double m_drawableArea{1.0};
+
     std::mutex m_mutex, m_joypadServerMutex;
 
 };
