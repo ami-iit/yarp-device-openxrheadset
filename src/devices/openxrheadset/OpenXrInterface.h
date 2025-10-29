@@ -149,6 +149,7 @@ public:
     struct NamedPoseVelocity
     {
         std::string name;
+        std::string parentFrame;
         Pose pose;
         Velocity velocity;
         PoseFilterType filterType{ PoseFilterType::JUMP_FILTER };

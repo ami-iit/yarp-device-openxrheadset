@@ -61,7 +61,7 @@ void PosesManager::publishFrames()
 
     m_rootFramePublisher.updateInputPose(m_rootPose);
 
-    for (auto& inputPose : m_posesInputList)
+    for (const auto& inputPose : m_posesInputList)
     {
         FilteredPosePublisher& publisher = m_poses[inputPose.name];
 
@@ -69,8 +69,20 @@ void PosesManager::publishFrames()
         {
             publisher.configure(m_settings);
         }
-
-        publisher.updateInputPose(inputPose);
+        OpenXrInterface::NamedPoseVelocity inputPoseModified = inputPose;
+        if (!inputPose.parentFrame.empty())
+        {
+            // The parent frame might have a label, so when publishing the frame we use the correct ID
+            // Note that the parent frame in the input pose might have been set only by the OpenXR interface
+            // hence, we don't need to check in the custom poses, and we can expect the parent frame to be
+            // in the m_poses map
+            auto parentIt = m_poses.find(inputPose.parentFrame);
+            if (parentIt != m_poses.end())
+            {
+                inputPoseModified.parentFrame = parentIt->second.label();
+            }
+        }
+        publisher.updateInputPose(inputPoseModified);
     }
 
     for (size_t i = 0; i < m_customPoses.size(); ++i)
@@ -105,16 +117,31 @@ void PosesManager::publishFrames()
                 {
                     rawRootToParentPose = posesIt->second.data();
                 }
+                // The parent frame might be expressed wrt another frame, so we reconstruct its pose wrt the raw root
+                while (!rawRootToParentPose.parentFrame.empty())
+                {
+                    OpenXrInterface::NamedPoseVelocity parentPose;
+                    auto posesIt2 = m_poses.find(rawRootToParentPose.parentFrame);
+                    //The parent frame is filled only by the OpenXR interface, so it is not using labels nor custom poses
+                    if (posesIt2 != m_poses.end())
+                    {
+                        parentPose = posesIt2->second.data();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    //Compose the poses
+                    rawRootToParentPose.parentFrame = parentPose.parentFrame;
+                    rawRootToParentPose.pose = parentPose.pose * rawRootToParentPose.pose;
+                }
 
                 //The pose of the parent frame is expressed with respect to the raw root, i.e. the frame wrt we receive the poses from OpenXR.
                 //We publish the custom poses wrt the modified root, i.e. openxr_origin, thus we need to provide the parent frame wrt this other frame
 
                 parentFramePose.name = rawRootToParentPose.name;
-                parentFramePose.pose.positionValid = rawRootToParentPose.pose.positionValid;
-                parentFramePose.pose.rotationValid = rawRootToParentPose.pose.rotationValid;
-
-                parentFramePose.pose.position = m_rootFrameRawRelativePoseInverse.position + m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.position;
-                parentFramePose.pose.rotation = m_rootFrameRawRelativePoseInverse.rotation * rawRootToParentPose.pose.rotation;
+                parentFramePose.parentFrame = ""; //Non-static custom poses are published with respect to the origin
+                parentFramePose.pose = m_rootFrameRawRelativePoseInverse * rawRootToParentPose.pose;
             }
             else if (customPoseIt != m_customPosesMap.end())
             {

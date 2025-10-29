@@ -142,20 +142,26 @@ void PosePublisher::publish()
         }
     }
 
+    std::string parentFrame = m_tfBaseFrame;
+    if (!m_data.parentFrame.empty())
+    {
+        parentFrame = m_data.parentFrame;
+    }
+
     if (m_staticPose)
     {
-        if (!m_tfPublisher->setTransformStatic(m_label, m_tfBaseFrame, m_localPose))
+        if (!m_tfPublisher->setTransformStatic(m_label, parentFrame, m_localPose))
         {
             yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame (static). It will not be published again.";
         }
         else
         {
-            yCInfo(OPENXRHEADSET) << "Published transformation from" << m_tfBaseFrame << "to" << m_label << " (static).";
+            yCInfo(OPENXRHEADSET) << "Published transformation from" << parentFrame << "to" << m_label << " (static).";
         }
         return;
     }
 
-    if (!m_tfPublisher->setTransform(m_label, m_tfBaseFrame, m_localPose))
+    if (!m_tfPublisher->setTransform(m_label, parentFrame, m_localPose))
     {
         yCWarning(OPENXRHEADSET) << "Failed to publish" << m_label << "frame.";
     }
