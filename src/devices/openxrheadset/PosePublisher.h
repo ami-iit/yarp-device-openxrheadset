@@ -53,8 +53,6 @@ public:
 
     const std::string& label() const;
 
-    const std::string& tfBaseFrame() const;
-
     const bool staticPose() const;
 
     virtual bool configured() const;

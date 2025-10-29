@@ -59,11 +59,6 @@ const std::string &PosePublisher::label() const
     return m_label;
 }
 
-const std::string &PosePublisher::tfBaseFrame() const
-{
-    return m_tfBaseFrame;
-}
-
 const bool PosePublisher::staticPose() const
 {
     return m_staticPose;
