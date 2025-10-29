@@ -414,6 +414,11 @@ public:
     // Depth limits
     float nearZ = 0.01f;
     float farZ = 100.0f;
+
+    // Pose names
+    const std::string leftHandPoseName = "openxr_left_hand";
+    const std::string rightHandPoseName = "openxr_right_hand";
+    const std::string headPoseName = "openxr_head";
 };
 
 

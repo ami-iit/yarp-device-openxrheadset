@@ -1976,19 +1976,19 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     size_t poseIndex = 0;
 
     auto& head = additionalPoses[poseIndex];
-    head.name = "openxr_head";
+    head.name = m_pimpl->headPoseName;
     head.pose = headPose();
     head.velocity = headVelocity();
     poseIndex++;
 
     auto& left_arm = additionalPoses[poseIndex];
-    left_arm.name = "openxr_left_hand";
+    left_arm.name = m_pimpl->leftHandPoseName;
     left_arm.pose = leftHandPose();
     left_arm.velocity = leftHandVelocity();
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
-    right_arm.name = "openxr_right_hand";
+    right_arm.name = m_pimpl->rightHandPoseName;
     right_arm.pose = rightHandPose();
     right_arm.velocity = rightHandVelocity();
     poseIndex++;
