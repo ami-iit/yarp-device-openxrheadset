@@ -1182,7 +1182,7 @@ void OpenXrInterface::updateXrActions()
 
         for (PoseAction& pose : inputs.poses)
         {
-            result = pose.update(m_pimpl->session, m_pimpl->play_space, m_pimpl->locate_space_time);
+            result = pose.update(m_pimpl->session, m_pimpl->locate_space_time);
             m_pimpl->checkXrOutput(result, "Failed to get the pose of %s!", pose.name.c_str()); //Continue anyway
         }
 

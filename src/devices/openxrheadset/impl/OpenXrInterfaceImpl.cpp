@@ -70,9 +70,13 @@ XrResult Action<Eigen::Vector2f>::update(XrSession session)
     return output;
 }
 
-XrResult PoseAction::create(XrSession session, XrActionSet actionSet, const std::string &inputName)
+XrResult PoseAction::create(XrSession session, XrActionSet actionSet, XrSpace inputReferenceSpace,
+                            const std::string& inputName, const std::string& inputParentFrame)
+
 {
     name = inputName;
+    parentFrame = inputParentFrame;
+    referenceSpace = inputReferenceSpace;
     XrActionCreateInfo action_info = {.type = XR_TYPE_ACTION_CREATE_INFO,
                                       .next = NULL,
                                       .actionType = XR_ACTION_TYPE_POSE_INPUT,
@@ -105,7 +109,7 @@ XrResult PoseAction::create(XrSession session, XrActionSet actionSet, const std:
     return result;
 }
 
-XrResult PoseAction::update(XrSession session, XrSpace referenceSpace, XrTime time)
+XrResult PoseAction::update(XrSession session, XrTime time)
 {
     XrActionStatePose action_state = {.type = XR_TYPE_ACTION_STATE_POSE, .next = NULL};
     XrActionStateGetInfo get_info = {.type = XR_TYPE_ACTION_STATE_GET_INFO,
@@ -281,7 +285,9 @@ bool OpenXrInterface::Implementation::fillActionBindings(const std::vector<Inter
 
                     inputsEntry.poses.emplace_back();
                     PoseAction& newAction = inputsEntry.poses.back();
-                    result = newAction.create(session, actionset, fullActionName);
+                    std::string parentFrame = (input.referenceFrame == PoseReferenceFrame::HEAD) ? headPoseName : "";
+                    XrSpace referenceSpace = (input.referenceFrame == PoseReferenceFrame::HEAD) ? view_space : play_space;
+                    result = newAction.create(session, actionset, referenceSpace, fullActionName, parentFrame);
                     if (!checkXrOutput(result, "Failed to create action %s for %s.", fullActionName.c_str(), profileName.c_str()))
                     {
                         return false;

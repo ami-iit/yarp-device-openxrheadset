@@ -89,9 +89,12 @@ struct PoseAction : public OpenXrInterface::NamedPoseVelocity
 
     XrSpace xrSpace;
 
-    XrResult create(XrSession session, XrActionSet actionSet, const std::string &inputName);
+    XrSpace referenceSpace;
 
-    XrResult update(XrSession session, XrSpace referenceSpace, XrTime time);
+    XrResult create(XrSession session, XrActionSet actionSet, XrSpace inputReferenceSpace,
+                    const std::string &inputName, const std::string &inputParentFrame);
+
+    XrResult update(XrSession session, XrTime time);
 };
 
 
@@ -114,9 +117,16 @@ struct ActionDeclaration
     std::string nameSuffix;
 };
 
+enum class PoseReferenceFrame
+{
+    HEAD,
+    LOCAL,
+};
+
 struct PoseActionDeclaration : public ActionDeclaration
 {
     PoseFilterType filterType{ PoseFilterType::JUMP_FILTER };
+    PoseReferenceFrame referenceFrame{ PoseReferenceFrame::LOCAL };
 };
 
 struct InputActionsDeclaration
