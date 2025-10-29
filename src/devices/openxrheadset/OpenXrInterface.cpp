@@ -2154,3 +2154,13 @@ OpenXrInterface::NamedPoseVelocity OpenXrInterface::NamedPoseVelocity::Identity(
 
     return output;
 }
+
+OpenXrInterface::Pose OpenXrInterface::Pose::operator*(const OpenXrInterface::Pose& other) const
+{
+    OpenXrInterface::Pose result;
+    result.positionValid = positionValid && rotationValid && other.positionValid;
+    result.rotationValid = rotationValid && other.rotationValid;
+    result.position = position + rotation * other.position;
+    result.rotation = rotation * other.rotation;
+    return result;
+}

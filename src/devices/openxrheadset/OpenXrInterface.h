@@ -133,6 +133,8 @@ public:
 
         Eigen::Vector3f position;
         Eigen::Quaternionf rotation;
+
+        Pose operator*(const Pose& other) const;
     };
 
     struct Velocity
