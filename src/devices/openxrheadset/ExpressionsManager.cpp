@@ -69,14 +69,14 @@ void ExpressionsManager::setExpressions(const std::vector<float>& eyeExpressions
     }
 }
 
-void ExpressionsManager::setGaze(const OpenXrInterface::Pose& headPose, const OpenXrInterface::Pose& gaze)
+void ExpressionsManager::setGazeInHeadFrame(const OpenXrInterface::Pose& gaze)
 {
-    if (!m_gazeSupported || !gaze.positionValid || !headPose.positionValid || !headPose.rotationValid)
+    if (!m_gazeSupported || !gaze.rotationValid)
     {
         return;
     }
 
-    Eigen::Vector3f gazeDirectionInHead = headPose.rotation.inverse() * gaze.rotation * Eigen::Vector3f::UnitZ();
+    Eigen::Vector3f gazeDirectionInHead = gaze.rotation * Eigen::Vector3f::UnitZ();
 
     yarp::sig::Vector& gazeVector = m_gazePort.prepare();
     gazeVector.resize(3);

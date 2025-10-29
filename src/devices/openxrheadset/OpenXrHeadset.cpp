@@ -651,7 +651,7 @@ void yarp::dev::OpenXrHeadset::run()
         m_posesManager.publishFrames();
 
         m_expressionsManager.setExpressions(m_openXrInterface.eyeExpressions(), m_openXrInterface.lipExpressions());
-        m_expressionsManager.setGaze(m_openXrInterface.headPose(), m_openXrInterface.gazePose());
+        m_expressionsManager.setGazeInHeadFrame(m_openXrInterface.gazePoseInViewFrame());
     }
     else
     {

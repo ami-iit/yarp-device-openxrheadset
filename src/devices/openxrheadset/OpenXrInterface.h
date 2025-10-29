@@ -221,7 +221,7 @@ public:
 
     bool gazeSupported() const;
 
-    Pose gazePose() const;
+    Pose gazePoseInViewFrame() const;
 
     void close();
 };

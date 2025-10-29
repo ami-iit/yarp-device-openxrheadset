@@ -926,7 +926,7 @@ bool OpenXrInterface::prepareXrActions()
 
         gazeInputs.poses =
         {
-            {"/input/gaze_ext/pose", "pose", PoseFilterType::NONE}
+            {"/input/gaze_ext/pose", "pose", PoseFilterType::NONE, PoseReferenceFrame::HEAD}
         };
 
         TopLevelPathDeclaration gaze;
@@ -2049,7 +2049,7 @@ bool OpenXrInterface::gazeSupported() const
     return m_pimpl->use_gaze;
 }
 
-OpenXrInterface::Pose OpenXrInterface::gazePose() const
+OpenXrInterface::Pose OpenXrInterface::gazePoseInViewFrame() const
 {
     if (!m_pimpl->use_gaze)
     {
@@ -2058,7 +2058,7 @@ OpenXrInterface::Pose OpenXrInterface::gazePose() const
     const std::vector<PoseAction>& currentPoses = m_pimpl->top_level_paths.back().currentActions().poses; //eyes are in the last position
     if (currentPoses.size() == 0) //no pose in the current interaction profile
     {
-        return OpenXrInterface::Pose();
+        return Pose();
     }
 
     return currentPoses.front().pose;

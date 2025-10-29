@@ -34,7 +34,7 @@ public:
 
     void setExpressions(const std::vector<float>& eyeExpressions, const std::vector<float>& lipExpressions);
 
-    void setGaze(const OpenXrInterface::Pose& headPose, const OpenXrInterface::Pose& gaze);
+    void setGazeInHeadFrame(const OpenXrInterface::Pose& gaze);
 
     void close();
 
@@ -44,7 +44,6 @@ public:
 
     std::string getGazePortName() const;
 };
-
 
 
 #endif // YARP_DEV_EXPRESSIONSMANAGER_H
