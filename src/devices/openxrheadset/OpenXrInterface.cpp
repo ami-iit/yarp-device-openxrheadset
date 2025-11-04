@@ -1214,11 +1214,17 @@ void OpenXrInterface::updateXrActions()
                                                .expressionCount = static_cast<uint32_t>(m_pimpl->htc_eye_expressions.size()),
                                                .expressionWeightings = m_pimpl->htc_eye_expressions.data() };
         result = m_pimpl->pfn_xrGetFacialExpressionsHTC(m_pimpl->htc_eye_facial_tracker, &expressions);
-        if (!m_pimpl->checkXrOutput(result, "Failed to get the facial expressions of the eye tracker!") || !expressions.isActive)
+        if (!XR_SUCCEEDED(result) || !expressions.isActive)
         {
             if (!expressions.isActive)
             {
                 yCWarningThrottle(OPENXRHEADSET, 5.0, "The eye facial tracker is not active!");
+            }
+            else
+            {
+                char resultString[XR_MAX_RESULT_STRING_SIZE];
+                xrResultToString(m_pimpl->instance, result, resultString);
+                yCWarningThrottle(OPENXRHEADSET, 5.0, "Failed to get the facial expressions of the eye tracker! [%s].", resultString);
             }
             m_pimpl->htc_eye_expressions.assign(m_pimpl->htc_eye_expressions.size(), 0.0);
         }
@@ -1233,11 +1239,17 @@ void OpenXrInterface::updateXrActions()
                                                .expressionCount = static_cast<uint32_t>(m_pimpl->htc_lip_expressions.size()),
                                                .expressionWeightings = m_pimpl->htc_lip_expressions.data() };
         result = m_pimpl->pfn_xrGetFacialExpressionsHTC(m_pimpl->htc_lip_facial_tracker, &expressions);
-        if (!m_pimpl->checkXrOutput(result, "Failed to get the facial expressions of the lip tracker!") || !expressions.isActive)
+        if (!XR_SUCCEEDED(result) || !expressions.isActive)
         {
             if (!expressions.isActive)
             {
                 yCWarningThrottle(OPENXRHEADSET, 5.0, "The lip facial tracker is not active!");
+            }
+            else
+            {
+                char resultString[XR_MAX_RESULT_STRING_SIZE];
+                xrResultToString(m_pimpl->instance, result, resultString);
+                yCWarningThrottle(OPENXRHEADSET, 5.0, "Failed to get the facial expressions of the lip tracker! [%s].", resultString);
             }
             m_pimpl->htc_lip_expressions.assign(m_pimpl->htc_lip_expressions.size(), 0.0);
         }
