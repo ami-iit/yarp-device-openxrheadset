@@ -217,7 +217,7 @@ public:
             vsprintf(output, formatRes, args);
             va_end(args);
 
-            yCError(OPENXRHEADSET) << output;
+            yCError(OPENXRHEADSET, "%s", output);
         }
         else
         {
