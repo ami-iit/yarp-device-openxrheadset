@@ -34,6 +34,8 @@
 #define OCULUS_TOUCH_INTERACTION_PROFILE_TAG "/interaction_profiles/oculus/touch_controller"
 #define HTC_VIVE_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_controller"
 #define HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_tracker_htcx"
+#define HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG "/interaction_profiles/htc/vive_focus3_controller"
+#define GAZE_INTERACTION_PROFILE_TAG "/interaction_profiles/ext/eye_gaze_interaction"
 
 // STRUCTS
 template <typename ActionType>
@@ -87,9 +89,12 @@ struct PoseAction : public OpenXrInterface::NamedPoseVelocity
 
     XrSpace xrSpace;
 
-    XrResult create(XrSession session, XrActionSet actionSet, const std::string &inputName);
+    XrSpace referenceSpace;
 
-    XrResult update(XrSession session, XrSpace referenceSpace, XrTime time);
+    XrResult create(XrSession session, XrActionSet actionSet, XrSpace inputReferenceSpace,
+                    const std::string &inputName, const std::string &inputParentFrame);
+
+    XrResult update(XrSession session, XrTime time);
 };
 
 
@@ -112,9 +117,16 @@ struct ActionDeclaration
     std::string nameSuffix;
 };
 
+enum class PoseReferenceFrame
+{
+    HEAD,
+    LOCAL,
+};
+
 struct PoseActionDeclaration : public ActionDeclaration
 {
     PoseFilterType filterType{ PoseFilterType::JUMP_FILTER };
+    PoseReferenceFrame referenceFrame{ PoseReferenceFrame::LOCAL };
 };
 
 struct InputActionsDeclaration
@@ -205,7 +217,7 @@ public:
             vsprintf(output, formatRes, args);
             va_end(args);
 
-            yCError(OPENXRHEADSET) << output;
+            yCError(OPENXRHEADSET, "%s", output);
         }
         else
         {
@@ -282,6 +294,8 @@ public:
     // position of a frame in the middle of the eyes, oriented as the first eye
     XrPosef mid_views_pose_inverted;
 
+    float ipd = 0.06f;
+
     // List of top level paths to retrieve the state of each action
     std::vector<TopLevelPath> top_level_paths;
 
@@ -296,6 +310,38 @@ public:
 
     // Map defining which tracker is connected
     std::unordered_map<std::string, TrackerStatus> htc_trackers_status;
+
+    // flag to check if the HTC VIVE Focus3 controllers are supported by the runtime.
+    bool focus3_supported = false;
+
+    //flag to check if facial tracking is supported by the headset.
+    bool htc_eye_facial_tracking_supported = false;
+
+    //flag to check if lip facial tracking is supported by the headset.
+    bool htc_lip_facial_tracking_supported = false;
+
+    // Pointer to function to create the HTC facial tracker
+    PFN_xrCreateFacialTrackerHTC pfn_xrCreateFacialTrackerHTC = NULL;
+
+    // Pointer to function to destroy the HTC facial tracker
+    PFN_xrDestroyFacialTrackerHTC pfn_xrDestroyFacialTrackerHTC = NULL;
+
+    // Pointer to function to get the facial expressions
+    PFN_xrGetFacialExpressionsHTC pfn_xrGetFacialExpressionsHTC = NULL;
+
+    // Handles for eye and lip tracking
+    XrFacialTrackerHTC htc_eye_facial_tracker = XR_NULL_HANDLE;
+    XrFacialTrackerHTC htc_lip_facial_tracker = XR_NULL_HANDLE;
+
+    // Stucts to store the facial expressions
+    std::vector<float> htc_eye_expressions;
+    std::vector<float> htc_lip_expressions;
+
+    // Flag to enable the use of expressions
+    bool use_expressions = true;
+
+    // Flag to enable the use of gaze
+    bool use_gaze = true;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;
@@ -378,6 +424,11 @@ public:
     // Depth limits
     float nearZ = 0.01f;
     float farZ = 100.0f;
+
+    // Pose names
+    const std::string leftHandPoseName = "openxr_left_hand";
+    const std::string rightHandPoseName = "openxr_right_hand";
+    const std::string headPoseName = "openxr_head";
 };
 
 

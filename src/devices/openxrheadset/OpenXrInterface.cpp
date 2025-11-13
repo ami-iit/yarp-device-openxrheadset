@@ -40,7 +40,11 @@ bool OpenXrInterface::checkExtensions()
     bool opengl_supported = false;
     bool depth_supported = false;
     bool debug_supported = false;
+    bool gaze_supported = false;
+    bool htc_facial_tracking_supported = false;
 
+    std::stringstream supported_extensions;
+    supported_extensions << "Supported extensions: " <<std::endl;
     for (uint32_t i = 0; i < ext_count; i++) {
         if (strcmp(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             opengl_supported = true;
@@ -57,7 +61,23 @@ bool OpenXrInterface::checkExtensions()
         if (strcmp(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
             m_pimpl->htc_trackers_supported = true;
         }
+
+        if (strcmp(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            m_pimpl->focus3_supported = true;
+        }
+
+        if (strcmp(XR_HTC_FACIAL_TRACKING_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            htc_facial_tracking_supported = true;
+        }
+
+        if (strcmp(XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
+            gaze_supported = true;
+        }
+
+        supported_extensions << std::endl << "    - " << ext_props[i].extensionName;
     }
+
+    yCInfo(OPENXRHEADSET) << supported_extensions.str();
 
     // A graphics extension like OpenGL is required to draw anything in VR
     if (!opengl_supported) {
@@ -77,6 +97,20 @@ bool OpenXrInterface::checkExtensions()
 
     if (!m_pimpl->htc_trackers_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Trackers!";
+    }
+
+    if (!m_pimpl->focus3_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Focus 3 controllers!";
+    }
+
+    if (!htc_facial_tracking_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Facial Tracking!";
+        m_pimpl->use_expressions = false;
+    }
+
+    if (!gaze_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support the eye gaze extension!";
+        m_pimpl->use_gaze = false;
     }
 
     return true;
@@ -117,6 +151,18 @@ bool OpenXrInterface::prepareXrInstance()
     if (m_pimpl->htc_trackers_supported)
     {
         requestedExtensions.push_back(XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME);
+    }
+    if (m_pimpl->focus3_supported)
+    {
+        requestedExtensions.push_back(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME);
+    }
+    if (m_pimpl->use_expressions)
+    {
+        requestedExtensions.push_back(XR_HTC_FACIAL_TRACKING_EXTENSION_NAME);
+    }
+    if (m_pimpl->use_gaze)
+    {
+        requestedExtensions.push_back(XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME);
     }
 
     // Populate the info to create the instance
@@ -211,6 +257,24 @@ bool OpenXrInterface::prepareXrInstance()
             return false;
     }
 
+    if (m_pimpl->use_expressions)
+    {
+        result = xrGetInstanceProcAddr(m_pimpl->instance, "xrCreateFacialTrackerHTC",
+            (PFN_xrVoidFunction*)&(m_pimpl->pfn_xrCreateFacialTrackerHTC));
+        if (!m_pimpl->checkXrOutput(result, "Failed to get the function to create the HTC facial tracker!"))
+            return false;
+
+        result = xrGetInstanceProcAddr(m_pimpl->instance, "xrDestroyFacialTrackerHTC",
+            (PFN_xrVoidFunction*)&(m_pimpl->pfn_xrDestroyFacialTrackerHTC));
+        if (!m_pimpl->checkXrOutput(result, "Failed to get the function to destroy the HTC facial tracker!"))
+            return false;
+
+        result = xrGetInstanceProcAddr(m_pimpl->instance, "xrGetFacialExpressionsHTC",
+            (PFN_xrVoidFunction*)&(m_pimpl->pfn_xrGetFacialExpressionsHTC));
+        if (!m_pimpl->checkXrOutput(result, "Failed to get the function to get the HTC facial expressions!"))
+            return false;
+    }
+
     return true;
 
 }
@@ -228,7 +292,7 @@ bool OpenXrInterface::prepareXrSystem()
 
     yCInfo(OPENXRHEADSET) << "Successfully got XrSystem with id" << m_pimpl->system_id << "for HMD form factor";
 
-    printSystemProperties();
+    checkSystemProperties();
 
     uint32_t view_count = 0;
     // We first get the number of view configurations for the STEREO type
@@ -299,11 +363,36 @@ bool OpenXrInterface::prepareXrSystem()
     return true;
 }
 
-void OpenXrInterface::printSystemProperties()
+void OpenXrInterface::checkSystemProperties()
 {
     XrSystemProperties system_props;
     system_props.type = XR_TYPE_SYSTEM_PROPERTIES;
     system_props.next = NULL;
+
+    void** next_chain = &system_props.next;
+
+    XrSystemFacialTrackingPropertiesHTC facial_tracking_props;
+    facial_tracking_props.type = XR_TYPE_SYSTEM_FACIAL_TRACKING_PROPERTIES_HTC;
+    facial_tracking_props.next = NULL;
+    facial_tracking_props.supportEyeFacialTracking = XR_FALSE;
+    facial_tracking_props.supportLipFacialTracking = XR_FALSE;
+
+    if (m_pimpl->use_expressions)
+    {
+        *next_chain = &facial_tracking_props;
+        next_chain = &facial_tracking_props.next;
+    }
+
+    XrSystemEyeGazeInteractionPropertiesEXT eye_gaze_props;
+    eye_gaze_props.type = XR_TYPE_SYSTEM_EYE_GAZE_INTERACTION_PROPERTIES_EXT;
+    eye_gaze_props.next = NULL;
+    eye_gaze_props.supportsEyeGazeInteraction = XR_FALSE;
+
+    if (m_pimpl->use_gaze)
+    {
+        *next_chain = &eye_gaze_props;
+        next_chain = &eye_gaze_props.next;
+    }
 
     XrResult result = xrGetSystemProperties(m_pimpl->instance, m_pimpl->system_id, &system_props);
     if (!XR_SUCCEEDED(result))
@@ -321,6 +410,25 @@ void OpenXrInterface::printSystemProperties()
            system_props.graphicsProperties.maxSwapchainImageWidth);
     yCInfo(OPENXRHEADSET, "\tOrientation Tracking: %d", system_props.trackingProperties.orientationTracking);
     yCInfo(OPENXRHEADSET, "\tPosition Tracking   : %d", system_props.trackingProperties.positionTracking);
+
+    if (m_pimpl->use_expressions)
+    {
+        yCInfo(OPENXRHEADSET, "Facial tracking properties for system %lu: Eye tracking %d, Lip tracking %d",
+            system_props.systemId, facial_tracking_props.supportEyeFacialTracking, facial_tracking_props.supportLipFacialTracking);
+        m_pimpl->htc_eye_facial_tracking_supported = facial_tracking_props.supportEyeFacialTracking;
+        m_pimpl->htc_lip_facial_tracking_supported = facial_tracking_props.supportLipFacialTracking;
+    }
+
+    if (m_pimpl->use_gaze)
+    {
+        yCInfo(OPENXRHEADSET, "Eye gaze properties for system %lu: Eye gaze %d",
+            system_props.systemId, eye_gaze_props.supportsEyeGazeInteraction);
+        if (!eye_gaze_props.supportsEyeGazeInteraction)
+        {
+            yCWarning(OPENXRHEADSET) << "The runtime does not seem to support eye gaze interaction! Trying to use it anyway.";
+        }
+    }
+
 }
 
 bool OpenXrInterface::prepareGL()
@@ -416,6 +524,44 @@ bool OpenXrInterface::prepareXrSession()
     result = xrCreateReferenceSpace(m_pimpl->session, &space_create_info, &(m_pimpl->view_space));
     if (! m_pimpl->checkXrOutput(result, "Failed to create view space!"))
         return false;
+
+    if (m_pimpl->htc_eye_facial_tracking_supported)
+    {
+        XrFacialTrackerCreateInfoHTC facial_tracker_create_info = {
+            .type = XR_TYPE_FACIAL_TRACKER_CREATE_INFO_HTC,
+            .next = NULL,
+            .facialTrackingType = XR_FACIAL_TRACKING_TYPE_EYE_DEFAULT_HTC,
+        };
+        result = m_pimpl->pfn_xrCreateFacialTrackerHTC(m_pimpl->session, &facial_tracker_create_info, &m_pimpl->htc_eye_facial_tracker);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create eye facial tracker! Avoiding using it."))
+        {
+            m_pimpl->htc_eye_facial_tracking_supported = false;
+        }
+        else
+        {
+            yCInfo(OPENXRHEADSET) << "Successfully created eye facial tracker!";
+            m_pimpl->htc_eye_expressions.resize(XR_FACIAL_EXPRESSION_EYE_COUNT_HTC, 0.0);
+        }
+    }
+
+    if (m_pimpl->htc_lip_facial_tracking_supported)
+    {
+        XrFacialTrackerCreateInfoHTC facial_tracker_create_info = {
+            .type = XR_TYPE_FACIAL_TRACKER_CREATE_INFO_HTC,
+            .next = NULL,
+            .facialTrackingType = XR_FACIAL_TRACKING_TYPE_LIP_DEFAULT_HTC,
+        };
+        result = m_pimpl->pfn_xrCreateFacialTrackerHTC(m_pimpl->session, &facial_tracker_create_info, &m_pimpl->htc_lip_facial_tracker);
+        if (!m_pimpl->checkXrOutput(result, "Failed to create lip facial tracker! Avoiding using it."))
+        {
+            m_pimpl->htc_lip_facial_tracking_supported = false;
+        }
+        else
+        {
+            yCInfo(OPENXRHEADSET) << "Successfully created lip facial tracker!";
+            m_pimpl->htc_lip_expressions.resize(XR_FACIAL_EXPRESSION_LIP_COUNT_HTC, 0.0);
+        }
+    }
 
     return true;
 
@@ -666,6 +812,51 @@ bool OpenXrInterface::prepareXrActions()
 
     right_hand.inputsDeclarations[HTC_VIVE_INTERACTION_PROFILE_TAG] = vive_left_inputs; //the inputs from the left and right hand are the same
 
+    if (m_pimpl->focus3_supported)
+    {
+        InputActionsDeclaration& focus3_left_inputs = left_hand.inputsDeclarations[HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG];
+        InputActionsDeclaration& focus3_right_inputs = right_hand.inputsDeclarations[HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_PROFILE_TAG];
+
+        focus3_left_inputs.poses =
+        {
+            {"/input/grip/pose", "grip"}
+        };
+        focus3_right_inputs.poses = focus3_left_inputs.poses;
+
+
+        focus3_left_inputs.buttons =
+        {
+            //We avoid the menu button because it is used to open SteamVR when using the Streaming Hub
+            {"/input/x/click",          "x"},
+            {"/input/y/click",          "y"},
+            {"/input/trigger/click",    "trigger_click"},
+            {"/input/squeeze/click",    "squeeze_click"},
+            {"/input/thumbstick/click", "thumbstick_click"}
+        };
+        focus3_right_inputs.buttons =
+        {
+            {"/input/a/click",          "a"},
+            {"/input/b/click",          "b"},
+            {"/input/trigger/click",    "trigger_click"},
+            {"/input/squeeze/click",    "squeeze_click"},
+            {"/input/thumbstick/click", "thumbstick_click"}
+        };
+
+        focus3_left_inputs.axes =
+        {
+            {"/input/trigger/value",  "trigger"},
+            {"/input/squeeze/value",  "squeeze"}
+        };
+        focus3_right_inputs.axes = focus3_left_inputs.axes;
+
+        focus3_left_inputs.thumbsticks =
+        {
+            {"/input/thumbstick",  "thumbstick"}
+        };
+
+        focus3_right_inputs.thumbsticks = focus3_left_inputs.thumbsticks;
+    }
+
     std::vector<TopLevelPathDeclaration> topLevelPathsDeclaration = {left_hand,    //The left hand should always come first in this list
                                                                      right_hand};  //The right hand should always come second in this list
 
@@ -727,6 +918,24 @@ bool OpenXrInterface::prepareXrActions()
         }
 
         interactionProfilesPrefixes.push_back({HTC_VIVE_TRACKER_INTERACTION_PROFILE_TAG, "vive_tracker_"});
+    }
+
+    if (m_pimpl->use_gaze)
+    {
+        InputActionsDeclaration gazeInputs;
+
+        gazeInputs.poses =
+        {
+            {"/input/gaze_ext/pose", "pose", PoseFilterType::NONE, PoseReferenceFrame::HEAD}
+        };
+
+        TopLevelPathDeclaration gaze;
+        gaze.stringPath = "/user/eyes_ext";
+        gaze.actionNamePrefix = "eyes_";
+        gaze.inputsDeclarations[GAZE_INTERACTION_PROFILE_TAG] = gazeInputs;
+
+        topLevelPathsDeclaration.push_back(gaze); //The gaze should be the last one in this list
+        interactionProfilesPrefixes.push_back({ GAZE_INTERACTION_PROFILE_TAG, "gaze_" });
     }
 
     if (!m_pimpl->fillActionBindings(interactionProfilesPrefixes, topLevelPathsDeclaration))
@@ -927,6 +1136,8 @@ void OpenXrInterface::updateXrSpaces()
     m_pimpl->mid_views_pose_inverted.orientation = toXr(toEigen(m_pimpl->mid_views_pose.orientation).inverse());
     m_pimpl->mid_views_pose_inverted.position = toXr(toEigen(m_pimpl->mid_views_pose_inverted.orientation) * -toEigen(m_pimpl->mid_views_pose.position));
 
+    m_pimpl->ipd = (toEigen(m_pimpl->views[1].pose.position) - toEigen(m_pimpl->views[0].pose.position)).norm();
+
     for (size_t i = 0; i < m_pimpl->views.size(); ++i)
     {
 #ifdef DEBUG_RENDERING_LOCATION
@@ -971,7 +1182,7 @@ void OpenXrInterface::updateXrActions()
 
         for (PoseAction& pose : inputs.poses)
         {
-            result = pose.update(m_pimpl->session, m_pimpl->play_space, m_pimpl->locate_space_time);
+            result = pose.update(m_pimpl->session, m_pimpl->locate_space_time);
             m_pimpl->checkXrOutput(result, "Failed to get the pose of %s!", pose.name.c_str()); //Continue anyway
         }
 
@@ -991,6 +1202,56 @@ void OpenXrInterface::updateXrActions()
         {
             result = thumbstick.update(m_pimpl->session);
             m_pimpl->checkXrOutput(result, "Failed to update the status of %s!", thumbstick.name.c_str()); //Continue anyway
+        }
+    }
+
+    if (m_pimpl->htc_eye_facial_tracking_supported)
+    {
+        XrFacialExpressionsHTC expressions = { .type = XR_TYPE_FACIAL_EXPRESSIONS_HTC,
+                                               .next = NULL,
+                                               .isActive = XR_TRUE,
+                                               .sampleTime = m_pimpl->frame_state.predictedDisplayTime,
+                                               .expressionCount = static_cast<uint32_t>(m_pimpl->htc_eye_expressions.size()),
+                                               .expressionWeightings = m_pimpl->htc_eye_expressions.data() };
+        result = m_pimpl->pfn_xrGetFacialExpressionsHTC(m_pimpl->htc_eye_facial_tracker, &expressions);
+        if (!XR_SUCCEEDED(result) || !expressions.isActive)
+        {
+            if (!expressions.isActive)
+            {
+                yCWarningThrottle(OPENXRHEADSET, 5.0, "The eye facial tracker is not active!");
+            }
+            else
+            {
+                char resultString[XR_MAX_RESULT_STRING_SIZE];
+                xrResultToString(m_pimpl->instance, result, resultString);
+                yCWarningThrottle(OPENXRHEADSET, 5.0, "Failed to get the facial expressions of the eye tracker! [%s].", resultString);
+            }
+            m_pimpl->htc_eye_expressions.assign(m_pimpl->htc_eye_expressions.size(), 0.0);
+        }
+    }
+
+    if (m_pimpl->htc_lip_facial_tracking_supported)
+    {
+        XrFacialExpressionsHTC expressions = { .type = XR_TYPE_FACIAL_EXPRESSIONS_HTC,
+                                               .next = NULL,
+                                               .isActive = XR_TRUE,
+                                               .sampleTime = m_pimpl->frame_state.predictedDisplayTime,
+                                               .expressionCount = static_cast<uint32_t>(m_pimpl->htc_lip_expressions.size()),
+                                               .expressionWeightings = m_pimpl->htc_lip_expressions.data() };
+        result = m_pimpl->pfn_xrGetFacialExpressionsHTC(m_pimpl->htc_lip_facial_tracker, &expressions);
+        if (!XR_SUCCEEDED(result) || !expressions.isActive)
+        {
+            if (!expressions.isActive)
+            {
+                yCWarningThrottle(OPENXRHEADSET, 5.0, "The lip facial tracker is not active!");
+            }
+            else
+            {
+                char resultString[XR_MAX_RESULT_STRING_SIZE];
+                xrResultToString(m_pimpl->instance, result, resultString);
+                yCWarningThrottle(OPENXRHEADSET, 5.0, "Failed to get the facial expressions of the lip tracker! [%s].", resultString);
+            }
+            m_pimpl->htc_lip_expressions.assign(m_pimpl->htc_lip_expressions.size(), 0.0);
         }
     }
 }
@@ -1398,6 +1659,8 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
 
     m_pimpl->hideWindow = settings.hideWindow;
     m_pimpl->renderInPlaySpace = settings.renderInPlaySpace;
+    m_pimpl->use_gaze = settings.useGaze;
+    m_pimpl->use_expressions = settings.useExpressions;
 
 #ifdef DEBUG_RENDERING_LOCATION
     m_pimpl->renderInPlaySpace = true;
@@ -1566,6 +1829,11 @@ bool OpenXrInterface::isRunning() const
     return m_pimpl->initialized && !m_pimpl->closing;
 }
 
+float OpenXrInterface::ipd() const
+{
+    return m_pimpl->ipd;
+}
+
 OpenXrInterface::Pose OpenXrInterface::headPose() const
 {
     return XrSpaceLocationToPose(m_pimpl->view_space_location);
@@ -1720,19 +1988,19 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     size_t poseIndex = 0;
 
     auto& head = additionalPoses[poseIndex];
-    head.name = "openxr_head";
+    head.name = m_pimpl->headPoseName;
     head.pose = headPose();
     head.velocity = headVelocity();
     poseIndex++;
 
     auto& left_arm = additionalPoses[poseIndex];
-    left_arm.name = "openxr_left_hand";
+    left_arm.name = m_pimpl->leftHandPoseName;
     left_arm.pose = leftHandPose();
     left_arm.velocity = leftHandVelocity();
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
-    right_arm.name = "openxr_right_hand";
+    right_arm.name = m_pimpl->rightHandPoseName;
     right_arm.pose = rightHandPose();
     right_arm.velocity = rightHandVelocity();
     poseIndex++;
@@ -1768,9 +2036,61 @@ bool OpenXrInterface::shouldResetLocalReferenceSpace()
     return shouldReset;
 }
 
+bool OpenXrInterface::eyeExpressionsSupported() const
+{
+    return m_pimpl->htc_eye_facial_tracking_supported;
+}
+
+bool OpenXrInterface::lipExpressionsSupported() const
+{
+    return m_pimpl->htc_lip_facial_tracking_supported;
+}
+
+const std::vector<float>& OpenXrInterface::eyeExpressions() const
+{
+    return m_pimpl->htc_eye_expressions;
+}
+
+const std::vector<float>& OpenXrInterface::lipExpressions() const
+{
+    return m_pimpl->htc_lip_expressions;
+}
+
+bool OpenXrInterface::gazeSupported() const
+{
+    return m_pimpl->use_gaze;
+}
+
+OpenXrInterface::Pose OpenXrInterface::gazePoseInViewFrame() const
+{
+    if (!m_pimpl->use_gaze)
+    {
+        return Pose();
+    }
+    const std::vector<PoseAction>& currentPoses = m_pimpl->top_level_paths.back().currentActions().poses; //eyes are in the last position
+    if (currentPoses.size() == 0) //no pose in the current interaction profile
+    {
+        return Pose();
+    }
+
+    return currentPoses.front().pose;
+}
+
 void OpenXrInterface::close()
 {
     m_pimpl->closing = true;
+
+    if (m_pimpl->htc_eye_facial_tracking_supported)
+    {
+        m_pimpl->pfn_xrDestroyFacialTrackerHTC(m_pimpl->htc_eye_facial_tracker);
+        m_pimpl->htc_eye_facial_tracking_supported = false;
+    }
+
+    if (m_pimpl->htc_lip_facial_tracking_supported)
+    {
+        m_pimpl->pfn_xrDestroyFacialTrackerHTC(m_pimpl->htc_lip_facial_tracker);
+        m_pimpl->htc_lip_facial_tracking_supported = false;
+    }
 
     if (m_pimpl->glFrameBufferId != 0) {
         glDeleteFramebuffers(1, &(m_pimpl->glFrameBufferId));
@@ -1845,4 +2165,14 @@ OpenXrInterface::NamedPoseVelocity OpenXrInterface::NamedPoseVelocity::Identity(
     output.velocity.angular.setZero();
 
     return output;
+}
+
+OpenXrInterface::Pose OpenXrInterface::Pose::operator*(const OpenXrInterface::Pose& other) const
+{
+    OpenXrInterface::Pose result;
+    result.positionValid = positionValid && rotationValid && other.positionValid;
+    result.rotationValid = rotationValid && other.rotationValid;
+    result.position = position + rotation * other.position;
+    result.rotation = rotation * other.rotation;
+    return result;
 }

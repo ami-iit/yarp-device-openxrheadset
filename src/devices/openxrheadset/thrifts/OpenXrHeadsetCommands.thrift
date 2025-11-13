@@ -10,14 +10,14 @@ service OpenXrHeadsetCommands
 {
     /**
     * Get the current interaction profile for the left hand
-    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller, htc_vive_controller, or htc_vive_focus3_controller
     * @return a string indicating the interaction profile in use.
     */
     string getLeftHandInteractionProfile();
 
     /**
     * Get the current interaction profile for the right hand
-    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller, htc_vive_controller, or htc_vive_focus3_controller
     * @return a string indicating the interaction profile in use.
     */
     string getRightHandInteractionProfile();
@@ -114,7 +114,7 @@ service OpenXrHeadsetCommands
 
    /**
     * Get the current lateral distance between the visualization of the robot cameras.
-    * @return The IPD in meters.
+    * @return The distance in meters.
     */
     double getInterCameraDistance();
 
@@ -124,6 +124,12 @@ service OpenXrHeadsetCommands
     * @return True if successfull.
     */
     bool setInterCameraDistance(1:double distance);
+
+    /**
+    * Get the current IPD (Inter Pupillary Distance) of the VR eyes.
+    * @return The IPD in meters
+    */
+    double getIPD();
 
     /**
     * Get the current drawable area percentage.
@@ -193,7 +199,7 @@ service OpenXrHeadsetCommands
      */
      bool setCustomPoseRelativeOrientation(1:string customFrameName, 2:double angle1, 3:double angle2, 4:double angle3);
 
-     /**
+    /**
      * Reset the transforms all the published tranforms.
      * This will also delete all the transforms currently stored in the transform server,
      * so also the static poses will be published again. This must be used with caution,
@@ -201,9 +207,46 @@ service OpenXrHeadsetCommands
      */
      bool resetTransforms();
 
-     /**
+    /**
      * Start the joypad control server. The server will restart if already started.
      * @return True if the server is started successfully, false otherwise.
      */
+
      bool restartJoypadControlServer();
+
+    /**
+     * Check if the eye expressions are enabled
+     * @return True if the eye expressions are enabled, false otherwise
+     */
+     bool eyeExpressionsEnabled();
+
+    /**
+     * Get the name of the port trough which it is possible to get the eye expressions.
+     * @return the name of the port to get the eye expressions.
+     */
+     string getEyeExpressionsPortName();
+
+    /**
+     * Check if the lip expressions are enabled
+     * @return True if the lip expressions are enabled, false otherwise
+     */
+     bool lipExpressionsEnabled();
+
+    /**
+     * Get the name of the port trough which it is possible to get the lip expressions.
+     * @return the name of the port to get the lip expressions.
+     */
+     string getLipExpressionsPortName();
+
+    /**
+     * Check if the gaze acquisition is enabled
+     * @return True if the gaze acquisition is enabled, false otherwise
+     */
+     bool gazeEnabled();
+
+    /**
+     * Get the name of the port trough which it is possible to get the gaze position.
+     * @return the name of the port to get the gaze position.
+     */
+     string getGazePortName();
 }

@@ -31,6 +31,7 @@
 #include <EyesManager.h>
 #include <SlideManager.h>
 #include <PosesManager.h>
+#include <ExpressionsManager.h>
 #include <thrifts/OpenXrHeadsetCommands.h>
 
 #include <Eigen/Core>
@@ -86,14 +87,14 @@ public:
     //OpenXrHeadsetCommands
     /**
      * Get the current interaction profile for the left hand
-     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller, htc_vive_controller, or htc_vive_focus3_controller
      * @return a string indicating the interaction profile in use.
      */
     virtual std::string getLeftHandInteractionProfile() override;
 
     /**
      * Get the current interaction profile for the right hand
-     * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller or htc_vive_controller
+    * It returns a string that can be one between none, khr_simple_controller, oculus_touch_controller, htc_vive_controller, or htc_vive_focus3_controller
      * @return a string indicating the interaction profile in use.
      */
     virtual std::string getRightHandInteractionProfile() override;
@@ -190,7 +191,7 @@ public:
 
     /**
      * Get the current lateral distance between the visualization of the robot cameras.
-     * @return The IPD in meters.
+     * @return The distance in meters.
      */
     virtual double getInterCameraDistance() override;
 
@@ -200,6 +201,12 @@ public:
      * @return True if successfull.
      */
     virtual bool setInterCameraDistance(const double distance) override;
+
+    /**
+     * Get the current IPD (Inter Pupillary Distance) of the VR eyes.
+     * @return The IPD in meters
+     */
+    virtual double getIPD() override;
 
     /**
      * Get the current drawable area percentage.
@@ -283,6 +290,42 @@ public:
      */
     virtual bool restartJoypadControlServer() override;
 
+    /**
+     * Check if the eye expressions are enabled
+     * @return True if the eye expressions are enabled, false otherwise
+     */
+    virtual bool eyeExpressionsEnabled() override;
+
+    /**
+     * Get the name of the port trough which it is possible to get the eye expressions.
+     * @return the name of the port to get the eye expressions.
+     */
+    virtual std::string getEyeExpressionsPortName() override;
+
+    /**
+     * Check if the lip expressions are enabled
+     * @return True if the lip expressions are enabled, false otherwise
+     */
+    virtual bool lipExpressionsEnabled() override;
+
+    /**
+     * Get the name of the port trough which it is possible to get the lip expressions.
+     * @return the name of the port to get the lip expressions.
+     */
+    virtual std::string getLipExpressionsPortName() override;
+
+    /**
+     * Check if the gaze acquisition is enabled
+     * @return True if the gaze acquisition is enabled, false otherwise
+     */
+    virtual bool gazeEnabled() override;
+
+    /**
+     * Get the name of the port trough which it is possible to get the gaze position.
+     * @return the name of the port to get the gaze position.
+     */
+    virtual std::string getGazePortName() override;
+
 private:
 
     /**
@@ -335,6 +378,8 @@ private:
     std::string m_prefix;
 
     EyesManager m_eyesManager;
+
+    ExpressionsManager m_expressionsManager;
 
     std::vector<GuiParam> m_huds;
     std::vector<LabelLayer> m_labels;

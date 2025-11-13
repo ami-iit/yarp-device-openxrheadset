@@ -72,6 +72,8 @@ struct OpenXrInterfaceSettings
     double posesPredictionInMs{0.0};
     bool hideWindow{false};
     bool renderInPlaySpace{false};
+    bool useGaze{ true };
+    bool useExpressions{ true };
 };
 
 class OpenXrInterface
@@ -88,7 +90,7 @@ class OpenXrInterface
 
     bool prepareXrSystem();
 
-    void printSystemProperties();
+    void checkSystemProperties();
 
     bool prepareGL();
 
@@ -131,6 +133,8 @@ public:
 
         Eigen::Vector3f position;
         Eigen::Quaternionf rotation;
+
+        Pose operator*(const Pose& other) const;
     };
 
     struct Velocity
@@ -145,6 +149,7 @@ public:
     struct NamedPoseVelocity
     {
         std::string name;
+        std::string parentFrame;
         Pose pose;
         Velocity velocity;
         PoseFilterType filterType{ PoseFilterType::JUMP_FILTER };
@@ -176,6 +181,8 @@ public:
 
     bool isRunning() const;
 
+    float ipd() const;
+
     Pose headPose() const;
 
     Velocity headVelocity() const;
@@ -203,6 +210,18 @@ public:
     int64_t currentNanosecondsSinceEpoch() const;
 
     bool shouldResetLocalReferenceSpace();
+
+    bool eyeExpressionsSupported() const;
+
+    bool lipExpressionsSupported() const;
+
+    const std::vector<float>& eyeExpressions() const;
+
+    const std::vector<float>& lipExpressions() const;
+
+    bool gazeSupported() const;
+
+    Pose gazePoseInViewFrame() const;
 
     void close();
 };
