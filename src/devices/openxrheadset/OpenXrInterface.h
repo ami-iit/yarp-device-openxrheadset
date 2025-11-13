@@ -104,6 +104,8 @@ class OpenXrInterface
 
     bool prepareGlFramebuffer();
 
+    bool prepareHandTracking();
+
     void pollXrEvents();
 
     bool startXrFrame();
@@ -113,6 +115,8 @@ class OpenXrInterface
     void updateXrActions();
 
     bool updateInteractionProfiles();
+
+    void updateHandTracking();
 
     void printInteractionProfiles();
 
@@ -224,6 +228,7 @@ public:
     Pose gazePoseInViewFrame() const;
 
     void close();
+
 };
 
 #endif // YARP_DEV_OPENXRINTERFACE_H
