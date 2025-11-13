@@ -993,6 +993,14 @@ bool OpenXrInterface::prepareHandTracking() {
     if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker"))
         return false;
 
+    // allocate memory for left_hand_joint_locations
+    m_pimpl->right_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
+    m_pimpl->rightHandJointPoses_.resize(XR_HAND_JOINT_COUNT_EXT);
+
+    // Allocate memory for left_hand_joint_locations
+    m_pimpl->left_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
+    m_pimpl->leftHandJointPoses_.resize(XR_HAND_JOINT_COUNT_EXT);
+
     return true;
 }
 
@@ -1353,12 +1361,6 @@ bool OpenXrInterface::updateInteractionProfiles()
 
 void OpenXrInterface::updateHandTracking()
 {
-    // allocate memory for left_hand_joint_locations
-    m_pimpl->right_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
-
-    // Allocate memory for left_hand_joint_locations (if not already done)
-    m_pimpl->left_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
-
     // for each pose, put its position and rotations as invalid
     for (auto& pose : m_pimpl->leftHandJointPoses_) {
         pose.positionValid = false;
@@ -1400,17 +1402,13 @@ void OpenXrInterface::updateHandTracking()
     if (XR_SUCCEEDED(leftResult) && left_hand_joints.isActive) {
         for (uint32_t i = 0; i < left_hand_joints.jointCount; ++i) {
             const XrHandJointLocationEXT& joint = left_hand_joints.jointLocations[i];
-            if (joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) {
-                Eigen::Vector3f position(joint.pose.position.x, joint.pose.position.y, joint.pose.position.z);
-                Eigen::Quaternionf rotation(joint.pose.orientation.w, joint.pose.orientation.x, joint.pose.orientation.y, joint.pose.orientation.z);
-                OpenXrInterface::Pose handPose;
-                handPose.position = position;
-                handPose.rotation = rotation;
-                handPose.positionValid = true;
-                handPose.rotationValid = true;
-                if (i == 1)
-                    m_pimpl->leftHandPose_ = handPose;
-            }
+            OpenXrInterface::Pose& jointPose = m_pimpl->leftHandJointPoses_[i];
+            jointPose.position = toEigen(joint.pose.position);
+            jointPose.rotation = toEigen(joint.pose.orientation);
+            jointPose.positionValid = joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT;
+            jointPose.rotationValid = joint.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
+            if (i == 1)
+                m_pimpl->leftHandPose_ = jointPose;
         }
     }
 
@@ -1419,18 +1417,14 @@ void OpenXrInterface::updateHandTracking()
     if (XR_SUCCEEDED(rightResult) && right_hand_joints.isActive) {
         for (uint32_t i = 0; i < right_hand_joints.jointCount; ++i) {
             const XrHandJointLocationEXT& joint = right_hand_joints.jointLocations[i];
-            if (joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) {
-                Eigen::Vector3f position(joint.pose.position.x, joint.pose.position.y, joint.pose.position.z);
-                Eigen::Quaternionf rotation(joint.pose.orientation.w, joint.pose.orientation.x, joint.pose.orientation.y, joint.pose.orientation.z);
-                OpenXrInterface::Pose handPose;
-                handPose.position = position;
-                handPose.rotation = rotation;
-                handPose.positionValid = true;
-                handPose.rotationValid = true;
-                m_pimpl->rightHandJointPoses_.push_back(handPose);
-                if (i == 1)
-                    m_pimpl->rightHandPose_ = handPose;
-            }
+            OpenXrInterface::Pose& jointPose = m_pimpl->rightHandJointPoses_[i];
+            jointPose.position = toEigen(joint.pose.position);
+            jointPose.rotation = toEigen(joint.pose.orientation);
+            jointPose.positionValid = joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT;
+            jointPose.rotationValid = joint.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
+            m_pimpl->rightHandJointPoses_.push_back(jointPose);
+            if (i == 1)
+                m_pimpl->rightHandPose_ = jointPose;
         }
     }
 }
