@@ -42,6 +42,7 @@ bool OpenXrInterface::checkExtensions()
     bool debug_supported = false;
     bool gaze_supported = false;
     bool htc_facial_tracking_supported = false;
+    bool hand_tracking_supported = false;
 
     std::stringstream supported_extensions;
     supported_extensions << "Supported extensions: " <<std::endl;
@@ -74,7 +75,7 @@ bool OpenXrInterface::checkExtensions()
             gaze_supported = true;
         }
         if (strcmp(XR_EXT_HAND_TRACKING_EXTENSION_NAME, ext_props[i].extensionName) == 0) {
-            m_pimpl->hand_tracking_supported = true;
+            hand_tracking_supported = true;
         }
 
         supported_extensions << std::endl << "    - " << ext_props[i].extensionName;
@@ -101,9 +102,6 @@ bool OpenXrInterface::checkExtensions()
     if (!m_pimpl->htc_trackers_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Trackers!";
     }
-    if (!m_pimpl->hand_tracking_supported) {
-        yCWarning(OPENXRHEADSET) << "Runtime does not support hand tracking!";
-    }
 
     if (!m_pimpl->focus3_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the HTC Vive Focus 3 controllers!";
@@ -117,6 +115,11 @@ bool OpenXrInterface::checkExtensions()
     if (!gaze_supported) {
         yCWarning(OPENXRHEADSET) << "Runtime does not support the eye gaze extension!";
         m_pimpl->use_gaze = false;
+    }
+
+    if (!hand_tracking_supported) {
+        yCWarning(OPENXRHEADSET) << "Runtime does not support hand tracking!";
+        m_pimpl->use_hand_tracking = false;
     }
 
     return true;
@@ -170,7 +173,7 @@ bool OpenXrInterface::prepareXrInstance()
     {
         requestedExtensions.push_back(XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME);
     }
-    if (m_pimpl->hand_tracking_supported)
+    if (m_pimpl->use_hand_tracking)
     {
         requestedExtensions.push_back(XR_EXT_HAND_TRACKING_EXTENSION_NAME);
     }
@@ -285,7 +288,7 @@ bool OpenXrInterface::prepareXrInstance()
             return false;
     }
 
-    if (m_pimpl->hand_tracking_supported)
+    if (m_pimpl->use_hand_tracking)
     {
         XrResult result = xrGetInstanceProcAddr(m_pimpl->instance, "xrCreateHandTrackerEXT",
             (PFN_xrVoidFunction*)&m_pimpl->pfn_xrCreateHandTrackerEXT);
@@ -973,7 +976,7 @@ bool OpenXrInterface::prepareXrActions()
 
 bool OpenXrInterface::prepareHandTracking() {
 
-    if (!m_pimpl->hand_tracking_supported) {
+    if (!m_pimpl->use_hand_tracking) {
         return true;
     }
     XrHandTrackerCreateInfoEXT handTrackerCreateInfo =
@@ -985,13 +988,19 @@ bool OpenXrInterface::prepareHandTracking() {
     };
 
     XrResult result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->left_hand_tracker);
-    if (!m_pimpl->checkXrOutput(result, "Failed to create left hand tracker"))
-        return false;
+    if (!m_pimpl->checkXrOutput(result, "Failed to create left hand tracker. Avoiding to use hand trackers"))
+    {
+        m_pimpl->use_hand_tracking = false;
+        return true;
+    }
 
     handTrackerCreateInfo.hand = XR_HAND_RIGHT_EXT;
     result = m_pimpl->pfn_xrCreateHandTrackerEXT(m_pimpl->session, &handTrackerCreateInfo, &m_pimpl->right_hand_tracker);
-    if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker"))
-        return false;
+    if (!m_pimpl->checkXrOutput(result, "Failed to create right hand tracker. Avoiding to use hand trackers"))
+    {
+        m_pimpl->use_hand_tracking = false;
+        return true;
+    }
 
     // allocate memory for left_hand_joint_locations
     m_pimpl->right_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
@@ -1791,6 +1800,7 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     m_pimpl->renderInPlaySpace = settings.renderInPlaySpace;
     m_pimpl->use_gaze = settings.useGaze;
     m_pimpl->use_expressions = settings.useExpressions;
+    m_pimpl->use_hand_tracking = settings.useHandTracking;
 
 #ifdef DEBUG_RENDERING_LOCATION
     m_pimpl->renderInPlaySpace = true;
@@ -1838,7 +1848,7 @@ void OpenXrInterface::draw(double drawableArea)
         m_pimpl->locate_space_time = currentNanosecondsSinceEpoch() + m_pimpl->locate_space_prediction_in_ns;
         updateXrSpaces();
         updateXrActions();
-        if (m_pimpl->hand_tracking_supported){
+        if (m_pimpl->use_hand_tracking){
             updateHandTracking();
         }
         if (m_pimpl->frame_state.shouldRender) {
@@ -2116,7 +2126,7 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
         }
     }
 
-    if (m_pimpl->hand_tracking_supported)
+    if (m_pimpl->use_hand_tracking)
         numberOfPoses += XR_HAND_JOINT_COUNT_EXT*2;
 
     additionalPoses.resize(numberOfPoses);
@@ -2132,19 +2142,19 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     auto& left_arm = additionalPoses[poseIndex];
     left_arm.name = m_pimpl->leftHandPoseName;
     left_arm.pose = m_pimpl->leftHandPose_;
-    if (m_pimpl->hand_tracking_supported)
+    if (m_pimpl->use_hand_tracking)
         left_arm.filterType = PoseFilterType::NONE;
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
     right_arm.name = m_pimpl->rightHandPoseName;
     right_arm.pose = m_pimpl->rightHandPose_;
-    if (m_pimpl->hand_tracking_supported)
+    if (m_pimpl->use_hand_tracking)
         right_arm.filterType = PoseFilterType::NONE;
     poseIndex++;
 
     // add also all finger poses
-    if (m_pimpl->hand_tracking_supported) {
+    if (m_pimpl->use_hand_tracking) {
         for (size_t i = 0; i < m_pimpl->leftHandJointPoses_.size(); ++i)
         {
             auto& finger = additionalPoses[poseIndex];

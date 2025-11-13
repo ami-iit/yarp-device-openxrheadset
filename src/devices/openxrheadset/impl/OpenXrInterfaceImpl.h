@@ -302,8 +302,8 @@ public:
     // flag to check if the HTC Vive trackers are supported by the runtime.
     bool htc_trackers_supported = false;
 
-    // flag to check if the hand tracking is supported by the runtime.
-    bool hand_tracking_supported = false;
+    // flag to check if the hand tracking should be used.
+    bool use_hand_tracking = true;
 
     // Pointer to function to get the list of trackers
     PFN_xrEnumerateViveTrackerPathsHTCX pfn_xrEnumerateViveTrackerPathsHTCX = NULL;

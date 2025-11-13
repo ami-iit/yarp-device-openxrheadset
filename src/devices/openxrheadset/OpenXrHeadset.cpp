@@ -287,6 +287,9 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     bool noExpressions = cfg.check("no_expressions") && (cfg.find("no_expressions").isNull() || cfg.find("no_expressions").asBool());
     m_openXrInterfaceSettings.useExpressions = !noExpressions;
 
+    bool noHandTracking = cfg.check("no_hand_tracking") && (cfg.find("no_hand_tracking").isNull() || cfg.find("no_hand_tracking").asBool());
+    m_openXrInterfaceSettings.useHandTracking = !noHandTracking;
+
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     m_rootFrameRaw = m_rootFrame + "_raw";

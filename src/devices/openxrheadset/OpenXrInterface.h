@@ -74,6 +74,7 @@ struct OpenXrInterfaceSettings
     bool renderInPlaySpace{false};
     bool useGaze{ true };
     bool useExpressions{ true };
+    bool useHandTracking{ true };
 };
 
 class OpenXrInterface
