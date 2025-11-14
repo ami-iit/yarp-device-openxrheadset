@@ -1024,8 +1024,8 @@ bool OpenXrInterface::prepareHandTracking() {
         rightJoint.parentFrame = "";
 
         std::string joint_name = m_pimpl->getFingerName(static_cast<XrHandJointEXT>(i));
-        leftJoint.name = "openxr_left_hand_" + joint_name;
-        rightJoint.name = "openxr_right_hand_" + joint_name;
+        leftJoint.name = m_pimpl->leftHandPoseName + "_" + joint_name;
+        rightJoint.name = m_pimpl->rightHandPoseName + "_" + joint_name;
     }
 
     return true;
