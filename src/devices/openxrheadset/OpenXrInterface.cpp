@@ -2127,7 +2127,7 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     }
 
     if (m_pimpl->use_hand_tracking)
-        numberOfPoses += XR_HAND_JOINT_COUNT_EXT*2;
+        numberOfPoses += m_pimpl->leftHandJointPoses_.size() + m_pimpl->rightHandJointPoses_.size();
 
     additionalPoses.resize(numberOfPoses);
     size_t poseIndex = 0;
@@ -2153,7 +2153,18 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
         right_arm.filterType = PoseFilterType::NONE;
     poseIndex++;
 
-    // add also all finger poses
+    for (size_t topLevelIndex = 0; topLevelIndex < m_pimpl->top_level_paths.size(); ++topLevelIndex)
+    {
+        std::vector<PoseAction>& posesList = m_pimpl->top_level_paths[topLevelIndex].currentActions().poses;
+        // Skip the first pose for left and right hands (already considered)
+        // since the first two top level paths are reserved to left and right hand respectively
+        for (size_t i = (topLevelIndex < 2) ? 1 : 0; i < posesList.size(); ++i)
+        {
+            additionalPoses[poseIndex] = posesList[i];
+            poseIndex++;
+        }
+    }
+
     if (m_pimpl->use_hand_tracking) {
         for (size_t i = 0; i < m_pimpl->leftHandJointPoses_.size(); ++i)
         {
@@ -2163,9 +2174,6 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
             finger.filterType = PoseFilterType::NONE;
             poseIndex++;
         }
-		// if the left hand is not tracked, we need to skip to the right hand fingers
-        if (m_pimpl->leftHandJointPoses_.size() == 0)
-            poseIndex += XR_HAND_JOINT_COUNT_EXT;
         for (size_t i = 0; i < m_pimpl->rightHandJointPoses_.size(); ++i)
         {
             auto& finger = additionalPoses[poseIndex];
@@ -2173,15 +2181,6 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
             finger.pose = m_pimpl->rightHandJointPoses_[i];
             finger.filterType = PoseFilterType::NONE;
             poseIndex++;
-        }
-        for (size_t topLevelIndex = 0; topLevelIndex < m_pimpl->top_level_paths.size(); ++topLevelIndex)
-        {
-            std::vector<PoseAction>& posesList = m_pimpl->top_level_paths[topLevelIndex].currentActions().poses;
-            for (size_t i = (topLevelIndex < 2) ? 1 : 0; i < posesList.size(); ++i)
-            {
-                additionalPoses[poseIndex] = posesList[i];
-                poseIndex++;
-            }
         }
     }
 }
