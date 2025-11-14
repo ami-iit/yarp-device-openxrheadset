@@ -1028,6 +1028,8 @@ bool OpenXrInterface::prepareHandTracking() {
         rightJoint.name = m_pimpl->rightHandPoseName + "_" + joint_name;
     }
 
+    yCInfo(OPENXRHEADSET) << "Hand tracking successfully started!";
+
     return true;
 }
 
