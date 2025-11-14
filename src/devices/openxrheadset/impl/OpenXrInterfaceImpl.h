@@ -250,6 +250,8 @@ public:
 
     std::string sessionStateToString(XrSessionState state);
 
+    std::string getFingerName(XrHandJointEXT fingerIndex);
+
     // DATA
 
     // the instance handle can be thought of as the basic connection to the OpenXR runtime
@@ -442,10 +444,8 @@ public:
     const std::string headPoseName = "openxr_head";
 
     // Hand tracking
-    Pose leftHandPose_;
-    Pose rightHandPose_;
-    std::vector<Pose> leftHandJointPoses_;
-    std::vector<Pose> rightHandJointPoses_;
+    std::vector<NamedPoseVelocity> leftHandJointPoses;
+    std::vector<NamedPoseVelocity> rightHandJointPoses;
 };
 
 

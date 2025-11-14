@@ -1004,11 +1004,29 @@ bool OpenXrInterface::prepareHandTracking() {
 
     // allocate memory for left_hand_joint_locations
     m_pimpl->right_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
-    m_pimpl->rightHandJointPoses_.resize(XR_HAND_JOINT_COUNT_EXT);
+    m_pimpl->rightHandJointPoses.resize(XR_HAND_JOINT_COUNT_EXT);
 
     // Allocate memory for left_hand_joint_locations
     m_pimpl->left_hand_joint_locations.resize(XR_HAND_JOINT_COUNT_EXT);
-    m_pimpl->leftHandJointPoses_.resize(XR_HAND_JOINT_COUNT_EXT);
+    m_pimpl->leftHandJointPoses.resize(XR_HAND_JOINT_COUNT_EXT);
+
+    for (size_t i = 0; i < XR_HAND_JOINT_COUNT_EXT; ++i)
+    {
+        auto& leftJoint = m_pimpl->leftHandJointPoses[i];
+        auto& rightJoint = m_pimpl->rightHandJointPoses[i];
+        // We cannot get a velocity for hand joints
+        // so we use the NONE filter type
+        leftJoint.filterType = PoseFilterType::NONE;
+        rightJoint.filterType = PoseFilterType::NONE;
+
+        // We get the poses in play space
+        leftJoint.parentFrame = "";
+        rightJoint.parentFrame = "";
+
+        std::string joint_name = m_pimpl->getFingerName(static_cast<XrHandJointEXT>(i));
+        leftJoint.name = "openxr_left_hand_" + joint_name;
+        rightJoint.name = "openxr_right_hand_" + joint_name;
+    }
 
     return true;
 }
@@ -1371,13 +1389,13 @@ bool OpenXrInterface::updateInteractionProfiles()
 void OpenXrInterface::updateHandTracking()
 {
     // for each pose, put its position and rotations as invalid
-    for (auto& pose : m_pimpl->leftHandJointPoses_) {
-        pose.positionValid = false;
-        pose.rotationValid = false;
+    for (auto& joint : m_pimpl->leftHandJointPoses) {
+        joint.pose.positionValid = false;
+        joint.pose.rotationValid = false;
     }
-    for (auto& pose : m_pimpl->rightHandJointPoses_) {
-        pose.positionValid = false;
-        pose.rotationValid = false;
+    for (auto& joint : m_pimpl->rightHandJointPoses) {
+        joint.pose.positionValid = false;
+        joint.pose.rotationValid = false;
     }
 
     XrHandJointLocationsEXT left_hand_joints =
@@ -1411,13 +1429,11 @@ void OpenXrInterface::updateHandTracking()
     if (XR_SUCCEEDED(leftResult) && left_hand_joints.isActive) {
         for (uint32_t i = 0; i < left_hand_joints.jointCount; ++i) {
             const XrHandJointLocationEXT& joint = left_hand_joints.jointLocations[i];
-            OpenXrInterface::Pose& jointPose = m_pimpl->leftHandJointPoses_[i];
+            OpenXrInterface::Pose& jointPose = m_pimpl->leftHandJointPoses[i].pose;
             jointPose.position = toEigen(joint.pose.position);
             jointPose.rotation = toEigen(joint.pose.orientation);
             jointPose.positionValid = joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT;
             jointPose.rotationValid = joint.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
-            if (i == 1)
-                m_pimpl->leftHandPose_ = jointPose;
         }
     }
 
@@ -1426,14 +1442,11 @@ void OpenXrInterface::updateHandTracking()
     if (XR_SUCCEEDED(rightResult) && right_hand_joints.isActive) {
         for (uint32_t i = 0; i < right_hand_joints.jointCount; ++i) {
             const XrHandJointLocationEXT& joint = right_hand_joints.jointLocations[i];
-            OpenXrInterface::Pose& jointPose = m_pimpl->rightHandJointPoses_[i];
+            OpenXrInterface::Pose& jointPose = m_pimpl->rightHandJointPoses[i].pose;
             jointPose.position = toEigen(joint.pose.position);
             jointPose.rotation = toEigen(joint.pose.orientation);
             jointPose.positionValid = joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT;
             jointPose.rotationValid = joint.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
-            m_pimpl->rightHandJointPoses_.push_back(jointPose);
-            if (i == 1)
-                m_pimpl->rightHandPose_ = jointPose;
         }
     }
 }
@@ -2127,7 +2140,7 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     }
 
     if (m_pimpl->use_hand_tracking)
-        numberOfPoses += m_pimpl->leftHandJointPoses_.size() + m_pimpl->rightHandJointPoses_.size();
+        numberOfPoses += m_pimpl->leftHandJointPoses.size() + m_pimpl->rightHandJointPoses.size();
 
     additionalPoses.resize(numberOfPoses);
     size_t poseIndex = 0;
@@ -2135,22 +2148,19 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     auto& head = additionalPoses[poseIndex];
     head.name = m_pimpl->headPoseName;
     head.pose = headPose();
-	head.velocity = headVelocity();
-    head.filterType = PoseFilterType::NONE;
+    head.velocity = headVelocity();
     poseIndex++;
 
     auto& left_arm = additionalPoses[poseIndex];
     left_arm.name = m_pimpl->leftHandPoseName;
-    left_arm.pose = m_pimpl->leftHandPose_;
-    if (m_pimpl->use_hand_tracking)
-        left_arm.filterType = PoseFilterType::NONE;
+    left_arm.pose = leftHandPose();
+    left_arm.velocity = leftHandVelocity();
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
     right_arm.name = m_pimpl->rightHandPoseName;
-    right_arm.pose = m_pimpl->rightHandPose_;
-    if (m_pimpl->use_hand_tracking)
-        right_arm.filterType = PoseFilterType::NONE;
+    right_arm.pose = rightHandPose();
+    right_arm.velocity = rightHandVelocity();
     poseIndex++;
 
     for (size_t topLevelIndex = 0; topLevelIndex < m_pimpl->top_level_paths.size(); ++topLevelIndex)
@@ -2166,20 +2176,14 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
     }
 
     if (m_pimpl->use_hand_tracking) {
-        for (size_t i = 0; i < m_pimpl->leftHandJointPoses_.size(); ++i)
+        for (const auto& finger: m_pimpl->leftHandJointPoses)
         {
-            auto& finger = additionalPoses[poseIndex];
-            finger.name = "openxr_left_hand_finger_" + std::to_string(i);
-            finger.pose = m_pimpl->leftHandJointPoses_[i];
-            finger.filterType = PoseFilterType::NONE;
+            additionalPoses[poseIndex] = finger;
             poseIndex++;
         }
-        for (size_t i = 0; i < m_pimpl->rightHandJointPoses_.size(); ++i)
+        for (const auto& finger : m_pimpl->rightHandJointPoses)
         {
-            auto& finger = additionalPoses[poseIndex];
-            finger.name = "openxr_right_hand_finger_" + std::to_string(i);
-            finger.pose = m_pimpl->rightHandJointPoses_[i];
-            finger.filterType = PoseFilterType::NONE;
+            additionalPoses[poseIndex] = finger;
             poseIndex++;
         }
     }
