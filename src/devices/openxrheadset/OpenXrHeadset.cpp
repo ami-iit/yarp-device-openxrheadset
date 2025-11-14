@@ -287,6 +287,47 @@ bool yarp::dev::OpenXrHeadset::open(yarp::os::Searchable &cfg)
     bool noExpressions = cfg.check("no_expressions") && (cfg.find("no_expressions").isNull() || cfg.find("no_expressions").asBool());
     m_openXrInterfaceSettings.useExpressions = !noExpressions;
 
+    bool noHandTracking = cfg.check("no_hand_tracking") && (cfg.find("no_hand_tracking").isNull() || cfg.find("no_hand_tracking").asBool());
+    m_openXrInterfaceSettings.useHandTracking = !noHandTracking;
+
+    auto parsePoseFilterType = [](const std::string& str, PoseFilterType& filterType) -> bool
+    {
+        std::string lowerStr = str;
+        std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+        if (lowerStr == "none")
+        {
+            filterType = PoseFilterType::NONE;
+            return true;
+        }
+        else if (lowerStr == "jump")
+        {
+            filterType = PoseFilterType::JUMP_FILTER;
+            return true;
+        }
+        return false;
+    };
+
+    std::string headFilterTypeStr = cfg.check("head_pose_filter_type", yarp::os::Value("jump")).asString();
+    if (!parsePoseFilterType(headFilterTypeStr, m_openXrInterfaceSettings.headPoseFilterType))
+    {
+        yCError(OPENXRHEADSET) << "Unrecognized head_pose_filter_type:" << headFilterTypeStr;
+        return false;
+    }
+
+    std::string handsFilterTypeStr = cfg.check("hands_pose_filter_type", yarp::os::Value("jump")).asString();
+    if (!parsePoseFilterType(handsFilterTypeStr, m_openXrInterfaceSettings.handsPoseFilterType))
+    {
+        yCError(OPENXRHEADSET) << "Unrecognized hands_pose_filter_type:" << handsFilterTypeStr;
+        return false;
+    }
+
+    std::string trackersFilterTypeStr = cfg.check("trackers_pose_filter_type", yarp::os::Value("jump")).asString();
+    if (!parsePoseFilterType(trackersFilterTypeStr, m_openXrInterfaceSettings.trackersPoseFilterType))
+    {
+        yCError(OPENXRHEADSET) << "Unrecognized trackers_pose_filter_type:" << trackersFilterTypeStr;
+        return false;
+    }
+
     m_getStickAsAxis = cfg.check("stick_as_axis", yarp::os::Value(false)).asBool();
     m_rootFrame = cfg.check("tf_root_frame", yarp::os::Value("openxr_origin")).asString();
     m_rootFrameRaw = m_rootFrame + "_raw";

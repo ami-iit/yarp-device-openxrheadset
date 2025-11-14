@@ -250,6 +250,8 @@ public:
 
     std::string sessionStateToString(XrSessionState state);
 
+    std::string getFingerName(XrHandJointEXT fingerIndex);
+
     // DATA
 
     // the instance handle can be thought of as the basic connection to the OpenXR runtime
@@ -302,6 +304,9 @@ public:
     // flag to check if the HTC Vive trackers are supported by the runtime.
     bool htc_trackers_supported = false;
 
+    // flag to check if the hand tracking should be used.
+    bool use_hand_tracking = true;
+
     // Pointer to function to get the list of trackers
     PFN_xrEnumerateViveTrackerPathsHTCX pfn_xrEnumerateViveTrackerPathsHTCX = NULL;
 
@@ -342,6 +347,14 @@ public:
 
     // Flag to enable the use of gaze
     bool use_gaze = true;
+
+    // Hand tracking
+    std::vector<XrHandJointLocationEXT> left_hand_joint_locations;
+    std::vector<XrHandJointLocationEXT> right_hand_joint_locations;
+    XrHandTrackerEXT left_hand_tracker = XR_NULL_HANDLE;
+    XrHandTrackerEXT right_hand_tracker = XR_NULL_HANDLE;
+    PFN_xrLocateHandJointsEXT pfn_xrLocateHandJointsEXT = nullptr;
+    PFN_xrCreateHandTrackerEXT pfn_xrCreateHandTrackerEXT = nullptr;
 
     // state of the application
     XrSessionState state = XR_SESSION_STATE_UNKNOWN;
@@ -429,6 +442,15 @@ public:
     const std::string leftHandPoseName = "openxr_left_hand";
     const std::string rightHandPoseName = "openxr_right_hand";
     const std::string headPoseName = "openxr_head";
+
+    // Hand tracking
+    std::vector<NamedPoseVelocity> leftHandJointPoses;
+    std::vector<NamedPoseVelocity> rightHandJointPoses;
+
+    // Filters
+    PoseFilterType head_filter_type = PoseFilterType::JUMP_FILTER;
+    PoseFilterType hands_filter_type = PoseFilterType::JUMP_FILTER;
+    PoseFilterType htc_trackers_filter_type = PoseFilterType::JUMP_FILTER;
 };
 
 

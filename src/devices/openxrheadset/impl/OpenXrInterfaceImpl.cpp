@@ -461,6 +461,98 @@ std::string OpenXrInterface::Implementation::sessionStateToString(XrSessionState
     return output;
 }
 
+std::string OpenXrInterface::Implementation::getFingerName(XrHandJointEXT fingerIndex)
+{
+    // This works when using XR_HAND_JOINT_SET_DEFAULT_EXT when creating the hand tracker
+    std::string output;
+    switch (fingerIndex)
+    {
+    case XR_HAND_JOINT_PALM_EXT:
+        output = "joint_palm";
+        break;
+    case XR_HAND_JOINT_WRIST_EXT:
+        output = "joint_wrist";
+        break;
+    case XR_HAND_JOINT_THUMB_METACARPAL_EXT:
+        output = "joint_thumb_metacarpal";
+        break;
+    case XR_HAND_JOINT_THUMB_PROXIMAL_EXT:
+        output = "joint_thumb_proximal";
+        break;
+    case XR_HAND_JOINT_THUMB_DISTAL_EXT:
+        output = "joint_thumb_distal";
+        break;
+    case XR_HAND_JOINT_THUMB_TIP_EXT:
+        output = "joint_thumb_tip";
+        break;
+    case XR_HAND_JOINT_INDEX_METACARPAL_EXT:
+        output = "joint_index_metacarpal";
+        break;
+    case XR_HAND_JOINT_INDEX_PROXIMAL_EXT:
+        output = "joint_index_proximal";
+        break;
+    case XR_HAND_JOINT_INDEX_INTERMEDIATE_EXT:
+        output = "joint_index_intermediate";
+        break;
+    case XR_HAND_JOINT_INDEX_DISTAL_EXT:
+        output = "joint_index_distal";
+        break;
+    case XR_HAND_JOINT_INDEX_TIP_EXT:
+        output = "joint_index_tip";
+        break;
+    case XR_HAND_JOINT_MIDDLE_METACARPAL_EXT:
+        output = "joint_middle_metacarpal";
+        break;
+    case XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT:
+        output = "joint_middle_proximal";
+        break;
+    case XR_HAND_JOINT_MIDDLE_INTERMEDIATE_EXT:
+        output = "joint_middle_intermediate";
+        break;
+    case XR_HAND_JOINT_MIDDLE_DISTAL_EXT:
+        output = "joint_middle_distal";
+        break;
+    case XR_HAND_JOINT_MIDDLE_TIP_EXT:
+        output = "joint_middle_tip";
+        break;
+    case XR_HAND_JOINT_RING_METACARPAL_EXT:
+        output = "joint_ring_metacarpal";
+        break;
+    case XR_HAND_JOINT_RING_PROXIMAL_EXT:
+        output = "joint_ring_proximal";
+        break;
+    case XR_HAND_JOINT_RING_INTERMEDIATE_EXT:
+        output = "joint_ring_intermediate";
+        break;
+    case XR_HAND_JOINT_RING_DISTAL_EXT:
+        output = "joint_ring_distal";
+        break;
+    case XR_HAND_JOINT_RING_TIP_EXT:
+        output = "joint_ring_tip";
+        break;
+    case XR_HAND_JOINT_LITTLE_METACARPAL_EXT:
+        output = "joint_little_metacarpal";
+        break;
+    case XR_HAND_JOINT_LITTLE_PROXIMAL_EXT:
+        output = "joint_little_proximal";
+        break;
+    case XR_HAND_JOINT_LITTLE_INTERMEDIATE_EXT:
+        output = "joint_little_intermediate";
+        break;
+    case XR_HAND_JOINT_LITTLE_DISTAL_EXT:
+        output = "joint_little_distal";
+        break;
+    case XR_HAND_JOINT_LITTLE_TIP_EXT:
+        output = "joint_little_tip";
+        break;
+    case XR_HAND_JOINT_MAX_ENUM_EXT:
+    default:
+        output = "joint_unknown";
+        break;
+
+    }
+    return output;
+}
 
 InputActions &TopLevelPath::currentActions()
 {
