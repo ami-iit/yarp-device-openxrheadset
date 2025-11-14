@@ -2166,7 +2166,7 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
 
     auto& right_arm = additionalPoses[poseIndex];
     right_arm.name = m_pimpl->rightHandPoseName;
-    left_arm.filterType = m_pimpl->hands_filter_type;
+    right_arm.filterType = m_pimpl->hands_filter_type;
     right_arm.pose = rightHandPose();
     right_arm.velocity = rightHandVelocity();
     poseIndex++;
