@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(yarp-device-openxrheadset
         LANGUAGES C CXX
-        VERSION 0.0.9)
+        VERSION 0.0.10)
 
 # Defines the CMAKE_INSTALL_LIBDIR, CMAKE_INSTALL_BINDIR and many other useful macros.
 # See https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
@@ -71,7 +71,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 ### Dependencies
 
-# Temporary set CMAKE_POLICY_VERSION_MINIMUM 3.5 as a workaround 
+# Temporary set CMAKE_POLICY_VERSION_MINIMUM 3.5 as a workaround
 # for https://github.com/robotology/gz-sim-yarp-plugins/pull/258#issue-2963247728
 # Remove once we drop support for compilation on Ubuntu 22.04 with apt dependencies
 # find_package(jsoncpp) is transitively called by find_package(OpenXR)
