@@ -764,7 +764,7 @@ bool OpenXrInterface::prepareXrActions()
 
     khr_left_inputs.poses =
     {
-        {"/input/grip/pose", "grip"}
+        {"/input/grip/pose", "grip", m_pimpl->hands_filter_type}
     };
 
     khr_left_inputs.buttons =
@@ -781,7 +781,7 @@ bool OpenXrInterface::prepareXrActions()
 
     oculus_left_inputs.poses =
     {
-        {"/input/grip/pose", "grip"}
+        {"/input/grip/pose", "grip", m_pimpl->hands_filter_type}
     };
     oculus_right_inputs.poses = oculus_left_inputs.poses;
 
@@ -819,7 +819,7 @@ bool OpenXrInterface::prepareXrActions()
 
     vive_left_inputs.poses =
     {
-        {"/input/grip/pose", "grip"}
+        {"/input/grip/pose", "grip", m_pimpl->hands_filter_type}
     };
 
     vive_left_inputs.buttons =
@@ -849,7 +849,7 @@ bool OpenXrInterface::prepareXrActions()
 
         focus3_left_inputs.poses =
         {
-            {"/input/grip/pose", "grip"}
+            {"/input/grip/pose", "grip", m_pimpl->hands_filter_type}
         };
         focus3_right_inputs.poses = focus3_left_inputs.poses;
 
@@ -897,7 +897,7 @@ bool OpenXrInterface::prepareXrActions()
 
         viveTrackerInputs.poses =
         {
-            {"/input/grip/pose", "pose"}
+            {"/input/grip/pose", "pose", m_pimpl->htc_trackers_filter_type}
         };
 
         viveTrackerInputs.buttons =
@@ -1814,6 +1814,9 @@ bool OpenXrInterface::initialize(const OpenXrInterfaceSettings &settings)
     m_pimpl->use_gaze = settings.useGaze;
     m_pimpl->use_expressions = settings.useExpressions;
     m_pimpl->use_hand_tracking = settings.useHandTracking;
+    m_pimpl->head_filter_type = settings.headPoseFilterType;
+    m_pimpl->hands_filter_type = settings.handsPoseFilterType;
+    m_pimpl->htc_trackers_filter_type = settings.trackersPoseFilterType;
 
 #ifdef DEBUG_RENDERING_LOCATION
     m_pimpl->renderInPlaySpace = true;
@@ -2147,18 +2150,21 @@ void OpenXrInterface::getAllPoses(std::vector<NamedPoseVelocity> &additionalPose
 
     auto& head = additionalPoses[poseIndex];
     head.name = m_pimpl->headPoseName;
+    head.filterType = m_pimpl->head_filter_type;
     head.pose = headPose();
     head.velocity = headVelocity();
     poseIndex++;
 
     auto& left_arm = additionalPoses[poseIndex];
     left_arm.name = m_pimpl->leftHandPoseName;
+    left_arm.filterType = m_pimpl->hands_filter_type;
     left_arm.pose = leftHandPose();
     left_arm.velocity = leftHandVelocity();
     poseIndex++;
 
     auto& right_arm = additionalPoses[poseIndex];
     right_arm.name = m_pimpl->rightHandPoseName;
+    left_arm.filterType = m_pimpl->hands_filter_type;
     right_arm.pose = rightHandPose();
     right_arm.velocity = rightHandVelocity();
     poseIndex++;

@@ -446,6 +446,11 @@ public:
     // Hand tracking
     std::vector<NamedPoseVelocity> leftHandJointPoses;
     std::vector<NamedPoseVelocity> rightHandJointPoses;
+
+    // Filters
+    PoseFilterType head_filter_type = PoseFilterType::JUMP_FILTER;
+    PoseFilterType hands_filter_type = PoseFilterType::JUMP_FILTER;
+    PoseFilterType htc_trackers_filter_type = PoseFilterType::JUMP_FILTER;
 };
 
 
