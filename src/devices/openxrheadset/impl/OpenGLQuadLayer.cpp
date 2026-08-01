@@ -243,7 +243,7 @@ bool OpenGLQuadLayer::submitImage(int32_t xOffset, int32_t yOffset, int32_t imag
     //Copy from the read framebuffer to the draw framebuffer
     glBlitNamedFramebuffer(m_userBuffer.id(), m_internalBuffer.id(), xOffset, yOffset, xOffset + imageWidth, yOffset + imageHeight,
         0, 0, imageMaxWidth(), imageMaxHeight(),
-        GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 //Resetting read and draw framebuffers
     m_userBuffer.unbind();

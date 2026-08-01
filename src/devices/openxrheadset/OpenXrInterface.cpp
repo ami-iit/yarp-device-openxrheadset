@@ -2202,7 +2202,14 @@ void OpenXrInterface::endXrFrame()
 #ifdef DEBUG_RENDERING_LOCATION
                 layer->layer.pose = layer->desiredHeadFixedPose;
 #else
-                layer->layer.pose = toXr(Eigen::Matrix4f(toEigen(m_pimpl->mid_views_pose) * toEigen(layer->desiredHeadFixedPose)));
+                if (m_pimpl->renderInPlaySpace)
+                {
+                    layer->layer.pose = toXr(Eigen::Matrix4f(toEigen(m_pimpl->mid_views_pose) * toEigen(layer->desiredHeadFixedPose)));
+                }
+                else
+                {
+                    layer->layer.pose = layer->desiredHeadFixedPose;
+                }
 #endif
 
                 m_pimpl->submitLayer((XrCompositionLayerBaseHeader*) &layer->layer);

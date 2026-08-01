@@ -121,6 +121,8 @@ public:
         glBindTexture(GL_TEXTURE_2D, m_imageTexture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_2D, m_imageTexture, 0);
         glTexImage2D(GL_TEXTURE_2D, 0, m_pixelFormat, quadLayer->imageMaxWidth(), quadLayer->imageMaxHeight(), 0,
@@ -219,7 +221,7 @@ public:
         //Copy from the read framebuffer to the draw framebuffer
         glBlitFramebuffer(startX, endY, endX, startY,
             0, 0, m_quadLayer->imageMaxWidth(), m_quadLayer->imageMaxHeight(),
-            GL_COLOR_BUFFER_BIT, GL_NEAREST);   // When writing the texture, OpenGl starts from the bottom left corner and
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);   // When writing the texture, OpenGl starts from the bottom left corner and
                                                 // goes from left to right, bottom to up.
                                                 // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
                                                 // In Yarp, the first pixel is the top left, so we have to flip vertically.
