@@ -727,23 +727,6 @@ void yarp::dev::OpenXrHeadset::run()
 
 }
 
-bool yarp::dev::OpenXrHeadset::startService()
-{
-    //To let the device driver knowing that it need to poll updateService continuosly
-    return false;
-}
-
-bool yarp::dev::OpenXrHeadset::updateService()
-{
-    //To let the device driver that we are still alive
-    return !m_closed;
-}
-
-bool yarp::dev::OpenXrHeadset::stopService()
-{
-    return this->close();
-}
-
 bool yarp::dev::OpenXrHeadset::getAxisCount(unsigned int &axis_count)
 {
     std::lock_guard<std::mutex> lock(m_mutex);

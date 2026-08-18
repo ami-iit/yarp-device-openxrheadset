@@ -19,7 +19,6 @@
 #include <yarp/dev/IFrameTransform.h>
 #include <yarp/dev/IJoypadController.h>
 #include <yarp/dev/PolyDriver.h>
-#include <yarp/dev/ServiceInterfaces.h>
 #include <yarp/dev/IWrapper.h>
 #include <yarp/sig/Image.h>
 #include <yarp/sig/Matrix.h>
@@ -46,7 +45,6 @@ class OpenXrHeadset;
 
 class yarp::dev::OpenXrHeadset : public yarp::dev::DeviceDriver,
                                  public yarp::os::PeriodicThread,
-                                 public yarp::dev::IService,
                                  public yarp::dev::IJoypadController,
                                  public OpenXrHeadsetCommands
 {
@@ -59,15 +57,11 @@ public:
     virtual bool open(yarp::os::Searchable& cfg) override;
     virtual bool close() override;
 
-    // yarp::os::RateThread methods
+    // yarp::os::PeriodicThread methods
     virtual bool threadInit() override;
     virtual void threadRelease() override;
     virtual void run() override;
 
-    //  yarp::dev::IService methods
-    virtual bool startService() override;
-    virtual bool updateService() override;
-    virtual bool stopService() override;
 
     // yarp::dev::IJoypadController methods
     virtual bool getAxisCount(unsigned int& axis_count) override;
